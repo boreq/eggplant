@@ -1,11 +1,15 @@
 package commands
 
 import (
+	"runtime"
+	"time"
+
 	"github.com/boreq/goaccess/config"
 	"github.com/boreq/goaccess/core"
 	"github.com/boreq/goaccess/parser"
 	"github.com/boreq/goaccess/server"
 	"github.com/boreq/guinea"
+	"github.com/dustin/go-humanize"
 )
 
 var runCmd = guinea.Command{
@@ -46,6 +50,12 @@ func runRun(c guinea.Context) error {
 	tracker := core.NewTracker(p)
 	errC := make(chan error)
 
+	go func() {
+		for range time.Tick(1 * time.Second) {
+			logStats()
+		}
+	}()
+
 	// Load the specified files.
 	for i := 1; i < len(c.Arguments); i++ {
 		go func(i int) {
@@ -70,4 +80,16 @@ func runRun(c guinea.Context) error {
 	}()
 
 	return <-errC
+}
+
+func logStats() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	alloc := humanize.Bytes(m.Alloc)
+	totalAlloc := humanize.Bytes(m.TotalAlloc)
+	sys := humanize.Bytes(m.Sys)
+	numGC := m.NumGC
+
+	log.Debug("memory statistics", "alloc", alloc, "totalAlloc", totalAlloc, "sys", sys, "numGC", numGC)
+
 }
