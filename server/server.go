@@ -22,58 +22,12 @@ type handler struct {
 	repository *core.Repository
 }
 
-func extractDate(ps httprouter.Params, yearName, monthName, dayName, hourName string) (year, month, day, hour int, err error) {
-	year, err = strconv.Atoi(strings.TrimSuffix(ps.ByName(yearName), ".json"))
-	if err != nil {
-		err = errors.New("invalid year")
-		return
-	}
-
-	month, err = strconv.Atoi(strings.TrimSuffix(ps.ByName(monthName), ".json"))
-	if err != nil {
-		err = errors.New("invalid month")
-		return
-	}
-
-	day, err = strconv.Atoi(strings.TrimSuffix(ps.ByName(dayName), ".json"))
-	if err != nil {
-		err = errors.New("invalid day")
-		return
-	}
-
-	hour, err = strconv.Atoi(strings.TrimSuffix(ps.ByName(hourName), ".json"))
-	if err != nil {
-		err = errors.New("invalid hour")
-		return
-	}
-
-	if month < 1 || month > 12 {
-		err = errors.New("month must be in range [1, 12]")
-		return
-	}
-	return
-}
-
 func getParamInt(ps httprouter.Params, name string) (int, error) {
 	return strconv.Atoi(getParamString(ps, name))
 }
 
 func getParamString(ps httprouter.Params, name string) string {
 	return strings.TrimSuffix(ps.ByName(name), ".json")
-}
-
-func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	year, month, day, hour, err := extractDate(ps, "year", "month", "day", "hour")
-	if err != nil {
-		return nil, api.BadRequest.WithError(err)
-	}
-
-	response, ok := h.repository.Retrieve(year, time.Month(month), day, hour)
-	if !ok {
-		return nil, api.NotFound
-	}
-
-	return response, nil
 }
 
 func iterDateRange(from, to time.Time) <-chan time.Time {
@@ -217,6 +171,5 @@ func newHandler(repository *core.Repository) http.Handler {
 	}
 	router := httprouter.New()
 	router.GET("/api/from/:from/to/:to/:groupBy", api.Wrap(h.Range))
-	router.GET("/api/hour/:year/:month/:day/:hour", api.Wrap(h.Hour))
 	return router
 }
