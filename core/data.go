@@ -19,34 +19,34 @@ type ByRefererData struct {
 	Hits    int    `json:"hits"`
 }
 
-func (b *ByRefererData) Insert(entry *parser.Entry) error {
-	visit := createVisitHash(entry)
-	b.Hits++
+func (b *ByRefererData) InsertHits(hits int) {
+	b.Hits += hits
+}
+
+func (b *ByRefererData) InsertVisit(visit string) {
 	b.Visits.Add(visit)
-	return nil
 }
 
 type ByUriData struct {
 	Uri      string         `json:"uri"`
 	Visits   Set            `json:"visits"`
-	ByStatus []ByStatusData `json:"by_status"`
+	ByStatus []ByStatusData `json:"statuses"`
 }
 
-func (b *ByUriData) Insert(entry *parser.Entry) error {
-	visit := createVisitHash(entry)
+func (b *ByUriData) InsertVisit(visit string) {
 	b.Visits.Add(visit)
+}
 
-	// By status
-	byStatusData := b.findByStatus(entry.Status)
+func (b *ByUriData) GetOrCreateByStatus(status string) *ByStatusData {
+	byStatusData := b.findByStatus(status)
 	if byStatusData == nil {
 		b.ByStatus = cheapAppendByStatus(b.ByStatus, ByStatusData{
-			Status: entry.Status,
+			Status: status,
 			Hits:   0,
 		})
 		byStatusData = &b.ByStatus[len(b.ByStatus)-1]
 	}
-	byStatusData.Hits++
-	return nil
+	return byStatusData
 }
 
 func (b *ByUriData) findByStatus(status string) *ByStatusData {
@@ -63,41 +63,56 @@ type ByStatusData struct {
 	Hits   int    `json:"hits"`
 }
 
+func (b *ByStatusData) InsertHits(hits int) {
+	b.Hits += hits
+}
+
 type Data struct {
-	ByReferer []ByRefererData `json:"by_referer"`
-	ByUri     []ByUriData     `json:"by_uri"`
+	ByReferer []ByRefererData `json:"referers"`
+	ByUri     []ByUriData     `json:"uris"`
 }
 
 func (d *Data) Insert(entry *parser.Entry) error {
+	visit := createVisitHash(entry)
+
 	// By referer
-	byRefererData := d.findByReferer(entry.Referer)
+	byRefererData := d.GetOrCreateByReferer(entry.Referer)
+	byRefererData.InsertHits(1)
+	byRefererData.InsertVisit(visit)
+
+	// By URI
+	byUriData := d.GetOrCreateByUri(entry.HttpRequestURI)
+	byUriData.InsertVisit(visit)
+	byStatusData := byUriData.GetOrCreateByStatus(entry.Status)
+	byStatusData.InsertHits(1)
+
+	return nil
+}
+
+func (d *Data) GetOrCreateByReferer(referer string) *ByRefererData {
+	byRefererData := d.findByReferer(referer)
 	if byRefererData == nil {
 		d.ByReferer = cheapAppendByReferer(d.ByReferer, ByRefererData{
-			Referer: entry.Referer,
+			Referer: referer,
 			Visits:  NewSet(),
 			Hits:    0,
 		})
 		byRefererData = &d.ByReferer[len(d.ByReferer)-1]
 	}
-	if err := byRefererData.Insert(entry); err != nil {
-		return err
-	}
+	return byRefererData
+}
 
-	// By URI
-	byUriData := d.findByUri(entry.HttpRequestURI)
+func (d *Data) GetOrCreateByUri(uri string) *ByUriData {
+	byUriData := d.findByUri(uri)
 	if byUriData == nil {
 		d.ByUri = cheapAppendByUri(d.ByUri, ByUriData{
-			Uri:      entry.HttpRequestURI,
+			Uri:      uri,
 			Visits:   NewSet(),
 			ByStatus: []ByStatusData{},
 		})
 		byUriData = &d.ByUri[len(d.ByUri)-1]
 	}
-	if err := byUriData.Insert(entry); err != nil {
-		return err
-	}
-
-	return nil
+	return byUriData
 }
 
 func (d *Data) findByReferer(referer string) *ByRefererData {

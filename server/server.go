@@ -54,6 +54,14 @@ func extractDate(ps httprouter.Params, yearName, monthName, dayName, hourName st
 	return
 }
 
+func getParamInt(ps httprouter.Params, name string) (int, error) {
+	return strconv.Atoi(getParamString(ps, name))
+}
+
+func getParamString(ps httprouter.Params, name string) string {
+	return strings.TrimSuffix(ps.ByName(name), ".json")
+}
+
 func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
 	year, month, day, hour, err := extractDate(ps, "year", "month", "day", "hour")
 	if err != nil {
@@ -68,78 +76,147 @@ func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 	return response, nil
 }
 
-func iterDateRange(yearA, monthA, dayA, hourA, yearB, monthB, dayB, hourB int) <-chan []int {
-	dateA := time.Date(yearA, time.Month(monthA), dayA, hourA, 0, 0, 0, time.UTC)
-	dateB := time.Date(yearB, time.Month(monthB), dayB, hourB, 0, 0, 0, time.UTC)
-
-	c := make(chan []int)
+func iterDateRange(from, to time.Time) <-chan time.Time {
+	c := make(chan time.Time)
 	go func() {
 		defer close(c)
-		for d := dateA; !d.After(dateB); d = d.Add(time.Hour) {
-			c <- []int{d.Year(), int(d.Month()), d.Day(), d.Hour()}
+		for d := truncateToHour(from); !d.After(to); d = d.Add(time.Hour) {
+			c <- d
 		}
 	}()
 	return c
 }
 
 type RangeData struct {
-	Time TimeData  `json:"time"`
+	Time time.Time `json:"time"`
 	Data core.Data `json:"data"`
 }
 
-type TimeData struct {
-	Year  int `json:"year"`
-	Month int `json:"month"`
-	Day   int `json:"day"`
-	Hour  int `json:"hour"`
+type truncateFn func(t time.Time) time.Time
+
+func truncateToHour(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, t.Location())
+}
+
+func truncateToDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func truncateToMonth(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), 0, 0, 0, 0, 0, t.Location())
+}
+
+func getTruncateFn(groupBy string) (truncateFn, error) {
+	switch groupBy {
+	case "hourly":
+		return truncateToHour, nil
+	case "daily":
+		return truncateToDay, nil
+	case "monthly":
+		return truncateToMonth, nil
+	default:
+		return nil, errors.New("unsupported groupBy parameter")
+	}
 }
 
 func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	yearA, monthA, dayA, hourA, err := extractDate(ps, "yearA", "monthA", "dayA", "hourA")
+	fromTimestamp, err := getParamInt(ps, "from")
 	if err != nil {
 		return nil, api.BadRequest.WithError(err)
 	}
 
-	yearB, monthB, dayB, hourB, err := extractDate(ps, "yearB", "monthB", "dayB", "hourB")
+	toTimestamp, err := getParamInt(ps, "to")
 	if err != nil {
 		return nil, api.BadRequest.WithError(err)
+	}
+
+	from := time.Unix(int64(fromTimestamp), 0).UTC()
+	to := time.Unix(int64(toTimestamp), 0).UTC()
+
+	truncateFn, err := getTruncateFn(getParamString(ps, "groupBy"))
+	if err != nil {
+		return nil, api.BadRequest
 	}
 
 	var response []RangeData
-	for slice := range iterDateRange(yearA, monthA, dayA, hourA, yearB, monthB, dayB, hourB) {
-		log.Info("iterating over days", "slice", slice)
-		year := slice[0]
-		month := slice[1]
-		day := slice[2]
-		hour := slice[3]
-		rd := RangeData{
-			Time: TimeData{
-				Year:  year,
-				Month: month,
-				Day:   day,
-				Hour:  hour,
-			},
-		}
-		data, ok := h.repository.Retrieve(year, time.Month(month), day, hour)
+	for t := range iterDateRange(from, to) {
+		data, ok := h.repository.Retrieve(t.Year(), t.Month(), t.Day(), t.Hour())
 		if !ok {
 			data = core.NewData()
 		}
-		rd.Data = *data
-		response = append(response, rd)
+		rangeData := RangeData{Time: truncateFn(t), Data: *data}
+		var err error
+		response, err = addToResponse(response, rangeData)
+		if err != nil {
+			log.Error("could not add to response", "err", err)
+			return nil, api.InternalServerError
+		}
 	}
 
 	return response, nil
 }
 
+func addToResponse(response []RangeData, rangeData RangeData) ([]RangeData, error) {
+	data := findMatchingRangeData(response, rangeData.Time)
+	if data == nil {
+		response = append(response, RangeData{Time: rangeData.Time})
+		data = &response[len(response)-1]
+	}
+	err := mergeRangeData(&data.Data, rangeData.Data)
+	return response, err
+}
+
+func findMatchingRangeData(response []RangeData, t time.Time) *RangeData {
+	for i := range response {
+		if response[i].Time.Equal(t) {
+			return &response[i]
+		}
+	}
+	return nil
+}
+
+func mergeRangeData(target *core.Data, source core.Data) error {
+	// Group referers.
+	for _, src := range source.ByReferer {
+		targetByReferer := target.GetOrCreateByReferer(src.Referer)
+		targetByReferer.InsertHits(src.Hits)
+		for _, visit := range src.Visits.Get() {
+			targetByReferer.InsertVisit(visit)
+		}
+	}
+
+	// Group URIs.
+	for _, src := range source.ByUri {
+		targetByUri := target.GetOrCreateByUri(src.Uri)
+		for _, visit := range src.Visits.Get() {
+			targetByUri.InsertVisit(visit)
+		}
+		for _, srcStatus := range src.ByStatus {
+			targetByStatus := targetByUri.GetOrCreateByStatus(srcStatus.Status)
+			targetByStatus.InsertHits(srcStatus.Hits)
+		}
+	}
+
+	return nil
+}
+
 func Serve(repository *core.Repository, address string) error {
+	handler := newHandler(repository)
+	// Add CORS middleware.
+	handler = cors.AllowAll().Handler(handler)
+	// Add GZIP middleware.
+	handler = gziphandler.GzipHandler(handler)
+
+	log.Info("starting listening", "address", address)
+	return http.ListenAndServe(address, handler)
+}
+
+func newHandler(repository *core.Repository) http.Handler {
 	h := &handler{
 		repository: repository,
 	}
 	router := httprouter.New()
+	router.GET("/api/from/:from/to/:to/:groupBy", api.Wrap(h.Range))
 	router.GET("/api/hour/:year/:month/:day/:hour", api.Wrap(h.Hour))
-	router.GET("/api/range/:yearA/:monthA/:dayA/:hourA/:yearB/:monthB/:dayB/:hourB", api.Wrap(h.Range))
-	log.Info("starting listening", "address", address)
-	handler := cors.AllowAll().Handler(router)
-	handler = gziphandler.GzipHandler(handler)
-	return http.ListenAndServe(address, handler)
+	return router
 }
