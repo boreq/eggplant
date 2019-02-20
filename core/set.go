@@ -5,41 +5,19 @@ import (
 )
 
 func NewSet() Set {
-	return nil
+	return make(Set)
 }
 
-type Set []string
+type Set map[string]struct{}
 
 func (s *Set) Add(value string) {
-	if !s.Contains(value) {
-		*s = cheapAppend(*s, value)
-	}
-}
-
-func (s Set) Contains(value string) bool {
-	for _, v := range s {
-		if v == value {
-			return true
-		}
-	}
-	return false
+	(*s)[value] = struct{}{}
 }
 
 func (s Set) Size() int {
 	return len(s)
 }
 
-func (s Set) Get() []string {
-	return s
-}
-
 func (s *Set) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Itoa(s.Size())), nil
-}
-
-func cheapAppend(slice []string, value string) []string {
-	newSlice := make([]string, len(slice)+1, len(slice)+1)
-	copy(newSlice, slice)
-	newSlice[len(newSlice)-1] = value
-	return newSlice
 }

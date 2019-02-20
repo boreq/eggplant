@@ -83,6 +83,7 @@ func runRun(c guinea.Context) error {
 }
 
 func logStats() {
+	runtime.GC()
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	alloc := humanize.Bytes(m.Alloc)

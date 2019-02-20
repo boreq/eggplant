@@ -34,7 +34,7 @@ func iterDateRange(from, to time.Time) <-chan time.Time {
 	c := make(chan time.Time)
 	go func() {
 		defer close(c)
-		for d := truncateToHour(from); !d.After(to); d = d.Add(time.Hour) {
+		for d := truncateToHour(from); d.Before(to); d = d.Add(time.Hour) {
 			c <- d
 		}
 	}()
@@ -84,13 +84,13 @@ func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api
 		return nil, api.BadRequest.WithError(err)
 	}
 
-	from := time.Unix(int64(fromTimestamp), 0).UTC()
-	to := time.Unix(int64(toTimestamp), 0).UTC()
-
 	truncateFn, err := getTruncateFn(getParamString(ps, "groupBy"))
 	if err != nil {
 		return nil, api.BadRequest
 	}
+
+	from := truncateFn(time.Unix(int64(fromTimestamp), 0).UTC())
+	to := truncateFn(time.Unix(int64(toTimestamp), 0).UTC())
 
 	var response []RangeData
 	for t := range iterDateRange(from, to) {
@@ -134,7 +134,7 @@ func mergeRangeData(target *core.Data, source core.Data) error {
 	for _, src := range source.ByReferer {
 		targetByReferer := target.GetOrCreateByReferer(src.Referer)
 		targetByReferer.InsertHits(src.Hits)
-		for _, visit := range src.Visits.Get() {
+		for visit := range src.Visits {
 			targetByReferer.InsertVisit(visit)
 		}
 	}
@@ -142,7 +142,7 @@ func mergeRangeData(target *core.Data, source core.Data) error {
 	// Group URIs.
 	for _, src := range source.ByUri {
 		targetByUri := target.GetOrCreateByUri(src.Uri)
-		for _, visit := range src.Visits.Get() {
+		for visit := range src.Visits {
 			targetByUri.InsertVisit(visit)
 		}
 		for _, srcStatus := range src.ByStatus {
