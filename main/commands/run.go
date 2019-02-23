@@ -47,7 +47,9 @@ func runRun(c guinea.Context) error {
 		return err
 	}
 
-	tracker := core.NewTracker(p)
+	r := core.NewRepository(conf)
+
+	tracker := core.NewTracker(p, r)
 	errC := make(chan error)
 
 	go func() {

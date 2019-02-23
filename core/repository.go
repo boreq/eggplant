@@ -1,17 +1,23 @@
 package core
 
 import (
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/boreq/goaccess/config"
 	"github.com/boreq/goaccess/logging"
 	"github.com/boreq/goaccess/parser"
 )
 
-func NewRepository() *Repository {
+const entryKeyFormat = "2006-01-02 15"
+
+func NewRepository(conf *config.Config) *Repository {
 	rv := &Repository{
 		data: make(map[string]*Data),
 		log:  logging.New("repository"),
+		conf: conf,
 	}
 	return rv
 }
@@ -19,12 +25,15 @@ func NewRepository() *Repository {
 type Repository struct {
 	data      map[string]*Data
 	dataMutex sync.Mutex
+	conf      *config.Config
 	log       logging.Logger
 }
 
 func (r *Repository) Insert(entry *parser.Entry) error {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
+
+	r.normalize(entry)
 
 	key := r.createKey(entry.Time)
 	data, ok := r.data[key]
@@ -45,8 +54,25 @@ func (r *Repository) Retrieve(year int, month time.Month, day int, hour int) (*D
 	return d, ok
 }
 
-const entryKeyFormat = "2006-01-02 15"
-
 func (r *Repository) createKey(date time.Time) string {
 	return date.UTC().Format(entryKeyFormat)
+}
+
+func (r *Repository) normalize(entry *parser.Entry) {
+	if r.conf.NormalizeQuery {
+		u, err := url.ParseRequestURI(entry.HttpRequestURI)
+		if err != nil {
+			if entry.Status != "400" {
+				r.log.Warn("query normalization failed", "err", err, "entry", entry)
+			}
+		} else {
+			u.RawQuery = ""
+			entry.HttpRequestURI = u.String()
+		}
+	}
+	if r.conf.NormalizeSlash {
+		if len(entry.HttpRequestURI) > 1 {
+			entry.HttpRequestURI = strings.TrimRight(entry.HttpRequestURI, "/")
+		}
+	}
 }

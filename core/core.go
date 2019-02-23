@@ -6,9 +6,9 @@ import (
 	"github.com/hpcloud/tail"
 )
 
-func NewTracker(p *parser.Parser) *Tracker {
+func NewTracker(p *parser.Parser, r *Repository) *Tracker {
 	return &Tracker{
-		Repository: NewRepository(),
+		Repository: r,
 		parser:     p,
 		log:        logging.New("core/tracker"),
 	}
