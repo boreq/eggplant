@@ -42,8 +42,8 @@ func iterDateRange(from, to time.Time) <-chan time.Time {
 }
 
 type RangeData struct {
-	Time time.Time `json:"time"`
-	Data core.Data `json:"data"`
+	Time time.Time  `json:"time"`
+	Data *core.Data `json:"data"`
 }
 
 type truncateFn func(t time.Time) time.Time
@@ -91,14 +91,14 @@ func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api
 
 	from := truncateFn(time.Unix(int64(fromTimestamp), 0).UTC())
 	to := truncateFn(time.Unix(int64(toTimestamp), 0).UTC())
-
 	var response []RangeData
 	for t := range iterDateRange(from, to) {
+		log.Debug("iterating", "t", t, "from", from, "to", to)
 		data, ok := h.repository.Retrieve(t.Year(), t.Month(), t.Day(), t.Hour())
 		if !ok {
 			data = core.NewData()
 		}
-		rangeData := RangeData{Time: truncateFn(t), Data: *data}
+		rangeData := RangeData{Time: truncateFn(t), Data: data}
 		var err error
 		response, err = addToResponse(response, rangeData)
 		if err != nil {
@@ -113,10 +113,10 @@ func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api
 func addToResponse(response []RangeData, rangeData RangeData) ([]RangeData, error) {
 	data := findMatchingRangeData(response, rangeData.Time)
 	if data == nil {
-		response = append(response, RangeData{Time: rangeData.Time})
+		response = append(response, RangeData{Time: rangeData.Time, Data: core.NewData()})
 		data = &response[len(response)-1]
 	}
-	err := mergeRangeData(&data.Data, rangeData.Data)
+	err := mergeRangeData(data.Data, rangeData.Data)
 	return response, err
 }
 
@@ -129,25 +129,25 @@ func findMatchingRangeData(response []RangeData, t time.Time) *RangeData {
 	return nil
 }
 
-func mergeRangeData(target *core.Data, source core.Data) error {
+func mergeRangeData(target *core.Data, source *core.Data) error {
 	// Group referers.
-	for _, src := range source.ByReferer {
-		targetByReferer := target.GetOrCreateByReferer(src.Referer)
-		targetByReferer.InsertHits(src.Hits)
-		for visit := range src.Visits {
-			targetByReferer.InsertVisit(visit)
+	for sourceReferer, sourceRefererData := range source.Referers {
+		targetRefererData := target.GetOrCreateRefererData(sourceReferer)
+		targetRefererData.InsertHits(sourceRefererData.Hits)
+		for visit := range sourceRefererData.Visits {
+			targetRefererData.InsertVisit(visit)
 		}
 	}
 
 	// Group URIs.
-	for _, src := range source.ByUri {
-		targetByUri := target.GetOrCreateByUri(src.Uri)
-		for visit := range src.Visits {
-			targetByUri.InsertVisit(visit)
+	for sourceUri, sourceUriData := range source.Uris {
+		targetUriData := target.GetOrCreateUriData(sourceUri)
+		for visit := range sourceUriData.Visits {
+			targetUriData.InsertVisit(visit)
 		}
-		for _, srcStatus := range src.ByStatus {
-			targetByStatus := targetByUri.GetOrCreateByStatus(srcStatus.Status)
-			targetByStatus.InsertHits(srcStatus.Hits)
+		for sourceStatus, sourceStatusData := range sourceUriData.Statuses {
+			targetStatusData := targetUriData.GetOrCreateStatusData(sourceStatus)
+			targetStatusData.InsertHits(sourceStatusData.Hits)
 		}
 	}
 

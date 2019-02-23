@@ -8,129 +8,94 @@ import (
 
 func NewData() *Data {
 	return &Data{
-		ByReferer: []ByRefererData{},
-		ByUri:     []ByUriData{},
+		Referers: make(map[string]*RefererData),
+		Uris:     make(map[string]*UriData),
 	}
-}
-
-type ByRefererData struct {
-	Referer string `json:"referer"`
-	Visits  Set    `json:"visits"`
-	Hits    int    `json:"hits"`
-}
-
-func (b *ByRefererData) InsertHits(hits int) {
-	b.Hits += hits
-}
-
-func (b *ByRefererData) InsertVisit(visit string) {
-	b.Visits.Add(visit)
-}
-
-type ByUriData struct {
-	Uri      string         `json:"uri"`
-	Visits   Set            `json:"visits"`
-	ByStatus []ByStatusData `json:"statuses"`
-}
-
-func (b *ByUriData) InsertVisit(visit string) {
-	b.Visits.Add(visit)
-}
-
-func (b *ByUriData) GetOrCreateByStatus(status string) *ByStatusData {
-	byStatusData := b.findByStatus(status)
-	if byStatusData == nil {
-		b.ByStatus = cheapAppendByStatus(b.ByStatus, ByStatusData{
-			Status: status,
-			Hits:   0,
-		})
-		byStatusData = &b.ByStatus[len(b.ByStatus)-1]
-	}
-	return byStatusData
-}
-
-func (b *ByUriData) findByStatus(status string) *ByStatusData {
-	for i := range b.ByStatus {
-		if b.ByStatus[i].Status == status {
-			return &b.ByStatus[i]
-		}
-	}
-	return nil
-}
-
-type ByStatusData struct {
-	Status string `json:"status"`
-	Hits   int    `json:"hits"`
-}
-
-func (b *ByStatusData) InsertHits(hits int) {
-	b.Hits += hits
 }
 
 type Data struct {
-	ByReferer []ByRefererData `json:"referers"`
-	ByUri     []ByUriData     `json:"uris"`
+	Referers map[string]*RefererData `json:"referers"`
+	Uris     map[string]*UriData     `json:"uris"`
 }
 
 func (d *Data) Insert(entry *parser.Entry) error {
 	visit := createVisitHash(entry)
 
-	// By referer
-	byRefererData := d.GetOrCreateByReferer(entry.Referer)
-	byRefererData.InsertHits(1)
-	byRefererData.InsertVisit(visit)
+	refererData := d.GetOrCreateRefererData(entry.Referer)
+	refererData.InsertHits(1)
+	refererData.InsertVisit(visit)
 
-	// By URI
-	byUriData := d.GetOrCreateByUri(entry.HttpRequestURI)
-	byUriData.InsertVisit(visit)
-	byStatusData := byUriData.GetOrCreateByStatus(entry.Status)
-	byStatusData.InsertHits(1)
+	uriData := d.GetOrCreateUriData(entry.HttpRequestURI)
+	uriData.InsertVisit(visit)
+	statusData := uriData.GetOrCreateStatusData(entry.Status)
+	statusData.InsertHits(1)
 
 	return nil
 }
 
-func (d *Data) GetOrCreateByReferer(referer string) *ByRefererData {
-	byRefererData := d.findByReferer(referer)
-	if byRefererData == nil {
-		d.ByReferer = cheapAppendByReferer(d.ByReferer, ByRefererData{
-			Referer: referer,
-			Visits:  NewSet(),
-			Hits:    0,
-		})
-		byRefererData = &d.ByReferer[len(d.ByReferer)-1]
+func (d *Data) GetOrCreateRefererData(referer string) *RefererData {
+	refererData, ok := d.Referers[referer]
+	if !ok {
+		refererData = &RefererData{
+			Visits: NewSet(),
+			Hits:   0,
+		}
+		d.Referers[referer] = refererData
 	}
-	return byRefererData
+	return refererData
 }
 
-func (d *Data) GetOrCreateByUri(uri string) *ByUriData {
-	byUriData := d.findByUri(uri)
-	if byUriData == nil {
-		d.ByUri = cheapAppendByUri(d.ByUri, ByUriData{
-			Uri:      uri,
+func (d *Data) GetOrCreateUriData(uri string) *UriData {
+	uriData, ok := d.Uris[uri]
+	if !ok {
+		uriData = &UriData{
 			Visits:   NewSet(),
-			ByStatus: []ByStatusData{},
-		})
-		byUriData = &d.ByUri[len(d.ByUri)-1]
+			Statuses: make(map[string]*StatusData),
+		}
+		d.Uris[uri] = uriData
 	}
-	return byUriData
+	return uriData
 }
 
-func (d *Data) findByReferer(referer string) *ByRefererData {
-	for i := range d.ByReferer {
-		if d.ByReferer[i].Referer == referer {
-			return &d.ByReferer[i]
-		}
-	}
-	return nil
+type RefererData struct {
+	Visits Set `json:"visits"`
+	Hits   int `json:"hits"`
 }
 
-func (d *Data) findByUri(uri string) *ByUriData {
-	for i := range d.ByUri {
-		if d.ByUri[i].Uri == uri {
-			return &d.ByUri[i]
+func (b *RefererData) InsertHits(hits int) {
+	b.Hits += hits
+}
+
+func (b *RefererData) InsertVisit(visit string) {
+	b.Visits.Add(visit)
+}
+
+type UriData struct {
+	Visits   Set                    `json:"visits"`
+	Statuses map[string]*StatusData `json:"statuses"`
+}
+
+func (b *UriData) InsertVisit(visit string) {
+	b.Visits.Add(visit)
+}
+
+func (b *UriData) GetOrCreateStatusData(status string) *StatusData {
+	statusData, ok := b.Statuses[status]
+	if !ok {
+		statusData = &StatusData{
+			Hits: 0,
 		}
+		b.Statuses[status] = statusData
 	}
-	return nil
+	return statusData
+}
+
+type StatusData struct {
+	Hits int `json:"hits"`
+}
+
+func (b *StatusData) InsertHits(hits int) {
+	b.Hits += hits
 }
 
 var visitHash = crypto.SHA512_256
@@ -143,25 +108,4 @@ func createVisitHash(entry *parser.Entry) string {
 	h.Write([]byte(entry.UserAgent))
 	sum := h.Sum(nil)
 	return string(sum)[:retainHashBytes]
-}
-
-func cheapAppendByReferer(slice []ByRefererData, value ByRefererData) []ByRefererData {
-	newSlice := make([]ByRefererData, len(slice)+1, len(slice)+1)
-	copy(newSlice, slice)
-	newSlice[len(newSlice)-1] = value
-	return newSlice
-}
-
-func cheapAppendByUri(slice []ByUriData, value ByUriData) []ByUriData {
-	newSlice := make([]ByUriData, len(slice)+1, len(slice)+1)
-	copy(newSlice, slice)
-	newSlice[len(newSlice)-1] = value
-	return newSlice
-}
-
-func cheapAppendByStatus(slice []ByStatusData, value ByStatusData) []ByStatusData {
-	newSlice := make([]ByStatusData, len(slice)+1, len(slice)+1)
-	copy(newSlice, slice)
-	newSlice[len(newSlice)-1] = value
-	return newSlice
 }

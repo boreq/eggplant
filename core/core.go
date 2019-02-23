@@ -23,7 +23,6 @@ type Tracker struct {
 }
 
 func (t *Tracker) Follow(filepath string) error {
-	t.log.Debug("following file", "filepath", filepath)
 	ta, err := tail.TailFile(filepath, tail.Config{Follow: true})
 	if err != nil {
 		return err
@@ -32,7 +31,6 @@ func (t *Tracker) Follow(filepath string) error {
 }
 
 func (t *Tracker) Load(filepath string) error {
-	t.log.Debug("loading file", "filepath", filepath)
 	ta, err := tail.TailFile(filepath, tail.Config{MustExist: true})
 	if err != nil {
 		return err
