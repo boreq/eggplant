@@ -22,6 +22,43 @@ type handler struct {
 	repository *core.Repository
 }
 
+func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	fromTimestamp, err := getParamInt(ps, "from")
+	if err != nil {
+		return nil, api.BadRequest.WithError(err)
+	}
+
+	toTimestamp, err := getParamInt(ps, "to")
+	if err != nil {
+		return nil, api.BadRequest.WithError(err)
+	}
+
+	truncateFn, err := getTruncateFn(getParamString(ps, "groupBy"))
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	from := truncateFn(time.Unix(int64(fromTimestamp), 0).UTC())
+	to := time.Unix(int64(toTimestamp), 0).UTC()
+	var response []RangeData
+	for t := range iterDateRange(from, to) {
+		log.Debug("iterating", "t", t, "from", from, "to", to)
+		data, ok := h.repository.Retrieve(t.Year(), t.Month(), t.Day(), t.Hour())
+		if !ok {
+			data = core.NewData()
+		}
+		rangeData := RangeData{Time: truncateFn(t), Data: data}
+		var err error
+		response, err = addToResponse(response, rangeData)
+		if err != nil {
+			log.Error("could not add to response", "err", err)
+			return nil, api.InternalServerError
+		}
+	}
+
+	return response, nil
+}
+
 func getParamInt(ps httprouter.Params, name string) (int, error) {
 	return strconv.Atoi(getParamString(ps, name))
 }
@@ -73,42 +110,9 @@ func getTruncateFn(groupBy string) (truncateFn, error) {
 	}
 }
 
-func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	fromTimestamp, err := getParamInt(ps, "from")
-	if err != nil {
-		return nil, api.BadRequest.WithError(err)
-	}
-
-	toTimestamp, err := getParamInt(ps, "to")
-	if err != nil {
-		return nil, api.BadRequest.WithError(err)
-	}
-
-	truncateFn, err := getTruncateFn(getParamString(ps, "groupBy"))
-	if err != nil {
-		return nil, api.BadRequest
-	}
-
-	from := truncateFn(time.Unix(int64(fromTimestamp), 0).UTC())
-	to := truncateFn(time.Unix(int64(toTimestamp), 0).UTC())
-	var response []RangeData
-	for t := range iterDateRange(from, to) {
-		log.Debug("iterating", "t", t, "from", from, "to", to)
-		data, ok := h.repository.Retrieve(t.Year(), t.Month(), t.Day(), t.Hour())
-		if !ok {
-			data = core.NewData()
-		}
-		rangeData := RangeData{Time: truncateFn(t), Data: data}
-		var err error
-		response, err = addToResponse(response, rangeData)
-		if err != nil {
-			log.Error("could not add to response", "err", err)
-			return nil, api.InternalServerError
-		}
-	}
-
-	return response, nil
-}
+// visitPrefixFormat is used to generate a visit prefix which prevents
+// identical visits from different days from getting merged.
+const visitPrefixFormat = "2006-01-02"
 
 func addToResponse(response []RangeData, rangeData RangeData) ([]RangeData, error) {
 	data := findMatchingRangeData(response, rangeData.Time)
@@ -116,7 +120,7 @@ func addToResponse(response []RangeData, rangeData RangeData) ([]RangeData, erro
 		response = append(response, RangeData{Time: rangeData.Time, Data: core.NewData()})
 		data = &response[len(response)-1]
 	}
-	err := mergeRangeData(data.Data, rangeData.Data)
+	err := mergeRangeData(data.Data, rangeData.Data, rangeData.Time.Format(visitPrefixFormat))
 	return response, err
 }
 
@@ -129,13 +133,13 @@ func findMatchingRangeData(response []RangeData, t time.Time) *RangeData {
 	return nil
 }
 
-func mergeRangeData(target *core.Data, source *core.Data) error {
+func mergeRangeData(target *core.Data, source *core.Data, visitPrefix string) error {
 	// Group referers.
 	for sourceReferer, sourceRefererData := range source.Referers {
 		targetRefererData := target.GetOrCreateRefererData(sourceReferer)
 		targetRefererData.InsertHits(sourceRefererData.Hits)
 		for visit := range sourceRefererData.Visits {
-			targetRefererData.InsertVisit(visit)
+			targetRefererData.InsertVisit(visitPrefix + visit)
 		}
 	}
 
@@ -143,7 +147,7 @@ func mergeRangeData(target *core.Data, source *core.Data) error {
 	for sourceUri, sourceUriData := range source.Uris {
 		targetUriData := target.GetOrCreateUriData(sourceUri)
 		for visit := range sourceUriData.Visits {
-			targetUriData.InsertVisit(visit)
+			targetUriData.InsertVisit(visitPrefix + visit)
 		}
 		for sourceStatus, sourceStatusData := range sourceUriData.Statuses {
 			targetStatusData := targetUriData.GetOrCreateStatusData(sourceStatus)

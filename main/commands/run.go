@@ -54,10 +54,10 @@ func runRun(c guinea.Context) error {
 
 	// Statistics
 	go func() {
-		lastLines := tracker.Lines
+		lastLines, _ := tracker.GetStats()
 		duration := 1 * time.Second
 		for range time.Tick(duration) {
-			lines := tracker.Lines
+			lines, _ := tracker.GetStats()
 			linesPerSecond := float64(lines-lastLines) / duration.Seconds()
 			log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond)
 			lastLines = lines
