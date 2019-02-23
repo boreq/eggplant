@@ -52,9 +52,16 @@ func runRun(c guinea.Context) error {
 	tracker := core.NewTracker(p, r)
 	errC := make(chan error)
 
+	// Statistics
 	go func() {
-		for range time.Tick(1 * time.Second) {
-			logStats()
+		lastLines := tracker.Lines
+		duration := 1 * time.Second
+		for range time.Tick(duration) {
+			lines := tracker.Lines
+			linesPerSecond := float64(lines-lastLines) / duration.Seconds()
+			log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond)
+			lastLines = lines
+			logMemoryStats()
 		}
 	}()
 
@@ -84,7 +91,7 @@ func runRun(c guinea.Context) error {
 	return <-errC
 }
 
-func logStats() {
+func logMemoryStats() {
 	runtime.GC()
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
@@ -94,5 +101,4 @@ func logStats() {
 	numGC := m.NumGC
 
 	log.Debug("memory statistics", "alloc", alloc, "totalAlloc", totalAlloc, "sys", sys, "numGC", numGC)
-
 }
