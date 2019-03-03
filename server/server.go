@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,40 +21,246 @@ type handler struct {
 	repository *core.Repository
 }
 
-func (h *handler) Range(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	fromTimestamp, err := getParamInt(ps, "from")
-	if err != nil {
-		return nil, api.BadRequest.WithError(err)
-	}
-
-	toTimestamp, err := getParamInt(ps, "to")
-	if err != nil {
-		return nil, api.BadRequest.WithError(err)
-	}
-
-	truncateFn, err := getTruncateFn(getParamString(ps, "groupBy"))
+func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	year, err := getParamInt(ps, "year")
 	if err != nil {
 		return nil, api.BadRequest
 	}
 
-	from := truncateFn(time.Unix(int64(fromTimestamp), 0).UTC())
-	to := time.Unix(int64(toTimestamp), 0).UTC()
-	var response []RangeData
-	for t := range iterDateRange(from, to) {
-		log.Debug("iterating", "t", t, "from", from, "to", to)
-		data, ok := h.repository.Retrieve(t.Year(), t.Month(), t.Day(), t.Hour())
-		if !ok {
-			data = core.NewData()
-		}
-		rangeData := RangeData{Time: truncateFn(t), Data: data}
-		var err error
-		response, err = addToResponse(response, rangeData)
-		if err != nil {
-			log.Error("could not add to response", "err", err)
-			return nil, api.InternalServerError
-		}
+	month, err := getParamInt(ps, "month")
+	if err != nil {
+		return nil, api.BadRequest
 	}
 
+	day, err := getParamInt(ps, "day")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	hour, err := getParamInt(ps, "hour")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	if month < 1 || month > 12 {
+		return nil, api.BadRequest
+	}
+
+	data, ok := h.repository.RetrieveHour(year, time.Month(month), day, hour)
+	if !ok {
+		return nil, api.NotFound
+	}
+	return data, nil
+}
+
+func (h *handler) Day(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	year, err := getParamInt(ps, "year")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	month, err := getParamInt(ps, "month")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	day, err := getParamInt(ps, "day")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	if month < 1 || month > 12 {
+		return nil, api.BadRequest
+	}
+
+	data, ok := h.repository.RetrieveDay(year, time.Month(month), day)
+	if !ok {
+		return nil, api.NotFound
+	}
+	return data, nil
+}
+
+func (h *handler) Month(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	year, err := getParamInt(ps, "year")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	month, err := getParamInt(ps, "month")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	if month < 1 || month > 12 {
+		return nil, api.BadRequest
+	}
+
+	data, ok := h.repository.RetrieveMonth(year, time.Month(month))
+	if !ok {
+		return nil, api.NotFound
+	}
+	return data, nil
+}
+
+func (h *handler) RangeHourly(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	yearFrom, err := getParamInt(ps, "yearFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	monthFrom, err := getParamInt(ps, "monthFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	dayFrom, err := getParamInt(ps, "dayFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	hourFrom, err := getParamInt(ps, "hourFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	yearTo, err := getParamInt(ps, "yearTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	monthTo, err := getParamInt(ps, "monthTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	dayTo, err := getParamInt(ps, "dayTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	hourTo, err := getParamInt(ps, "hourTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	if monthFrom < 1 || monthFrom > 12 || monthTo < 1 || monthTo > 12 {
+		return nil, api.BadRequest
+	}
+
+	from := time.Date(yearFrom, time.Month(monthFrom), dayFrom, hourFrom, 0, 0, 0, time.UTC)
+	to := time.Date(yearTo, time.Month(monthTo), dayTo, hourTo, 0, 0, 0, time.UTC)
+
+	var response []RangeData
+	for t := from; !t.After(to); t = t.Add(time.Hour) {
+		data, ok := h.repository.RetrieveHour(t.Year(), t.Month(), t.Day(), t.Hour())
+		if !ok {
+			return nil, api.InternalServerError
+		}
+		rangeData := RangeData{
+			Time: t,
+			Data: data,
+		}
+		response = append(response, rangeData)
+
+	}
+	return response, nil
+}
+
+func (h *handler) RangeDaily(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	yearFrom, err := getParamInt(ps, "yearFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	monthFrom, err := getParamInt(ps, "monthFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	dayFrom, err := getParamInt(ps, "dayFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	yearTo, err := getParamInt(ps, "yearTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	monthTo, err := getParamInt(ps, "monthTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	dayTo, err := getParamInt(ps, "dayTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	if monthFrom < 1 || monthFrom > 12 || monthTo < 1 || monthTo > 12 {
+		return nil, api.BadRequest
+	}
+
+	from := time.Date(yearFrom, time.Month(monthFrom), dayFrom, 0, 0, 0, 0, time.UTC)
+	to := time.Date(yearTo, time.Month(monthTo), dayTo, 0, 0, 0, 0, time.UTC)
+
+	var response []RangeData
+	for t := from; !t.After(to); t = t.AddDate(0, 0, 1) {
+		data, ok := h.repository.RetrieveDay(t.Year(), t.Month(), t.Day())
+		if !ok {
+			return nil, api.InternalServerError
+		}
+		rangeData := RangeData{
+			Time: t,
+			Data: data,
+		}
+		response = append(response, rangeData)
+
+	}
+	return response, nil
+}
+
+func (h *handler) RangeMonthly(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	yearFrom, err := getParamInt(ps, "yearFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	monthFrom, err := getParamInt(ps, "monthFrom")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	yearTo, err := getParamInt(ps, "yearTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	monthTo, err := getParamInt(ps, "monthTo")
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
+	if monthFrom < 1 || monthFrom > 12 || monthTo < 1 || monthTo > 12 {
+		return nil, api.BadRequest
+	}
+
+	from := time.Date(yearFrom, time.Month(monthFrom), 0, 0, 0, 0, 0, time.UTC)
+	to := time.Date(yearTo, time.Month(monthTo), 0, 0, 0, 0, 0, time.UTC)
+
+	var response []RangeData
+	for t := from; !t.After(to); t = t.AddDate(0, 1, 0) {
+		data, ok := h.repository.RetrieveMonth(t.Year(), t.Month())
+		if !ok {
+			return nil, api.InternalServerError
+		}
+		rangeData := RangeData{
+			Time: t,
+			Data: data,
+		}
+		response = append(response, rangeData)
+
+	}
 	return response, nil
 }
 
@@ -67,95 +272,9 @@ func getParamString(ps httprouter.Params, name string) string {
 	return strings.TrimSuffix(ps.ByName(name), ".json")
 }
 
-func iterDateRange(from, to time.Time) <-chan time.Time {
-	c := make(chan time.Time)
-	go func() {
-		defer close(c)
-		for d := truncateToHour(from); d.Before(to); d = d.Add(time.Hour) {
-			c <- d
-		}
-	}()
-	return c
-}
-
 type RangeData struct {
 	Time time.Time  `json:"time"`
 	Data *core.Data `json:"data"`
-}
-
-type truncateFn func(t time.Time) time.Time
-
-func truncateToHour(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, t.Location())
-}
-
-func truncateToDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-}
-
-func truncateToMonth(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), 0, 0, 0, 0, 0, t.Location())
-}
-
-func getTruncateFn(groupBy string) (truncateFn, error) {
-	switch groupBy {
-	case "hourly":
-		return truncateToHour, nil
-	case "daily":
-		return truncateToDay, nil
-	case "monthly":
-		return truncateToMonth, nil
-	default:
-		return nil, errors.New("unsupported groupBy parameter")
-	}
-}
-
-// visitPrefixFormat is used to generate a visit prefix which prevents
-// identical visits from different days from getting merged.
-const visitPrefixFormat = "2006-01-02"
-
-func addToResponse(response []RangeData, rangeData RangeData) ([]RangeData, error) {
-	data := findMatchingRangeData(response, rangeData.Time)
-	if data == nil {
-		response = append(response, RangeData{Time: rangeData.Time, Data: core.NewData()})
-		data = &response[len(response)-1]
-	}
-	err := mergeRangeData(data.Data, rangeData.Data, rangeData.Time.Format(visitPrefixFormat))
-	return response, err
-}
-
-func findMatchingRangeData(response []RangeData, t time.Time) *RangeData {
-	for i := range response {
-		if response[i].Time.Equal(t) {
-			return &response[i]
-		}
-	}
-	return nil
-}
-
-func mergeRangeData(target *core.Data, source *core.Data, visitPrefix string) error {
-	// Group referers.
-	for sourceReferer, sourceRefererData := range source.Referers {
-		targetRefererData := target.GetOrCreateRefererData(sourceReferer)
-		targetRefererData.InsertHits(sourceRefererData.Hits)
-		for visit := range sourceRefererData.Visits {
-			targetRefererData.InsertVisit(visitPrefix + visit)
-		}
-	}
-
-	// Group URIs.
-	for sourceUri, sourceUriData := range source.Uris {
-		targetUriData := target.GetOrCreateUriData(sourceUri)
-		for visit := range sourceUriData.Visits {
-			targetUriData.InsertVisit(visitPrefix + visit)
-		}
-		for sourceStatus, sourceStatusData := range sourceUriData.Statuses {
-			targetStatusData := targetUriData.GetOrCreateStatusData(sourceStatus)
-			targetStatusData.InsertHits(sourceStatusData.Hits)
-		}
-	}
-
-	return nil
 }
 
 func Serve(repository *core.Repository, address string) error {
@@ -174,6 +293,16 @@ func newHandler(repository *core.Repository) http.Handler {
 		repository: repository,
 	}
 	router := httprouter.New()
-	router.GET("/api/from/:from/to/:to/:groupBy", api.Wrap(h.Range))
+
+	// Discrete endpoints
+	router.GET("/api/hour/:year/:month/:day/:hour", api.Wrap(h.Hour))
+	router.GET("/api/day/:year/:month/:day", api.Wrap(h.Day))
+	router.GET("/api/month/:year/:month", api.Wrap(h.Month))
+
+	// Range endpoints
+	router.GET("/api/range/hourly/:yearFrom/:monthFrom/:dayFrom/:hourFrom/:yearTo/:monthTo/:dayTo/:hourTo", api.Wrap(h.RangeHourly))
+	router.GET("/api/range/daily/:yearFrom/:monthFrom/:dayFrom/:yearTo/:monthTo/:dayTo", api.Wrap(h.RangeDaily))
+	router.GET("/api/range/monthly/:yearFrom/:monthFrom/:yearTo/:monthTo", api.Wrap(h.RangeMonthly))
+
 	return router
 }
