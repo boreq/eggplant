@@ -14,6 +14,7 @@ require (
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/rakyll/statik v0.1.5
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/objx v0.1.1 // indirect
 	golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a // indirect

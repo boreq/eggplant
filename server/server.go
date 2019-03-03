@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/rakyll/statik/fs"
+
+	_ "github.com/boreq/goaccess/statik"
 
 	"github.com/boreq/goaccess/core"
 	"github.com/boreq/goaccess/logging"
@@ -290,9 +293,14 @@ type RangeData struct {
 }
 
 func Serve(repository *core.Repository, address string) error {
-	handler := newHandler(repository)
+	handler, err := newHandler(repository)
+	if err != nil {
+		return err
+	}
+
 	// Add CORS middleware.
 	handler = cors.AllowAll().Handler(handler)
+
 	// Add GZIP middleware.
 	handler = gziphandler.GzipHandler(handler)
 
@@ -300,10 +308,16 @@ func Serve(repository *core.Repository, address string) error {
 	return http.ListenAndServe(address, handler)
 }
 
-func newHandler(repository *core.Repository) http.Handler {
+func newHandler(repository *core.Repository) (http.Handler, error) {
 	h := &handler{
 		repository: repository,
 	}
+
+	statikFS, err := fs.New()
+	if err != nil {
+		return nil, err
+	}
+
 	router := httprouter.New()
 
 	// Discrete endpoints
@@ -316,5 +330,8 @@ func newHandler(repository *core.Repository) http.Handler {
 	router.GET("/api/range/daily/:yearFrom/:monthFrom/:dayFrom/:yearTo/:monthTo/:dayTo", api.Wrap(h.RangeDaily))
 	router.GET("/api/range/monthly/:yearFrom/:monthFrom/:yearTo/:monthTo", api.Wrap(h.RangeMonthly))
 
-	return router
+	// Frontend
+	router.NotFound = http.FileServer(statikFS)
+
+	return router, nil
 }
