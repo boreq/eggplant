@@ -3,7 +3,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/boreq/goaccess/main/commands"
+	"github.com/boreq/plum/main/commands"
 	"github.com/boreq/guinea"
 	"os"
 )

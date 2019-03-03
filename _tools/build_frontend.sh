@@ -2,10 +2,12 @@
 set -e
 
 # Build frontend
-cd ../goaccess-frontend
+echo "Running yarn build"
+cd ../plum-frontend
 rm -rf dist
 yarn build
 
 # Build backend
-cd ../goaccess-backend
-statik -src=../goaccess-frontend/dist
+cd ../plum
+echo "Running https://github.com/rakyll/statik"
+statik -f -src=../plum-frontend/dist

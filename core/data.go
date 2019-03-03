@@ -3,7 +3,7 @@ package core
 import (
 	"crypto"
 
-	"github.com/boreq/goaccess/parser"
+	"github.com/boreq/plum/parser"
 )
 
 func NewData() *Data {

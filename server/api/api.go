@@ -4,7 +4,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/boreq/flightradar-backend/logging"
@@ -20,8 +19,6 @@ var NotFound = NewError(404, "Not found.")
 type Error interface {
 	GetCode() int
 	Error() string
-	WithError(e error) Error
-	WithErrorf(format string, a ...interface{}) Error
 }
 
 func NewError(code int, message string) Error {
@@ -39,16 +36,6 @@ func (err apiError) GetCode() int {
 
 func (err apiError) Error() string {
 	return err.Message
-}
-
-func (err apiError) WithError(e error) Error {
-	newErr := err
-	newErr.Message = e.Error()
-	return newErr
-}
-
-func (err apiError) WithErrorf(format string, a ...interface{}) Error {
-	return err.WithError(fmt.Errorf(format, a...))
 }
 
 type Handle func(r *http.Request, p httprouter.Params) (interface{}, Error)

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boreq/goaccess/config"
-	"github.com/boreq/goaccess/logging"
-	"github.com/boreq/goaccess/parser"
+	"github.com/boreq/plum/config"
+	"github.com/boreq/plum/logging"
+	"github.com/boreq/plum/parser"
 )
 
 const entryKeyFormat = "2006-01-02 15"

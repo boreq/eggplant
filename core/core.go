@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/boreq/goaccess/logging"
-	"github.com/boreq/goaccess/parser"
+	"github.com/boreq/plum/logging"
+	"github.com/boreq/plum/parser"
 	"github.com/hpcloud/tail"
 )
 

@@ -9,11 +9,11 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/rakyll/statik/fs"
 
-	_ "github.com/boreq/goaccess/statik"
+	_ "github.com/boreq/plum/statik"
 
-	"github.com/boreq/goaccess/core"
-	"github.com/boreq/goaccess/logging"
-	"github.com/boreq/goaccess/server/api"
+	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/logging"
+	"github.com/boreq/plum/server/api"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 )

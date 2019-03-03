@@ -4,10 +4,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/boreq/goaccess/config"
-	"github.com/boreq/goaccess/core"
-	"github.com/boreq/goaccess/parser"
-	"github.com/boreq/goaccess/server"
+	"github.com/boreq/plum/config"
+	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/server"
 	"github.com/boreq/guinea"
 	"github.com/dustin/go-humanize"
 )

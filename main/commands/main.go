@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/boreq/goaccess/logging"
+	"github.com/boreq/plum/logging"
 	"github.com/boreq/guinea"
 )
 

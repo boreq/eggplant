@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boreq/goaccess/logging"
-	"github.com/boreq/goaccess/parser/format"
+	"github.com/boreq/plum/logging"
+	"github.com/boreq/plum/parser/format"
 	"github.com/pkg/errors"
 )
 
