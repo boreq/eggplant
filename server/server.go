@@ -108,7 +108,7 @@ func (h *handler) Month(r *http.Request, ps httprouter.Params) (interface{}, api
 		return nil, api.NotFound
 	}
 	rangeData := RangeData{
-		Time: time.Date(year, time.Month(month), 0, 0, 0, 0, 0, time.UTC),
+		Time: time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC),
 		Data: data,
 	}
 	return rangeData, nil
@@ -257,8 +257,8 @@ func (h *handler) RangeMonthly(r *http.Request, ps httprouter.Params) (interface
 		return nil, api.BadRequest
 	}
 
-	from := time.Date(yearFrom, time.Month(monthFrom), 0, 0, 0, 0, 0, time.UTC)
-	to := time.Date(yearTo, time.Month(monthTo), 0, 0, 0, 0, 0, time.UTC)
+	from := time.Date(yearFrom, time.Month(monthFrom), 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(yearTo, time.Month(monthTo), 1, 0, 0, 0, 0, time.UTC)
 
 	var response []RangeData
 	for t := from; !t.After(to); t = t.AddDate(0, 1, 0) {
