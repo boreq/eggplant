@@ -116,6 +116,10 @@ func (r *Repository) normalize(entry *parser.Entry) {
 			entry.HttpRequestURI = strings.TrimRight(entry.HttpRequestURI, "/")
 		}
 	}
+	if r.conf.StripRefererProtocol {
+		entry.Referer = strings.TrimPrefix(entry.Referer, "http://")
+		entry.Referer = strings.TrimPrefix(entry.Referer, "https://")
+	}
 }
 
 func iterateDay(year int, month time.Month, day int) []time.Time {
