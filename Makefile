@@ -2,17 +2,17 @@ all: build
 
 build:
 	mkdir -p build
-	go build -o ./build/goaccess ./main
+	go build -o ./build/plum ./main
 
 build-race:
 	mkdir -p build
-	go build -race -o ./build/goaccess ./main
+	go build -race -o ./build/plum ./main
 
 frontend:
 	./_tools/build_frontend.sh
 
 doc:
-	@echo "http://localhost:6060/pkg/github.com/boreq/goaccess/"
+	@echo "http://localhost:6060/pkg/github.com/boreq/plum/"
 	godoc -http=:6060
 
 test:
