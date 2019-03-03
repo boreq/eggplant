@@ -50,7 +50,11 @@ func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 	if !ok {
 		return nil, api.NotFound
 	}
-	return data, nil
+	rangeData := RangeData{
+		Time: time.Date(year, time.Month(month), day, hour, 0, 0, 0, time.UTC),
+		Data: data,
+	}
+	return rangeData, nil
 }
 
 func (h *handler) Day(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
@@ -77,7 +81,11 @@ func (h *handler) Day(r *http.Request, ps httprouter.Params) (interface{}, api.E
 	if !ok {
 		return nil, api.NotFound
 	}
-	return data, nil
+	rangeData := RangeData{
+		Time: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		Data: data,
+	}
+	return rangeData, nil
 }
 
 func (h *handler) Month(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
@@ -99,7 +107,11 @@ func (h *handler) Month(r *http.Request, ps httprouter.Params) (interface{}, api
 	if !ok {
 		return nil, api.NotFound
 	}
-	return data, nil
+	rangeData := RangeData{
+		Time: time.Date(year, time.Month(month), 0, 0, 0, 0, 0, time.UTC),
+		Data: data,
+	}
+	return rangeData, nil
 }
 
 func (h *handler) RangeHourly(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
