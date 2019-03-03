@@ -17,6 +17,7 @@ require (
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/objx v0.1.1 // indirect
 	golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a // indirect
+	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	upspin.io v0.0.0-20190213074607-15046f4f3b2a
