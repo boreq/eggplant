@@ -19,7 +19,7 @@ var runCmd = guinea.Command{
 			Name:        "follow",
 			Optional:    false,
 			Multiple:    false,
-			Description: "A log file to be monitored",
+			Description: "Log file to be monitored",
 		},
 		{
 			Name:        "load",
@@ -36,7 +36,7 @@ var runCmd = guinea.Command{
 			Default:     config.Default().ServeAddress,
 		},
 	},
-	ShortDescription: "runs the program",
+	ShortDescription: "loads and follows log files",
 }
 
 func runRun(c guinea.Context) error {

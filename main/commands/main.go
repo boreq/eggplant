@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"github.com/boreq/plum/logging"
 	"github.com/boreq/guinea"
+	"github.com/boreq/plum/logging"
 )
 
 var log = logging.New("main/commands")
@@ -12,8 +12,11 @@ var MainCmd = guinea.Command{
 	Subcommands: map[string]*guinea.Command{
 		"run": &runCmd,
 	},
-	ShortDescription: "live log analyzer",
-	Description:      "This software analyzes web server logs in real time.",
+	ShortDescription: "a real-time access log analyser",
+	Description: `
+Plum analyses web server access logs in real time and allows the user to access
+the produced statistics using a web dashboard.
+`,
 }
 
 func runMain(c guinea.Context) error {

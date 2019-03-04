@@ -3,15 +3,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/boreq/plum/main/commands"
-	"github.com/boreq/guinea"
 	"os"
+
+	"github.com/boreq/guinea"
+	"github.com/boreq/plum/main/commands"
 )
 
 func main() {
-	e := guinea.Run(&commands.MainCmd)
-	if e != nil {
-		fmt.Fprintln(os.Stderr, e)
+	if err := guinea.Run(&commands.MainCmd); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
