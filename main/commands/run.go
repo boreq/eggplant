@@ -19,20 +19,20 @@ var runCmd = guinea.Command{
 			Name:        "follow",
 			Optional:    false,
 			Multiple:    false,
-			Description: "a log file to be monitored",
+			Description: "A log file to be monitored",
 		},
 		{
 			Name:        "load",
 			Optional:    true,
 			Multiple:    true,
-			Description: "log files to be initially loaded",
+			Description: "Log files to be initially loaded",
 		},
 	},
 	Options: []guinea.Option{
 		guinea.Option{
 			Name:        "address",
 			Type:        guinea.String,
-			Description: "server address",
+			Description: "Server address",
 			Default:     config.Default().ServeAddress,
 		},
 	},
