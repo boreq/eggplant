@@ -4,11 +4,11 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/boreq/guinea"
 	"github.com/boreq/plum/config"
 	"github.com/boreq/plum/core"
 	"github.com/boreq/plum/parser"
 	"github.com/boreq/plum/server"
-	"github.com/boreq/guinea"
 	"github.com/dustin/go-humanize"
 )
 
@@ -28,19 +28,21 @@ var runCmd = guinea.Command{
 			Description: "log files to be initially loaded",
 		},
 	},
+	Options: []guinea.Option{
+		guinea.Option{
+			Name:        "address",
+			Type:        guinea.String,
+			Description: "server address",
+			Default:     config.Default().ServeAddress,
+		},
+	},
 	ShortDescription: "runs the program",
 }
 
 func runRun(c guinea.Context) error {
 	conf := config.Default()
-	//if err := config.Load(c.Arguments[0]); err != nil {
-	//	return err
-	//}
-	//m := monitor.New(config.Config.ScriptsDirectory, config.Config.UpdateEverySeconds)
+	conf.ServeAddress = c.Options["address"].Str()
 
-	//if err := server.Serve(m, config.Config.ServeAddress); err != nil {
-	//	return err
-	//}
 	comb := parser.PredefinedFormats["combined"]
 	p, err := parser.NewParser(comb)
 	if err != nil {
