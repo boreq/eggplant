@@ -1,3 +1,4 @@
+// Package format parses the format strings.
 package format
 
 import (
@@ -139,6 +140,9 @@ func lex(format string) <-chan Item {
 	return l.items
 }
 
+// Lex lexes the format producing a list of items. The resulting list of items
+// will not contain items of type ItemError. If an ItemError is encountered an
+// error is returned instead.
 func Lex(format string) ([]Item, error) {
 	ch := lex(format)
 	var items []Item
