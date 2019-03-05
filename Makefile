@@ -2,11 +2,11 @@ all: build
 
 build:
 	mkdir -p build
-	go build -o ./build/plum ./main
+	go build -o ./build/plum ./cmd/plum
 
 build-race:
 	mkdir -p build
-	go build -race -o ./build/plum ./main
+	go build -race -o ./build/plum ./cmd/plum
 
 frontend:
 	./_tools/build_frontend.sh

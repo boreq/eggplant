@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/boreq/guinea"
+	"github.com/boreq/plum/cmd/plum/commands"
 	"github.com/boreq/plum/logging"
-	"github.com/boreq/plum/main/commands"
 )
 
 func main() {
