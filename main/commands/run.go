@@ -65,13 +65,7 @@ func runRun(c guinea.Context) error {
 
 	// Load the specified files
 	for i := 1; i < len(c.Arguments); i++ {
-		go func(i int) {
-			errC <- tracker.Load(c.Arguments[i])
-		}(i)
-	}
-
-	for i := 1; i < len(c.Arguments); i++ {
-		if err := <-errC; err != nil {
+		if err := tracker.Load(c.Arguments[i]); err != nil {
 			return err
 		}
 	}
