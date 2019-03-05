@@ -54,7 +54,6 @@ func Call(w http.ResponseWriter, r *http.Request, p httprouter.Params, handle Ha
 		code = InternalServerError.GetCode()
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(code)
 	_, err = bytes.NewBuffer(j).WriteTo(w)
 	return err
