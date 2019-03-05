@@ -62,6 +62,6 @@ Default: `combined`
 
 ## `--address`
 
-Address the dashboard will be accessible under.
+Address of the dashboard.
 
 Default: `127.0.0.1:8118`
