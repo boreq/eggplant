@@ -32,8 +32,14 @@ var runCmd = guinea.Command{
 		guinea.Option{
 			Name:        "address",
 			Type:        guinea.String,
-			Description: "Server address",
+			Description: "Serve address",
 			Default:     config.Default().ServeAddress,
+		},
+		guinea.Option{
+			Name:        "log-format",
+			Type:        guinea.String,
+			Description: "Log format",
+			Default:     config.Default().LogFormat,
 		},
 	},
 	ShortDescription: "loads and follows log files",
@@ -42,9 +48,9 @@ var runCmd = guinea.Command{
 func runRun(c guinea.Context) error {
 	conf := config.Default()
 	conf.ServeAddress = c.Options["address"].Str()
+	conf.LogFormat = c.Options["log-format"].Str()
 
-	comb := parser.PredefinedFormats["combined"]
-	p, err := parser.NewParser(comb)
+	p, err := parser.NewParser(getLogFormat(conf.LogFormat))
 	if err != nil {
 		return err
 	}
@@ -55,19 +61,9 @@ func runRun(c guinea.Context) error {
 	errC := make(chan error)
 
 	// Statistics
-	go func() {
-		lastLines, _ := tracker.GetStats()
-		duration := 1 * time.Second
-		for range time.Tick(duration) {
-			lines, _ := tracker.GetStats()
-			linesPerSecond := float64(lines-lastLines) / duration.Seconds()
-			log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond)
-			lastLines = lines
-			logMemoryStats()
-		}
-	}()
+	go printStats(tracker)
 
-	// Load the specified files.
+	// Load the specified files
 	for i := 1; i < len(c.Arguments); i++ {
 		go func(i int) {
 			errC <- tracker.Load(c.Arguments[i])
@@ -75,13 +71,12 @@ func runRun(c guinea.Context) error {
 	}
 
 	for i := 1; i < len(c.Arguments); i++ {
-		err := <-errC
-		if err != nil {
+		if err := <-errC; err != nil {
 			return err
 		}
 	}
 
-	// Track the specified file.
+	// Track the specified file
 	go func() {
 		errC <- tracker.Follow(c.Arguments[0])
 	}()
@@ -91,6 +86,29 @@ func runRun(c guinea.Context) error {
 	}()
 
 	return <-errC
+}
+
+// getLogFormat tries to find and return a predefined format with the provided
+// name or otherwise returns the provided format unaltered assuming that it is
+// a format string.
+func getLogFormat(format string) string {
+	predefinedFormat, ok := parser.PredefinedFormats[format]
+	if ok {
+		return predefinedFormat
+	}
+	return format
+}
+
+func printStats(tracker *core.Tracker) {
+	lastLines, _ := tracker.GetStats()
+	duration := 1 * time.Second
+	for range time.Tick(duration) {
+		lines, _ := tracker.GetStats()
+		linesPerSecond := float64(lines-lastLines) / duration.Seconds()
+		log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond)
+		lastLines = lines
+		logMemoryStats()
+	}
 }
 
 func logMemoryStats() {
