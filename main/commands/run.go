@@ -106,7 +106,6 @@ func printStats(tracker *core.Tracker) {
 }
 
 func logMemoryStats() {
-	runtime.GC()
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	alloc := humanize.Bytes(m.Alloc)
