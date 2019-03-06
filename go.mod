@@ -2,7 +2,6 @@ module github.com/boreq/plum
 
 require (
 	github.com/NYTimes/gziphandler v1.1.0
-	github.com/boreq/flightradar-backend v0.0.0-20180825141724-eeb78ba37a67
 	github.com/boreq/guinea v0.0.0-20190218203212-75c10cec45e9
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0

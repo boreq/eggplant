@@ -1,7 +1,5 @@
 github.com/NYTimes/gziphandler v1.1.0 h1:wkMjq4kSz11Zer+ncYWNBQDlj9Y5RLloY/Tb8yOj6gA=
 github.com/NYTimes/gziphandler v1.1.0/go.mod h1:EwmLXLwj3Rvq6vawd3hKEPUcQRyz2CDE1bov6dy8HNQ=
-github.com/boreq/flightradar-backend v0.0.0-20180825141724-eeb78ba37a67 h1:soc7z9RbrwwEGnVMl7cbbhI1lOR2egAH7dpLoFq0nJg=
-github.com/boreq/flightradar-backend v0.0.0-20180825141724-eeb78ba37a67/go.mod h1:Xbxie+XU60P24zH8gfhjTYewP562wEfS5ILAJ3NH/Gk=
 github.com/boreq/guinea v0.0.0-20190218203212-75c10cec45e9 h1:CgYlE4U2Piu/oRDi97UFgjjS7W2ODdPu0BVUV4LJ0sM=
 github.com/boreq/guinea v0.0.0-20190218203212-75c10cec45e9/go.mod h1:CFnWRfNiBUlwMXBQFpRfWK8FVbXPqGmn1xHgl2d1Aig=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
