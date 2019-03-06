@@ -7,14 +7,12 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/rakyll/statik/fs"
-
-	_ "github.com/boreq/plum/statik"
-
 	"github.com/boreq/plum/core"
 	"github.com/boreq/plum/logging"
 	"github.com/boreq/plum/server/api"
+	_ "github.com/boreq/plum/statik"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 )
 
