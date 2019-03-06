@@ -298,10 +298,10 @@ func Serve(repository *core.Repository, address string) error {
 		return err
 	}
 
-	// Add CORS middleware.
+	// Add CORS middleware
 	handler = cors.AllowAll().Handler(handler)
 
-	// Add GZIP middleware.
+	// Add GZIP middleware
 	handler = gziphandler.GzipHandler(handler)
 
 	log.Info("starting listening", "address", address)
