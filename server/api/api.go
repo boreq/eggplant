@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/boreq/flightradar-backend/logging"
+	"github.com/boreq/plum/logging"
 	"github.com/julienschmidt/httprouter"
 )
 
-var log = logging.GetLogger("api")
+var log = logging.New("api")
 
 var InternalServerError = NewError(500, "Internal server error.")
 var BadRequest = NewError(400, "Bad request.")
@@ -49,7 +49,7 @@ func Call(w http.ResponseWriter, r *http.Request, p httprouter.Params, handle Ha
 	}
 	j, err := json.Marshal(response)
 	if err != nil {
-		log.Printf("Marshal error: %s", err)
+		log.Error("marshal error", "err", err)
 		j, _ = json.Marshal(InternalServerError)
 		code = InternalServerError.GetCode()
 	}
