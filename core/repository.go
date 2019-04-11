@@ -143,7 +143,7 @@ func iterateMonth(year int, month time.Month) []time.Time {
 }
 
 func mergeData(target *Data, source *Data, visitPrefix string) {
-	// Group referers.
+	// Group referers
 	for sourceReferer, sourceRefererData := range source.Referers {
 		targetRefererData := target.GetOrCreateRefererData(sourceReferer)
 		targetRefererData.InsertHits(sourceRefererData.Hits)
@@ -152,12 +152,13 @@ func mergeData(target *Data, source *Data, visitPrefix string) {
 		}
 	}
 
-	// Group URIs.
+	// Group URIs
 	for sourceUri, sourceUriData := range source.Uris {
 		targetUriData := target.GetOrCreateUriData(sourceUri)
 		for visit := range sourceUriData.Visits {
 			targetUriData.InsertVisit(visitPrefix + visit)
 		}
+		targetUriData.AddBodyBytesSent(sourceUriData.BodyBytesSent)
 		for sourceStatus, sourceStatusData := range sourceUriData.Statuses {
 			targetStatusData := targetUriData.GetOrCreateStatusData(sourceStatus)
 			targetStatusData.InsertHits(sourceStatusData.Hits)

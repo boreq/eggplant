@@ -27,6 +27,7 @@ func (d *Data) Insert(entry *parser.Entry) error {
 
 	uriData := d.GetOrCreateUriData(entry.HttpRequestURI)
 	uriData.InsertVisit(visit)
+	uriData.AddBodyBytesSent(entry.BodyBytesSent)
 	statusData := uriData.GetOrCreateStatusData(entry.Status)
 	statusData.InsertHits(1)
 
@@ -71,12 +72,17 @@ func (b *RefererData) InsertVisit(visit string) {
 }
 
 type UriData struct {
-	Visits   Set                    `json:"visits"`
-	Statuses map[string]*StatusData `json:"statuses"`
+	Visits        Set                    `json:"visits"`
+	BodyBytesSent int                    `json:"bytes"`
+	Statuses      map[string]*StatusData `json:"statuses"`
 }
 
 func (b *UriData) InsertVisit(visit string) {
 	b.Visits.Add(visit)
+}
+
+func (b *UriData) AddBodyBytesSent(bytes int) {
+	b.BodyBytesSent += bytes
 }
 
 func (b *UriData) GetOrCreateStatusData(status string) *StatusData {
