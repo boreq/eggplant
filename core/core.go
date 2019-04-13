@@ -32,7 +32,8 @@ type Tracker struct {
 }
 
 func (t *Tracker) Follow(filepath string) error {
-	ta, err := tail.TailFile(filepath, tail.Config{Follow: true})
+	config := tail.Config{Follow: true, ReOpen: true}
+	ta, err := tail.TailFile(filepath, config)
 	if err != nil {
 		return err
 	}
