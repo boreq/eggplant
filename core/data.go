@@ -10,16 +10,20 @@ func NewData() *Data {
 	return &Data{
 		Referers: make(map[string]*RefererData),
 		Uris:     make(map[string]*UriData),
+		Visits:   NewSet(),
 	}
 }
 
 type Data struct {
 	Referers map[string]*RefererData `json:"referers"`
 	Uris     map[string]*UriData     `json:"uris"`
+	Visits   Set                     `json:"visits"`
 }
 
 func (d *Data) Insert(entry *parser.Entry) error {
 	visit := createVisitHash(entry)
+
+	d.InsertVisit(visit)
 
 	refererData := d.GetOrCreateRefererData(entry.Referer)
 	refererData.InsertHits(1)
@@ -44,6 +48,10 @@ func (d *Data) GetOrCreateRefererData(referer string) *RefererData {
 		d.Referers[referer] = refererData
 	}
 	return refererData
+}
+
+func (d *Data) InsertVisit(visit string) {
+	d.Visits.Add(visit)
 }
 
 func (d *Data) GetOrCreateUriData(uri string) *UriData {
