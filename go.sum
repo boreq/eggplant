@@ -2,6 +2,8 @@ github.com/NYTimes/gziphandler v1.1.0 h1:wkMjq4kSz11Zer+ncYWNBQDlj9Y5RLloY/Tb8yO
 github.com/NYTimes/gziphandler v1.1.0/go.mod h1:EwmLXLwj3Rvq6vawd3hKEPUcQRyz2CDE1bov6dy8HNQ=
 github.com/boreq/guinea v0.0.0-20190218203212-75c10cec45e9 h1:CgYlE4U2Piu/oRDi97UFgjjS7W2ODdPu0BVUV4LJ0sM=
 github.com/boreq/guinea v0.0.0-20190218203212-75c10cec45e9/go.mod h1:CFnWRfNiBUlwMXBQFpRfWK8FVbXPqGmn1xHgl2d1Aig=
+github.com/boreq/plum v0.0.0-20190926222854-a37a89c6b975 h1:y/lMkOQ3fSK3hEuLgN5HkJ/ngBM6w1/LAi85Gfwgiyg=
+github.com/boreq/plum v0.0.0-20190926222854-a37a89c6b975/go.mod h1:IrTQRAbNyv5g6I5EhcU9EtRi4zpVKRJIOLh7VsHQbP8=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

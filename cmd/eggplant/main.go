@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/boreq/eggplant/cmd/eggplant/commands"
+	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/guinea"
-	"github.com/boreq/plum/cmd/plum/commands"
-	"github.com/boreq/plum/logging"
 )
 
 func main() {
