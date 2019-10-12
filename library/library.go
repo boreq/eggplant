@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const rootDirectoryName = "Eggplant"
+
 type Id string
 
 func (id Id) String() string {
@@ -20,30 +22,33 @@ func (id Id) String() string {
 }
 
 type track struct {
-	name     string
+	title    string
 	fileHash string
 }
 
 func newTrack(path string) (*track, error) {
+	_, title := filepath.Split(path)
+
 	h, err := getFileHash(path)
 	if err != nil {
 		return nil, err
 	}
 	t := &track{
+		title:    title,
 		fileHash: h,
 	}
 	return t, nil
 }
 
 type directory struct {
-	name        string
+	title       string
 	directories map[Id]*directory
 	tracks      map[Id]*track
 }
 
-func newDirectory(name string) *directory {
+func newDirectory(title string) *directory {
 	return &directory{
-		name:        name,
+		title:       title,
 		directories: make(map[Id]*directory),
 		tracks:      make(map[Id]*track),
 	}
@@ -58,7 +63,7 @@ type Library struct {
 func Open(directory string) (*Library, error) {
 	l := &Library{
 		log:       logging.New("library"),
-		root:      newDirectory("Music Library"),
+		root:      newDirectory(rootDirectoryName),
 		directory: directory,
 	}
 
@@ -133,42 +138,58 @@ func (l *Library) getDirectory(ids []Id) (*directory, error) {
 }
 
 type Track struct {
-	Id   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
+	Id    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
-type Directory struct {
-	Id   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
+type Album struct {
+	Id    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"`
 
-	Directories []Directory `json:"directories,omitempty"`
-	Tracks      []Track     `json:"tracks,omitempty"`
+	Parents []Album `json:"parents,omitempty"`
+	Albums  []Album `json:"albums,omitempty"`
+	Tracks  []Track `json:"tracks,omitempty"`
 }
 
-func (l *Library) Browse(ids []Id) (Directory, error) {
-	listed := Directory{}
+func (l *Library) Browse(ids []Id) (Album, error) {
+	listed := Album{}
 
 	//if len(parts) > 0 {
 	//	listed.Name = parts[len(parts)-1]
 	//}
 
-	dir, err := l.getDirectory(ids)
-	if err != nil {
-		return Directory{}, errors.Wrap(err, "failed to get directory")
+	for i := 0; i < len(ids); i++ {
+		parentIds := ids[:i+1]
+		dir, err := l.getDirectory(parentIds)
+		if err != nil {
+			return Album{}, errors.Wrap(err, "failed to get directory")
+		}
+		parent := Album{
+			Id:    parentIds[len(parentIds)-1].String(),
+			Title: dir.title,
+		}
+		listed.Parents = append(listed.Parents, parent)
 	}
 
+	dir, err := l.getDirectory(ids)
+	if err != nil {
+		return Album{}, errors.Wrap(err, "failed to get directory")
+	}
+
+	listed.Title = dir.title
+
 	for id, directory := range dir.directories {
-		d := Directory{
-			Id:   id.String(),
-			Name: directory.name,
+		d := Album{
+			Id:    id.String(),
+			Title: directory.title,
 		}
-		listed.Directories = append(listed.Directories, d)
+		listed.Albums = append(listed.Albums, d)
 	}
 
 	for id, track := range dir.tracks {
 		t := Track{
-			Id:   id.String(),
-			Name: track.name,
+			Id:    id.String(),
+			Title: track.title,
 		}
 		listed.Tracks = append(listed.Tracks, t)
 	}
