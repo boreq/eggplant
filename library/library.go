@@ -28,7 +28,7 @@ type track struct {
 
 func newTrack(path string) (*track, error) {
 	_, title := filepath.Split(path)
-	i := strings.Index(title, ".")
+	i := strings.LastIndex(title, ".")
 	if i > 0 {
 		title = title[:i]
 	}
