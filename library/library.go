@@ -28,6 +28,10 @@ type track struct {
 
 func newTrack(path string) (*track, error) {
 	_, title := filepath.Split(path)
+	i := strings.Index(title, ".")
+	if i > 0 {
+		title = title[:i]
+	}
 
 	h, err := getFileHash(path)
 	if err != nil {
