@@ -4,6 +4,7 @@ import (
 	"github.com/boreq/eggplant/config"
 	"github.com/boreq/eggplant/library"
 	"github.com/boreq/eggplant/server"
+	"github.com/boreq/eggplant/store"
 	"github.com/boreq/guinea"
 	"github.com/pkg/errors"
 )
@@ -16,6 +17,12 @@ var runCmd = guinea.Command{
 			Optional:    false,
 			Multiple:    false,
 			Description: "Path to a directory containing your music",
+		},
+		{
+			Name:        "cache_directory",
+			Optional:    false,
+			Multiple:    false,
+			Description: "Path to a directory which will be used for caching",
 		},
 	},
 	Options: []guinea.Option{
@@ -40,8 +47,13 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "opening library failed")
 	}
 
+	store, err := store.New(c.Arguments[1], lib.List())
+	if err != nil {
+		return errors.Wrap(err, "creating store failed")
+	}
+
 	go func() {
-		errC <- server.Serve(lib, conf.ServeAddress)
+		errC <- server.Serve(lib, store, conf.ServeAddress)
 	}()
 
 	return <-errC

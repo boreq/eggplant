@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/store"
 	"github.com/pkg/errors"
 )
 
@@ -24,6 +25,7 @@ func (id Id) String() string {
 type track struct {
 	title    string
 	fileHash string
+	path     string
 }
 
 func newTrack(path string) (*track, error) {
@@ -40,6 +42,7 @@ func newTrack(path string) (*track, error) {
 	t := &track{
 		title:    title,
 		fileHash: h,
+		path:     path,
 	}
 	return t, nil
 }
@@ -142,8 +145,9 @@ func (l *Library) getDirectory(ids []Id) (*directory, error) {
 }
 
 type Track struct {
-	Id    string `json:"id,omitempty"`
-	Title string `json:"title,omitempty"`
+	Id       string `json:"id,omitempty"`
+	Title    string `json:"title,omitempty"`
+	FileHash string `json:"fileHash,omitempty"`
 }
 
 type Album struct {
@@ -192,13 +196,36 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 
 	for id, track := range dir.tracks {
 		t := Track{
-			Id:    id.String(),
-			Title: track.title,
+			Id:       id.String(),
+			Title:    track.title,
+			FileHash: track.fileHash,
 		}
 		listed.Tracks = append(listed.Tracks, t)
 	}
 
 	return listed, nil
+}
+
+func (l *Library) List() []store.Track {
+	m := make(map[string]store.Track)
+	l.list(m, l.root)
+	var tracks []store.Track
+	for _, track := range m {
+		tracks = append(tracks, track)
+	}
+	return tracks
+}
+
+func (l *Library) list(tracks map[string]store.Track, dir *directory) {
+	for _, track := range dir.tracks {
+		tracks[track.fileHash] = store.Track{
+			Path: track.path,
+			Id:   track.fileHash,
+		}
+	}
+	for _, subdirectory := range dir.directories {
+		l.list(tracks, subdirectory)
+	}
 }
 
 func getHash(s string) (Id, error) {
