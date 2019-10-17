@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/boreq/eggplant/logging"
@@ -193,6 +194,7 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 		}
 		listed.Albums = append(listed.Albums, d)
 	}
+	sort.Slice(listed.Albums, func(i, j int) bool { return listed.Albums[i].Title < listed.Albums[j].Title })
 
 	for id, track := range dir.tracks {
 		t := Track{
@@ -202,6 +204,7 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 		}
 		listed.Tracks = append(listed.Tracks, t)
 	}
+	sort.Slice(listed.Tracks, func(i, j int) bool { return listed.Tracks[i].Title < listed.Tracks[j].Title })
 
 	return listed, nil
 }
