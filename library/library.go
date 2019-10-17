@@ -239,7 +239,7 @@ func getHash(s string) (Id, error) {
 	}
 	var sum []byte
 	sum = hasher.Sum(sum)
-	return Id(hex.EncodeToString(sum)), nil
+	return hashToId(sum), nil
 }
 
 func getFileHash(p string) (string, error) {
@@ -255,4 +255,10 @@ func getFileHash(p string) (string, error) {
 	var sum []byte
 	sum = hasher.Sum(sum)
 	return hex.EncodeToString(sum), nil
+}
+
+const idLength = 20
+
+func hashToId(sum []byte) Id {
+	return Id(hex.EncodeToString(sum)[:idLength])
 }
