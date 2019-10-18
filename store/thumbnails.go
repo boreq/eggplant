@@ -18,6 +18,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const scanEvery = 10 * time.Second
+
 type Thumbnail struct {
 	Id   string
 	Path string
@@ -44,9 +46,7 @@ type ThumbnailStore struct {
 }
 
 func (s *ThumbnailStore) SetThumbnails(thumbnails []Thumbnail) {
-	s.log.Debug("waiting to write")
 	s.ch <- thumbnails
-	s.log.Debug("written")
 }
 
 func (s *ThumbnailStore) ServeFile(w http.ResponseWriter, r *http.Request, id string) {
@@ -54,9 +54,7 @@ func (s *ThumbnailStore) ServeFile(w http.ResponseWriter, r *http.Request, id st
 }
 
 func (s *ThumbnailStore) receiveThumbnails() {
-	s.log.Debug("waiting to receive")
 	for thumbnails := range s.ch {
-		s.log.Debug("received")
 		if err := s.handleThumbnails(thumbnails); err != nil {
 			s.log.Error("could not handle updates", "err", err)
 		}
@@ -77,7 +75,7 @@ func (s *ThumbnailStore) processThumbnails() {
 		thumbnail, ok := s.getNextThumbnail()
 		if !ok {
 			s.log.Debug("no thumbnails to convert")
-			<-time.After(time.Second)
+			<-time.After(scanEvery)
 			continue
 		} else {
 			s.log.Debug("converting a thumbnail", "thumbnail", thumbnail)
@@ -108,11 +106,11 @@ func (s *ThumbnailStore) getNextThumbnail() (Thumbnail, bool) {
 
 func (s *ThumbnailStore) convert(thumbnail Thumbnail) error {
 	outputPath := s.filePath(thumbnail.Id)
+	tmpOutputPath := s.tmpFilePath(thumbnail.Id)
+
 	if err := makeDirectory(outputPath); err != nil {
 		return errors.Wrap(err, "could not create the output directory")
 	}
-
-	tmpOutputPath := outputPath + ".tmp"
 
 	f, err := os.Open(thumbnail.Path)
 	if err != nil {
@@ -142,9 +140,18 @@ func (s *ThumbnailStore) convert(thumbnail Thumbnail) error {
 	return nil
 }
 
+const thumbnailExtension = "png"
+const thumbnailDirectory = "thumbnails"
+
 func (s *ThumbnailStore) filePath(id string) string {
-	dir := path.Join(s.cacheDir, "thumbnails")
-	file := fmt.Sprintf("%s.png", id)
+	dir := path.Join(s.cacheDir, thumbnailDirectory)
+	file := fmt.Sprintf("%s.%s", id, thumbnailExtension)
+	return path.Join(dir, file)
+}
+
+func (s *ThumbnailStore) tmpFilePath(id string) string {
+	dir := path.Join(s.cacheDir, thumbnailDirectory)
+	file := fmt.Sprintf("_%s.%s", id, thumbnailExtension)
 	return path.Join(dir, file)
 }
 

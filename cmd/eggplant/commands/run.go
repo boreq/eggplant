@@ -53,7 +53,7 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not start a loader")
 	}
 
-	trackStore, err := store.New(c.Arguments[1])
+	trackStore, err := store.NewTrackStore(c.Arguments[1])
 	if err != nil {
 		return errors.Wrap(err, "creating store failed")
 	}
@@ -63,13 +63,13 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "creating thumbnail store failed")
 	}
 
-	lib, err := library.New(ch, thumbnailStore)
+	lib, err := library.New(ch, thumbnailStore, trackStore)
 	if err != nil {
 		return errors.Wrap(err, "opening library failed")
 	}
 
 	go func() {
-		errC <- server.Serve(lib, trackStore, conf.ServeAddress)
+		errC <- server.Serve(lib, trackStore, thumbnailStore, conf.ServeAddress)
 	}()
 
 	return <-errC

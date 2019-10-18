@@ -19,8 +19,9 @@ import (
 var log = logging.New("server")
 
 type handler struct {
-	library *library.Library
-	store   *store.Store
+	library        *library.Library
+	trackStore     *store.TrackStore
+	thumbnailStore *store.ThumbnailStore
 }
 
 func (h *handler) Browse(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
@@ -58,27 +59,8 @@ func (h *handler) Track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	w.Header().Add("Accept-Ranges", "bytes")
-	h.store.ServeFile(w, r, id)
-
-	//track, err := h.store.Read(id)
-	//if err != nil {
-	//	w.WriteHeader(http.StatusBadRequest)
-	//	return
-	//}
-
-	//if _, err := io.Copy(w, track); err != nil {
-	//	log.Warn("track copy failed", "err", err)
-	//	return
-	//}
+	h.trackStore.ServeFile(w, r, id)
 }
-
-//func getParamInt(ps httprouter.Params, name string) (int, error) {
-//	return strconv.Atoi(getParamString(ps, name))
-//}
-//
-//func getParamString(ps httprouter.Params, name string) string {
-//	return strings.TrimSuffix(ps.ByName(name), ".json")
-//}
 
 func trimExtension(s string) string {
 	if index := strings.LastIndex(s, "."); index >= 0 {
@@ -87,8 +69,8 @@ func trimExtension(s string) string {
 	return s
 }
 
-func Serve(l *library.Library, s *store.Store, address string) error {
-	handler, err := newHandler(l, s)
+func Serve(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.ThumbnailStore, address string) error {
+	handler, err := newHandler(l, trackStore, thumbnailStore)
 	if err != nil {
 		return err
 	}
@@ -103,10 +85,11 @@ func Serve(l *library.Library, s *store.Store, address string) error {
 	return http.ListenAndServe(address, handler)
 }
 
-func newHandler(l *library.Library, s *store.Store) (http.Handler, error) {
+func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.ThumbnailStore) (http.Handler, error) {
 	h := &handler{
-		library: l,
-		store:   s,
+		library:        l,
+		trackStore:     trackStore,
+		thumbnailStore: thumbnailStore,
 	}
 
 	statikFS, err := fs.New()
