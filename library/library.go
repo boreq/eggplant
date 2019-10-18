@@ -5,15 +5,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"os"
-	"path/filepath"
 	"sort"
-	"strings"
+	"sync"
 
+	"github.com/boreq/eggplant/loader"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/eggplant/store"
 	"github.com/pkg/errors"
 )
+
+const rootAlbumTitle = "Eggplant"
 
 type Id string
 
@@ -37,143 +38,164 @@ type Album struct {
 	Tracks  []Track `json:"tracks,omitempty"`
 }
 
-const rootDirectoryName = "Eggplant"
-
 type track struct {
-	title    string
-	fileHash string
-	path     string
+	title string
+	path  string
 }
 
-func newTrack(path string) (*track, error) {
-	_, title := filepath.Split(path)
-	i := strings.LastIndex(title, ".")
-	if i > 0 {
-		title = title[:i]
+func newTrack(title string, path string) track {
+	t := track{
+		title: title,
+		path:  path,
 	}
-
-	h, err := getFileHash(path)
-	if err != nil {
-		return nil, err
-	}
-	t := &track{
-		title:    title,
-		fileHash: h,
-		path:     path,
-	}
-	return t, nil
+	return t
 }
 
-type directory struct {
-	title       string
-	directories map[Id]*directory
-	tracks      map[Id]*track
+type album struct {
+	title         string
+	thumbnailPath string
+	thumbnailId   Id
+	albums        map[Id]*album
+	tracks        map[Id]track
 }
 
-func newDirectory(title string) *directory {
-	return &directory{
-		title:       title,
-		directories: make(map[Id]*directory),
-		tracks:      make(map[Id]*track),
+func newAlbum(title string) *album {
+	return &album{
+		title:  title,
+		albums: make(map[Id]*album),
+		tracks: make(map[Id]track),
 	}
 }
 
 type Library struct {
-	directory string
-	root      *directory
-	store     *store.Store
-	log       logging.Logger
+	root           *album
+	store          *store.Store
+	thumbnailStore *store.ThumbnailStore
+	mutex          sync.Mutex
+	log            logging.Logger
 }
 
-func Open(directory string, s *store.Store) (*Library, error) {
+func New(ch <-chan loader.Album, thumbnailStore *store.ThumbnailStore) (*Library, error) {
 	l := &Library{
-		log:       logging.New("library"),
-		root:      newDirectory(rootDirectoryName),
-		directory: directory,
-		store:     s,
+		log:            logging.New("library"),
+		root:           newAlbum(rootAlbumTitle),
+		thumbnailStore: thumbnailStore,
 	}
-
-	if err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			l.log.Debug("file", "name", info.Name(), "path", path)
-			if err := l.addFile(path); err != nil {
-				return errors.Wrap(err, "could not add a file")
-			}
-		}
-		return nil
-	}); err != nil {
-		return nil, errors.Wrap(err, "walk failed")
-	}
-	l.store.SetTracks(l.List())
+	go l.receiveLoaderUpdates(ch)
 	return l, nil
 
 }
 
-func (l *Library) addFile(path string) error {
-	relativePath, err := filepath.Rel(l.directory, path)
-	if err != nil {
-		return errors.Wrap(err, "could not get relative filepath")
+func (l *Library) receiveLoaderUpdates(ch <-chan loader.Album) {
+	for album := range ch {
+		if err := l.handleLoaderUpdate(album); err != nil {
+			l.log.Error("could not handle a loader update", "err", err)
+		}
+	}
+}
+
+func (l *Library) handleLoaderUpdate(album loader.Album) error {
+	l.mutex.Lock()
+	defer l.mutex.Lock()
+
+	// update the track list
+	l.root = newAlbum(rootAlbumTitle)
+	if err := l.mergeAlbum(l.root, album); err != nil {
+		return errors.Wrap(err, "merge album failed")
 	}
 
-	dir, file := filepath.Split(relativePath)
-	dirs := strings.Split(strings.Trim(dir, string(os.PathSeparator)), string(os.PathSeparator))
+	// schedule track conversion
 
-	directory, err := l.getOrCreateDirectory(dirs)
-	if err != nil {
-		return errors.Wrap(err, "could not get directory")
+	// schedule thumbnail conversion
+	var thumbnails []store.Thumbnail
+	if err := l.getThumbnails(&thumbnails, l.root); err != nil {
+		return errors.Wrap(err, "preparing a thumbnail list failed")
 	}
-	track, err := newTrack(path)
-	if err != nil {
-		return err
-	}
-	trackId, err := getHash(file)
-	if err != nil {
-		return err
-	}
-	directory.tracks[trackId] = track
+	l.thumbnailStore.SetThumbnails(thumbnails)
+
 	return nil
 }
 
-func (l *Library) getOrCreateDirectory(names []string) (*directory, error) {
-	var dir *directory = l.root
-	for _, name := range names {
-		id, err := getHash(name)
-		if err != nil {
-			return nil, err
-		}
-
-		subdir, ok := dir.directories[id]
-		if !ok {
-			subdir = newDirectory(name)
-			dir.directories[id] = subdir
-		}
-		dir = subdir
+func (l *Library) mergeAlbum(target *album, album loader.Album) error {
+	thumbnailId, err := longId(album.Thumbnail)
+	if err != nil {
+		return errors.Wrap(err, "could not create a thumbnail id")
 	}
-	return dir, nil
+	target.thumbnailPath = album.Thumbnail
+	target.thumbnailId = thumbnailId
+
+	for title, loaderTrack := range album.Tracks {
+		id, track, err := toTrack(title, loaderTrack)
+		if err != nil {
+			return errors.Wrap(err, "could not convert to a track")
+		}
+		target.tracks[id] = track
+	}
+
+	for title, loaderAlbum := range album.Albums {
+		id, album, err := toAlbum(title, *loaderAlbum)
+		if err != nil {
+			return errors.Wrap(err, "could not convert to an album")
+		}
+		target.albums[id] = album
+		l.mergeAlbum(album, *loaderAlbum)
+	}
+
+	return nil
 }
 
-func (l *Library) getDirectory(ids []Id) (*directory, error) {
-	var dir *directory = l.root
-	for _, id := range ids {
-		subdir, ok := dir.directories[id]
-		if !ok {
-			return nil, errors.Errorf("subdirectory '%s' not found", id)
+func (l *Library) getThumbnails(thumbnails *[]store.Thumbnail, current *album) error {
+	if current.thumbnailPath != "" {
+		thumbnail := store.Thumbnail{
+			Id:   current.thumbnailId.String(),
+			Path: current.thumbnailPath,
 		}
-		dir = subdir
+		*thumbnails = append(*thumbnails, thumbnail)
 	}
-	return dir, nil
+
+	for _, child := range current.albums {
+		l.getThumbnails(thumbnails, child)
+	}
+
+	return nil
+}
+
+func toTrack(title string, loaderTrack loader.Track) (Id, track, error) {
+	id, err := shortId(loaderTrack.Path)
+	if err != nil {
+		return "", track{}, errors.Wrap(err, "could not create an id")
+	}
+	track := newTrack(title, loaderTrack.Path)
+	return id, track, nil
+}
+
+func toAlbum(title string, loaderAlbum loader.Album) (Id, *album, error) {
+	id, err := shortId(title)
+	if err != nil {
+		return "", nil, errors.Wrap(err, "could not create an id")
+	}
+	album := newAlbum(title)
+	return id, album, nil
+}
+
+func (l *Library) getAlbum(ids []Id) (*album, error) {
+	var current *album = l.root
+	for _, id := range ids {
+		child, ok := current.albums[id]
+		if !ok {
+			return nil, errors.Errorf("album '%s' not found", id)
+		}
+		current = child
+	}
+	return current, nil
 }
 
 func (l *Library) Browse(ids []Id) (Album, error) {
 	listed := Album{}
 
-	//if len(parts) > 0 {
-	//	listed.Name = parts[len(parts)-1]
-	//}
-
 	for i := 0; i < len(ids); i++ {
 		parentIds := ids[:i+1]
-		dir, err := l.getDirectory(parentIds)
+		dir, err := l.getAlbum(parentIds)
 		if err != nil {
 			return Album{}, errors.Wrap(err, "failed to get directory")
 		}
@@ -184,14 +206,14 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 		listed.Parents = append(listed.Parents, parent)
 	}
 
-	dir, err := l.getDirectory(ids)
+	dir, err := l.getAlbum(ids)
 	if err != nil {
 		return Album{}, errors.Wrap(err, "failed to get directory")
 	}
 
 	listed.Title = dir.title
 
-	for id, directory := range dir.directories {
+	for id, directory := range dir.albums {
 		d := Album{
 			Id:    id.String(),
 			Title: directory.title,
@@ -204,8 +226,7 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 		t := Track{
 			Id:       id.String(),
 			Title:    track.title,
-			FileHash: track.fileHash,
-			Duration: l.store.GetDuration(track.fileHash).Seconds(),
+			Duration: l.store.GetDuration(id.String()).Seconds(),
 		}
 		listed.Tracks = append(listed.Tracks, t)
 	}
@@ -214,56 +235,70 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 	return listed, nil
 }
 
-func (l *Library) List() []store.Track {
-	m := make(map[string]store.Track)
-	l.list(m, l.root)
-	var tracks []store.Track
-	for _, track := range m {
-		tracks = append(tracks, track)
+//func (l *Library) List() []store.Track {
+//	m := make(map[string]store.Track)
+//	l.list(m, l.root)
+//	var tracks []store.Track
+//	for _, track := range m {
+//		tracks = append(tracks, track)
+//	}
+//	return tracks
+//}
+
+//func (l *Library) list(tracks map[string]store.Track, dir *directory) {
+//	for _, track := range dir.tracks {
+//		tracks[track.fileHash] = store.Track{
+//			Path: track.path,
+//			Id:   track.fileHash,
+//		}
+//	}
+//	for _, subdirectory := range dir.directories {
+//		l.list(tracks, subdirectory)
+//	}
+//}
+
+func longId(s string) (Id, error) {
+	sum, err := getHash(s)
+	if err != nil {
+		return "", errors.Wrap(err, "hashing failed")
 	}
-	return tracks
+	return Id(hex.EncodeToString(sum)), nil
 }
 
-func (l *Library) list(tracks map[string]store.Track, dir *directory) {
-	for _, track := range dir.tracks {
-		tracks[track.fileHash] = store.Track{
-			Path: track.path,
-			Id:   track.fileHash,
-		}
+func shortId(s string) (Id, error) {
+	sum, err := getHash(s)
+	if err != nil {
+		return "", errors.Wrap(err, "hashing failed")
 	}
-	for _, subdirectory := range dir.directories {
-		l.list(tracks, subdirectory)
-	}
+	return Id(hex.EncodeToString(sum)[:20]), nil
 }
 
-func getHash(s string) (Id, error) {
+func getHash(s string) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte(s))
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, buf); err != nil {
-		return "", err
+		return nil, err
 	}
 	var sum []byte
 	sum = hasher.Sum(sum)
-	return hashToId(sum), nil
+	return sum, nil
 }
 
-func getFileHash(p string) (string, error) {
-	f, err := os.Open(p)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, f); err != nil {
-		return "", err
-	}
-	var sum []byte
-	sum = hasher.Sum(sum)
-	return hex.EncodeToString(sum), nil
-}
+//func getFileHash(p string) (string, error) {
+//	f, err := os.Open(p)
+//	if err != nil {
+//		return "", err
+//	}
+//	defer f.Close()
+//	hasher := sha256.New()
+//	if _, err := io.Copy(hasher, f); err != nil {
+//		return "", err
+//	}
+//	var sum []byte
+//	sum = hasher.Sum(sum)
+//	return hex.EncodeToString(sum), nil
+//}
 
-const idLength = 20
-
-func hashToId(sum []byte) Id {
-	return Id(hex.EncodeToString(sum)[:idLength])
-}
+//func hashToId(sum []byte) Id {
+//	return Id(hex.EncodeToString(sum)[:idLength])
+//}

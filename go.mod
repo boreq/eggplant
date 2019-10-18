@@ -12,6 +12,8 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/rakyll/statik v0.1.5
 	github.com/rs/cors v1.6.0
+	golang.org/x/tools v0.0.0-20191018203202-04252eccb9d5 // indirect
+	honnef.co/go/tools v0.0.1-2019.2.3 // indirect
 )
 
 go 1.13

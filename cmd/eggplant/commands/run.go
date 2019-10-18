@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/boreq/eggplant/config"
 	"github.com/boreq/eggplant/library"
+	"github.com/boreq/eggplant/loader"
 	"github.com/boreq/eggplant/server"
 	"github.com/boreq/eggplant/store"
 	"github.com/boreq/guinea"
@@ -42,18 +43,33 @@ func runRun(c guinea.Context) error {
 
 	errC := make(chan error)
 
-	store, err := store.New(c.Arguments[1])
+	loader, err := loader.New(c.Arguments[0])
+	if err != nil {
+		return errors.Wrap(err, "could not create a loader")
+	}
+
+	ch, err := loader.Start()
+	if err != nil {
+		return errors.Wrap(err, "could not start a loader")
+	}
+
+	trackStore, err := store.New(c.Arguments[1])
 	if err != nil {
 		return errors.Wrap(err, "creating store failed")
 	}
 
-	lib, err := library.Open(c.Arguments[0], store)
+	thumbnailStore, err := store.NewThumbnailStore(c.Arguments[1])
+	if err != nil {
+		return errors.Wrap(err, "creating thumbnail store failed")
+	}
+
+	lib, err := library.New(ch, thumbnailStore)
 	if err != nil {
 		return errors.Wrap(err, "opening library failed")
 	}
 
 	go func() {
-		errC <- server.Serve(lib, store, conf.ServeAddress)
+		errC <- server.Serve(lib, trackStore, conf.ServeAddress)
 	}()
 
 	return <-errC

@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/NYTimes/gziphandler"
@@ -73,13 +72,13 @@ func (h *handler) Track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	//}
 }
 
-func getParamInt(ps httprouter.Params, name string) (int, error) {
-	return strconv.Atoi(getParamString(ps, name))
-}
-
-func getParamString(ps httprouter.Params, name string) string {
-	return strings.TrimSuffix(ps.ByName(name), ".json")
-}
+//func getParamInt(ps httprouter.Params, name string) (int, error) {
+//	return strconv.Atoi(getParamString(ps, name))
+//}
+//
+//func getParamString(ps httprouter.Params, name string) string {
+//	return strings.TrimSuffix(ps.ByName(name), ".json")
+//}
 
 func trimExtension(s string) string {
 	if index := strings.LastIndex(s, "."); index >= 0 {

@@ -1,11 +1,8 @@
 package commands
 
 import (
-	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/guinea"
 )
-
-var log = logging.New("main/commands")
 
 var MainCmd = guinea.Command{
 	Run: runMain,
