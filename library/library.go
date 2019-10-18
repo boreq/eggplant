@@ -22,6 +22,10 @@ func (id Id) String() string {
 	return string(id)
 }
 
+type Thumbnail struct {
+	Id string `json:"id,omitempty"`
+}
+
 type Track struct {
 	Id       string  `json:"id,omitempty"`
 	Title    string  `json:"title,omitempty"`
@@ -30,8 +34,9 @@ type Track struct {
 }
 
 type Album struct {
-	Id    string `json:"id,omitempty"`
-	Title string `json:"title,omitempty"`
+	Id        string     `json:"id,omitempty"`
+	Title     string     `json:"title,omitempty"`
+	Thumbnail *Thumbnail `json:"thumbnail,imitempty"`
 
 	Parents []Album `json:"parents,omitempty"`
 	Albums  []Album `json:"albums,omitempty"`
@@ -97,7 +102,7 @@ func (l *Library) receiveLoaderUpdates(ch <-chan loader.Album) {
 
 func (l *Library) handleLoaderUpdate(album loader.Album) error {
 	l.mutex.Lock()
-	defer l.mutex.Lock()
+	defer l.mutex.Unlock()
 
 	// update the track list
 	l.root = newAlbum(rootAlbumTitle)
@@ -123,12 +128,14 @@ func (l *Library) handleLoaderUpdate(album loader.Album) error {
 }
 
 func (l *Library) mergeAlbum(target *album, album loader.Album) error {
-	thumbnailId, err := longId(album.Thumbnail)
-	if err != nil {
-		return errors.Wrap(err, "could not create a thumbnail id")
+	if album.Thumbnail != "" {
+		thumbnailId, err := longId(album.Thumbnail)
+		if err != nil {
+			return errors.Wrap(err, "could not create a thumbnail id")
+		}
+		target.thumbnailPath = album.Thumbnail
+		target.thumbnailId = thumbnailId
 	}
-	target.thumbnailPath = album.Thumbnail
-	target.thumbnailId = thumbnailId
 
 	for title, loaderTrack := range album.Tracks {
 		id, track, err := toTrack(title, loaderTrack)
@@ -217,6 +224,9 @@ func (l *Library) getAlbum(ids []Id) (*album, error) {
 }
 
 func (l *Library) Browse(ids []Id) (Album, error) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
 	listed := Album{}
 
 	for i := 0; i < len(ids); i++ {
@@ -238,11 +248,23 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 	}
 
 	listed.Title = dir.title
+	if dir.thumbnailId != "" {
+		t := &Thumbnail{
+			Id: dir.thumbnailId.String(),
+		}
+		listed.Thumbnail = t
+	}
 
-	for id, directory := range dir.albums {
+	for id, album := range dir.albums {
 		d := Album{
 			Id:    id.String(),
-			Title: directory.title,
+			Title: album.title,
+		}
+		if album.thumbnailId != "" {
+			t := &Thumbnail{
+				Id: album.thumbnailId.String(),
+			}
+			d.Thumbnail = t
 		}
 		listed.Albums = append(listed.Albums, d)
 	}

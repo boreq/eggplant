@@ -62,6 +62,17 @@ func (h *handler) Track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	h.trackStore.ServeFile(w, r, id)
 }
 
+func (h *handler) Thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := trimExtension(ps.ByName("id"))
+	if !isIdValid(id) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Add("Accept-Ranges", "bytes")
+	h.thumbnailStore.ServeFile(w, r, id)
+}
+
 func trimExtension(s string) string {
 	if index := strings.LastIndex(s, "."); index >= 0 {
 		s = s[:index]
@@ -102,6 +113,7 @@ func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore
 	// API
 	router.GET("/api/browse/*path", api.Wrap(h.Browse))
 	router.GET("/api/track/:id", h.Track)
+	router.GET("/api/thumbnail/:id", h.Thumbnail)
 
 	// Frontend
 	router.NotFound = http.FileServer(statikFS)

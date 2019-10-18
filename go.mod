@@ -9,6 +9,7 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
 	github.com/julienschmidt/httprouter v1.2.0
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pkg/errors v0.8.1
 	github.com/rakyll/statik v0.1.5
 	github.com/rs/cors v1.6.0

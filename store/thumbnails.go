@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/logging"
+	"github.com/nfnt/resize"
 	"github.com/pkg/errors"
 )
 
@@ -129,7 +130,10 @@ func (s *ThumbnailStore) convert(thumbnail Thumbnail) error {
 		return errors.Wrap(err, "decoding failed")
 	}
 
-	if err := png.Encode(output, img); err != nil {
+	resized := resize.Resize(thumbnailSize, thumbnailSize, img, resize.Lanczos3)
+
+	encoder := png.Encoder{CompressionLevel: png.BestCompression}
+	if err := encoder.Encode(output, resized); err != nil {
 		return errors.Wrap(err, "encoding failed")
 	}
 
@@ -140,6 +144,7 @@ func (s *ThumbnailStore) convert(thumbnail Thumbnail) error {
 	return nil
 }
 
+const thumbnailSize = 200
 const thumbnailExtension = "png"
 const thumbnailDirectory = "thumbnails"
 
