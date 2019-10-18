@@ -42,14 +42,14 @@ func runRun(c guinea.Context) error {
 
 	errC := make(chan error)
 
-	lib, err := library.Open(c.Arguments[0])
-	if err != nil {
-		return errors.Wrap(err, "opening library failed")
-	}
-
-	store, err := store.New(c.Arguments[1], lib.List())
+	store, err := store.New(c.Arguments[1])
 	if err != nil {
 		return errors.Wrap(err, "creating store failed")
+	}
+
+	lib, err := library.Open(c.Arguments[0], store)
+	if err != nil {
+		return errors.Wrap(err, "opening library failed")
 	}
 
 	go func() {

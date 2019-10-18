@@ -15,13 +15,29 @@ import (
 	"github.com/pkg/errors"
 )
 
-const rootDirectoryName = "Eggplant"
-
 type Id string
 
 func (id Id) String() string {
 	return string(id)
 }
+
+type Track struct {
+	Id       string  `json:"id,omitempty"`
+	Title    string  `json:"title,omitempty"`
+	FileHash string  `json:"fileHash,omitempty"`
+	Duration float64 `json:"duration,omitempty"`
+}
+
+type Album struct {
+	Id    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"`
+
+	Parents []Album `json:"parents,omitempty"`
+	Albums  []Album `json:"albums,omitempty"`
+	Tracks  []Track `json:"tracks,omitempty"`
+}
+
+const rootDirectoryName = "Eggplant"
 
 type track struct {
 	title    string
@@ -65,14 +81,16 @@ func newDirectory(title string) *directory {
 type Library struct {
 	directory string
 	root      *directory
+	store     *store.Store
 	log       logging.Logger
 }
 
-func Open(directory string) (*Library, error) {
+func Open(directory string, s *store.Store) (*Library, error) {
 	l := &Library{
 		log:       logging.New("library"),
 		root:      newDirectory(rootDirectoryName),
 		directory: directory,
+		store:     s,
 	}
 
 	if err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
@@ -86,6 +104,7 @@ func Open(directory string) (*Library, error) {
 	}); err != nil {
 		return nil, errors.Wrap(err, "walk failed")
 	}
+	l.store.SetTracks(l.List())
 	return l, nil
 
 }
@@ -145,21 +164,6 @@ func (l *Library) getDirectory(ids []Id) (*directory, error) {
 	return dir, nil
 }
 
-type Track struct {
-	Id       string `json:"id,omitempty"`
-	Title    string `json:"title,omitempty"`
-	FileHash string `json:"fileHash,omitempty"`
-}
-
-type Album struct {
-	Id    string `json:"id,omitempty"`
-	Title string `json:"title,omitempty"`
-
-	Parents []Album `json:"parents,omitempty"`
-	Albums  []Album `json:"albums,omitempty"`
-	Tracks  []Track `json:"tracks,omitempty"`
-}
-
 func (l *Library) Browse(ids []Id) (Album, error) {
 	listed := Album{}
 
@@ -201,6 +205,7 @@ func (l *Library) Browse(ids []Id) (Album, error) {
 			Id:       id.String(),
 			Title:    track.title,
 			FileHash: track.fileHash,
+			Duration: l.store.GetDuration(track.fileHash).Seconds(),
 		}
 		listed.Tracks = append(listed.Tracks, t)
 	}

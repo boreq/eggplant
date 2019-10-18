@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,9 +22,8 @@ type Track struct {
 	Id   string
 }
 
-func New(cacheDir string, tracks []Track) (*Store, error) {
+func New(cacheDir string) (*Store, error) {
 	store := &Store{
-		tracks:   tracks,
 		cacheDir: cacheDir,
 	}
 	go store.run()
@@ -31,13 +31,31 @@ func New(cacheDir string, tracks []Track) (*Store, error) {
 }
 
 type Store struct {
-	cacheDir string
-	tracks   []Track
-	mutex    sync.Mutex
+	cacheDir  string
+	tracks    []Track
+	tracksSet bool
+	mutex     sync.Mutex
+}
+
+func (s *Store) SetTracks(tracks []Track) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.tracksSet = true
+	s.tracks = make([]Track, len(tracks))
+	copy(s.tracks, tracks)
 }
 
 func (s *Store) ServeFile(w http.ResponseWriter, r *http.Request, id string) {
 	http.ServeFile(w, r, s.filePath(id))
+}
+
+func (s *Store) GetDuration(id string) time.Duration {
+	duration, err := s.checkDuration(id)
+	if err != nil {
+		log.Error("duration could not be measured", "err", err)
+	}
+	return duration
 }
 
 func (s *Store) run() {
@@ -89,7 +107,6 @@ func (s *Store) convert(track Track) error {
 	cmd := exec.Command("ffmpeg", args...)
 	bufErr := &bytes.Buffer{}
 	cmd.Stderr = bufErr
-	println(cmd.String())
 	log.Debug("converting", "command", cmd.String())
 	if err := cmd.Run(); err != nil {
 		log.Error("command error", "stderr", bufErr.String())
@@ -97,6 +114,36 @@ func (s *Store) convert(track Track) error {
 	}
 	log.Debug("produced", "path", output)
 	return nil
+}
+
+func (s *Store) checkDuration(id string) (time.Duration, error) {
+	filePath := s.filePath(id)
+
+	args := []string{
+		"-v",
+		"error",
+		"-show_entries",
+		"format=duration",
+		"-of",
+		"default=noprint_wrappers=1:nokey=1",
+		filePath,
+	}
+	cmd := exec.Command("ffprobe", args...)
+	bufErr := &bytes.Buffer{}
+	cmd.Stderr = bufErr
+	log.Debug("checking duration", "command", cmd.String())
+	output, err := cmd.Output()
+	if err != nil {
+		log.Error("command error", "stderr", bufErr.String())
+		return 0, errors.Wrap(err, "ffprobe execution failed")
+	}
+
+	normalized := strings.TrimSpace(string(output)) + "s"
+	duration, err := time.ParseDuration(normalized)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not parse the duration")
+	}
+	return duration, nil
 }
 
 func (s *Store) filePath(id string) string {
