@@ -40,10 +40,12 @@ var runCmd = guinea.Command{
 func runRun(c guinea.Context) error {
 	conf := config.Default()
 	conf.ServeAddress = c.Options["address"].Str()
+	conf.MusicDirectory = c.Arguments[0]
+	conf.CacheDirectory = c.Arguments[1]
 
 	errC := make(chan error)
 
-	loader, err := loader.New(c.Arguments[0])
+	loader, err := loader.New(conf.MusicDirectory)
 	if err != nil {
 		return errors.Wrap(err, "could not create a loader")
 	}
@@ -53,19 +55,19 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not start a loader")
 	}
 
-	trackStore, err := store.NewTrackStore(c.Arguments[1])
+	trackStore, err := store.NewTrackStore(conf.CacheDirectory)
 	if err != nil {
-		return errors.Wrap(err, "creating store failed")
+		return errors.Wrap(err, "could not create a track store")
 	}
 
-	thumbnailStore, err := store.NewThumbnailStore(c.Arguments[1])
+	thumbnailStore, err := store.NewThumbnailStore(conf.CacheDirectory)
 	if err != nil {
-		return errors.Wrap(err, "creating thumbnail store failed")
+		return errors.Wrap(err, "could not create a thumbnail store")
 	}
 
 	lib, err := library.New(ch, thumbnailStore, trackStore)
 	if err != nil {
-		return errors.Wrap(err, "opening library failed")
+		return errors.Wrap(err, "could not create a library")
 	}
 
 	go func() {

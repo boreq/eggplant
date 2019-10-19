@@ -9,10 +9,9 @@ var MainCmd = guinea.Command{
 	Subcommands: map[string]*guinea.Command{
 		"run": &runCmd,
 	},
-	ShortDescription: "a real-time access log analyser",
+	ShortDescription: "a music streaming service",
 	Description: `
-Plum analyses web server access logs in real time and allows the user to access
-the produced statistics using a web dashboard.
+Eggplant serves your music using a web interface.
 `,
 }
 
