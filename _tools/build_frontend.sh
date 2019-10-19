@@ -3,11 +3,11 @@ set -e
 
 # Build frontend
 echo "Running yarn build"
-cd ../plum-frontend
+cd ../eggplant-frontend
 rm -rf dist
 yarn build
 
 # Build backend
-cd ../plum
+cd ../eggplant
 echo "Running https://github.com/rakyll/statik"
-statik -f -src=../plum-frontend/dist
+statik -f -src=../eggplant-frontend/dist
