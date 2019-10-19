@@ -96,6 +96,28 @@ func Serve(l *library.Library, trackStore *store.TrackStore, thumbnailStore *sto
 	return http.ListenAndServe(address, handler)
 }
 
+type frontendFileSystem struct {
+	fs http.FileSystem
+}
+
+func newFrontendFileSystem(fs http.FileSystem) *frontendFileSystem {
+	return &frontendFileSystem{
+		fs: fs,
+	}
+}
+
+func (f *frontendFileSystem) Open(name string) (http.File, error) {
+	file, err := f.fs.Open(name)
+	if err != nil {
+		file, err := f.fs.Open("/index.html")
+		if err != nil {
+			return nil, err
+		}
+		return file, nil
+	}
+	return file, nil
+}
+
 func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.ThumbnailStore) (http.Handler, error) {
 	h := &handler{
 		library:        l,
@@ -116,7 +138,7 @@ func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore
 	router.GET("/api/thumbnail/:id", h.Thumbnail)
 
 	// Frontend
-	router.NotFound = http.FileServer(statikFS)
+	router.NotFound = http.FileServer(newFrontendFileSystem(statikFS))
 
 	return router, nil
 }
