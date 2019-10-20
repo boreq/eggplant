@@ -120,6 +120,7 @@ func (s *TrackStore) convert(track Track) error {
 		"-y",
 		"-i",
 		track.Path,
+		"-vn",
 		"-c:a",
 		"libopus",
 		"-b:a",
