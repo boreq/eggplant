@@ -4,9 +4,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/boreq/eggplant/logging"
 	"github.com/pkg/errors"
+	"github.com/radovskyb/watcher"
 )
 
 type Track struct {
@@ -50,14 +52,43 @@ func (l *Loader) Start() (<-chan Album, error) {
 	// possiblity
 	album, err := l.load()
 	if err != nil {
-		errors.Wrap(err, "initial load failed")
+		return nil, errors.Wrap(err, "initial load failed")
 	}
+
+	w := watcher.New()
+	w.SetMaxEvents(1)
+
+	if err := w.AddRecursive(l.directory); err != nil {
+		return nil, errors.Wrap(err, "could not add a watcher")
+	}
+
+	go func() {
+		if err := w.Start(time.Second * 10); err != nil {
+			l.log.Error("watcher start returned an error", "err", err)
+		}
+	}()
 
 	ch := make(chan Album)
 	go func() {
-		// todo loading should be periodic possibly listening to
-		// filesystem changes
 		ch <- album
+
+		for {
+			select {
+			case <-w.Event:
+				l.log.Debug("reloading")
+				album, err := l.load()
+				if err != nil {
+					l.log.Error("load error", "err", err)
+					continue
+				}
+				ch <- album
+			case err := <-w.Error:
+				l.log.Error("watcher error", "err", err)
+			case <-w.Closed:
+				return
+			}
+			<-time.After(10 * time.Second) // in case something goes crazy
+		}
 	}()
 	return ch, nil
 }
