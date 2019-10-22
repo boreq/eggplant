@@ -3,114 +3,60 @@ package store
 import (
 	"bytes"
 	"fmt"
-	"math/rand"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/boreq/eggplant/logging"
 	"github.com/pkg/errors"
 )
 
-type Track struct {
-	Id   string
-	Path string
-}
-
 func NewTrackStore(cacheDir string) (*TrackStore, error) {
-	s := &TrackStore{
-		cacheDir: cacheDir,
-		ch:       make(chan []Track),
-		log:      logging.New("trackStore"),
+	converter := NewTrackConverter(cacheDir)
+	store, err := NewStore(converter)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create a store")
 	}
-	go s.receiveTracks()
-	go s.processTracks()
+	s := &TrackStore{
+		Store:     store,
+		converter: converter,
+		log:       logging.New("trackStore"),
+	}
 	return s, nil
 }
 
 type TrackStore struct {
-	cacheDir  string
-	ch        chan []Track
-	tracks    []Track
-	tracksSet bool
-	mutex     sync.Mutex
+	*Store
+	converter *TrackConverter
 	log       logging.Logger
 }
 
-func (s *TrackStore) SetTracks(tracks []Track) {
-	s.ch <- tracks
-}
-
-func (s *TrackStore) ServeFile(w http.ResponseWriter, r *http.Request, id string) {
-	http.ServeFile(w, r, s.filePath(id))
-}
-
 func (s *TrackStore) GetDuration(id string) time.Duration {
-	duration, err := s.checkDuration(id)
+	duration, err := s.converter.checkDuration(id)
 	if err != nil {
 		s.log.Error("duration could not be measured", "err", err)
 	}
 	return duration
 }
 
-func (s *TrackStore) receiveTracks() {
-	for tracks := range s.ch {
-		if err := s.handleTracks(tracks); err != nil {
-			s.log.Error("could not handle updates", "err", err)
-		}
+func NewTrackConverter(cacheDir string) *TrackConverter {
+	converter := &TrackConverter{
+		cacheDir: cacheDir,
+		log:      logging.New("trackConverter"),
 	}
+	return converter
 }
 
-func (s *TrackStore) handleTracks(tracks []Track) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.tracks = tracks
-	s.tracksSet = true
-	return nil
+type TrackConverter struct {
+	cacheDir string
+	log      logging.Logger
 }
 
-func (s *TrackStore) processTracks() {
-	for {
-		track, ok := s.getNextTrack()
-		if !ok {
-			s.log.Debug("no tracks to convert")
-			<-time.After(scanEvery)
-			continue
-		} else {
-			s.log.Debug("converting a track", "track", track)
-			if err := s.convert(track); err != nil {
-				s.log.Error("conversion failed", "err", err)
-				<-time.After(time.Second)
-			}
-		}
-	}
-}
-
-func (s *TrackStore) getNextTrack() (Track, bool) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	rand.Shuffle(len(s.tracks), func(i, j int) {
-		s.tracks[i], s.tracks[j] = s.tracks[j], s.tracks[i]
-	})
-
-	for _, track := range s.tracks {
-		p := s.filePath(track.Id)
-		if _, err := os.Stat(p); os.IsNotExist(err) {
-			return track, true
-		}
-	}
-	return Track{}, false
-}
-
-func (s *TrackStore) convert(track Track) error {
-	outputPath := s.filePath(track.Id)
-	tmpOutputPath := s.tmpFilePath(track.Id)
+func (c *TrackConverter) Convert(item Item) error {
+	outputPath := c.OutputFile(item.Id)
+	tmpOutputPath := c.tmpOutputFile(item.Id)
 
 	if err := makeDirectory(outputPath); err != nil {
 		return errors.Wrap(err, "could not create output directory")
@@ -119,7 +65,7 @@ func (s *TrackStore) convert(track Track) error {
 	args := []string{
 		"-y",
 		"-i",
-		track.Path,
+		item.Path,
 		"-vn",
 		"-c:a",
 		"libopus",
@@ -132,9 +78,9 @@ func (s *TrackStore) convert(track Track) error {
 	cmd := exec.Command("ffmpeg", args...)
 	bufErr := &bytes.Buffer{}
 	cmd.Stderr = bufErr
-	s.log.Debug("converting", "command", cmd.String())
+	c.log.Debug("converting", "command", cmd.String())
 	if err := cmd.Run(); err != nil {
-		s.log.Error("command error", "stderr", bufErr.String())
+		c.log.Error("command error", "stderr", bufErr.String())
 		return errors.Wrap(err, "ffmpeg execution failed")
 	}
 
@@ -145,8 +91,8 @@ func (s *TrackStore) convert(track Track) error {
 	return nil
 }
 
-func (s *TrackStore) checkDuration(id string) (time.Duration, error) {
-	filePath := s.filePath(id)
+func (c *TrackConverter) checkDuration(id string) (time.Duration, error) {
+	filePath := c.OutputFile(id)
 
 	args := []string{
 		"-v",
@@ -160,10 +106,10 @@ func (s *TrackStore) checkDuration(id string) (time.Duration, error) {
 	cmd := exec.Command("ffprobe", args...)
 	bufErr := &bytes.Buffer{}
 	cmd.Stderr = bufErr
-	s.log.Debug("checking duration", "command", cmd.String())
+	c.log.Debug("checking duration", "command", cmd.String())
 	output, err := cmd.Output()
 	if err != nil {
-		s.log.Error("command error", "stderr", bufErr.String())
+		c.log.Error("command error", "stderr", bufErr.String())
 		return 0, errors.Wrap(err, "ffprobe execution failed")
 	}
 
@@ -178,14 +124,14 @@ func (s *TrackStore) checkDuration(id string) (time.Duration, error) {
 const trackExtension = "ogg"
 const trackDirectory = "tracks"
 
-func (s *TrackStore) filePath(id string) string {
-	dir := path.Join(s.cacheDir, trackDirectory)
+func (c *TrackConverter) OutputFile(id string) string {
+	dir := path.Join(c.cacheDir, trackDirectory)
 	file := fmt.Sprintf("%s.%s", id, trackExtension)
 	return path.Join(dir, file)
 }
 
-func (s *TrackStore) tmpFilePath(id string) string {
-	dir := path.Join(s.cacheDir, trackDirectory)
+func (c *TrackConverter) tmpOutputFile(id string) string {
+	dir := path.Join(c.cacheDir, trackDirectory)
 	file := fmt.Sprintf("_%s.%s", id, trackExtension)
 	return path.Join(dir, file)
 }

@@ -75,12 +75,12 @@ func newAlbum(title string) *album {
 type Library struct {
 	root           *album
 	trackStore     *store.TrackStore
-	thumbnailStore *store.ThumbnailStore
+	thumbnailStore *store.Store
 	mutex          sync.Mutex
 	log            logging.Logger
 }
 
-func New(ch <-chan loader.Album, thumbnailStore *store.ThumbnailStore, trackStore *store.TrackStore) (*Library, error) {
+func New(ch <-chan loader.Album, thumbnailStore *store.Store, trackStore *store.TrackStore) (*Library, error) {
 	l := &Library{
 		log:            logging.New("library"),
 		root:           newAlbum(rootAlbumTitle),
@@ -111,18 +111,18 @@ func (l *Library) handleLoaderUpdate(album loader.Album) error {
 	}
 
 	// schedule track conversion
-	var tracks []store.Track
+	var tracks []store.Item
 	if err := l.getTracks(&tracks, l.root); err != nil {
 		return errors.Wrap(err, "preparing tracks failed")
 	}
-	l.trackStore.SetTracks(tracks)
+	l.trackStore.SetItems(tracks)
 
 	// schedule thumbnail conversion
-	var thumbnails []store.Thumbnail
+	var thumbnails []store.Item
 	if err := l.getThumbnails(&thumbnails, l.root); err != nil {
 		return errors.Wrap(err, "preparing thumbnails failed")
 	}
-	l.thumbnailStore.SetThumbnails(thumbnails)
+	l.thumbnailStore.SetItems(thumbnails)
 
 	return nil
 }
@@ -157,9 +157,9 @@ func (l *Library) mergeAlbum(target *album, album loader.Album) error {
 	return nil
 }
 
-func (l *Library) getThumbnails(thumbnails *[]store.Thumbnail, current *album) error {
+func (l *Library) getThumbnails(thumbnails *[]store.Item, current *album) error {
 	if current.thumbnailPath != "" {
-		thumbnail := store.Thumbnail{
+		thumbnail := store.Item{
 			Id:   current.thumbnailId.String(),
 			Path: current.thumbnailPath,
 		}
@@ -175,9 +175,9 @@ func (l *Library) getThumbnails(thumbnails *[]store.Thumbnail, current *album) e
 	return nil
 }
 
-func (l *Library) getTracks(tracks *[]store.Track, current *album) error {
+func (l *Library) getTracks(tracks *[]store.Item, current *album) error {
 	for id, track := range current.tracks {
-		track := store.Track{
+		track := store.Item{
 			Id:   id.String(),
 			Path: track.path,
 		}

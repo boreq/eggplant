@@ -21,7 +21,7 @@ var log = logging.New("server")
 type handler struct {
 	library        *library.Library
 	trackStore     *store.TrackStore
-	thumbnailStore *store.ThumbnailStore
+	thumbnailStore *store.Store
 }
 
 func (h *handler) Browse(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
@@ -80,7 +80,7 @@ func trimExtension(s string) string {
 	return s
 }
 
-func Serve(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.ThumbnailStore, address string) error {
+func Serve(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.Store, address string) error {
 	handler, err := newHandler(l, trackStore, thumbnailStore)
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func (f *frontendFileSystem) Open(name string) (http.File, error) {
 	return file, nil
 }
 
-func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.ThumbnailStore) (http.Handler, error) {
+func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore *store.Store) (http.Handler, error) {
 	h := &handler{
 		library:        l,
 		trackStore:     trackStore,
