@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/logging"
+	"github.com/pkg/errors"
 )
 
 type Stats struct {
@@ -44,6 +45,22 @@ type Store struct {
 	itemsSet  bool
 	mutex     sync.Mutex
 	log       logging.Logger
+}
+
+func (s *Store) GetStats() (Stats, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	converted, err := s.countConvertedItems()
+	if err != nil {
+		return Stats{}, errors.Wrap(err, "could not count counverted items")
+	}
+
+	stats := Stats{
+		AllItems:       len(s.items),
+		ConvertedItems: converted,
+	}
+	return stats, nil
 }
 
 func (s *Store) SetItems(items []Item) {
@@ -103,6 +120,21 @@ func (s *Store) getNextItem() (Item, bool) {
 		}
 	}
 	return Item{}, false
+}
+
+func (s *Store) countConvertedItems() (int, error) {
+	counter := 0
+	for _, item := range s.items {
+		p := s.converter.OutputFile(item.Id)
+		if _, err := os.Stat(p); err != nil {
+			if !os.IsNotExist(err) {
+				return 0, err
+			}
+			continue // isn't converted
+		}
+		counter++
+	}
+	return counter, nil
 }
 
 const scanEvery = 10 * time.Second

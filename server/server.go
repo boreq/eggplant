@@ -73,6 +73,37 @@ func (h *handler) Thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 	h.thumbnailStore.ServeFile(w, r, id)
 }
 
+type Stats struct {
+	Conversion ConversionStats `json:"conversion"`
+}
+
+type ConversionStats struct {
+	Thumbnails store.Stats `json:"thumbnails"`
+	Tracks     store.Stats `json:"tracks"`
+}
+
+func (h *handler) Stats(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	thumbnailStats, err := h.thumbnailStore.GetStats()
+	if err != nil {
+		log.Error("thumbnail stats error", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	trackStats, err := h.trackStore.GetStats()
+	if err != nil {
+		log.Error("track stats error", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	stats := Stats{
+		Conversion: ConversionStats{
+			Thumbnails: thumbnailStats,
+			Tracks:     trackStats,
+		},
+	}
+	return stats, nil
+}
+
 func trimExtension(s string) string {
 	if index := strings.LastIndex(s, "."); index >= 0 {
 		s = s[:index]
@@ -136,6 +167,7 @@ func newHandler(l *library.Library, trackStore *store.TrackStore, thumbnailStore
 	router.GET("/api/browse/*path", api.Wrap(h.Browse))
 	router.GET("/api/track/:id", h.Track)
 	router.GET("/api/thumbnail/:id", h.Thumbnail)
+	router.GET("/api/stats", api.Wrap(h.Stats))
 
 	// Frontend
 	router.NotFound = http.FileServer(newFrontendFileSystem(statikFS))
