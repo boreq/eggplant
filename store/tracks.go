@@ -37,7 +37,7 @@ type TrackStore struct {
 func (s *TrackStore) GetDuration(id string) time.Duration {
 	duration, err := s.converter.checkDuration(id)
 	if err != nil {
-		s.log.Error("duration could not be measured", "err", err)
+		s.log.Warn("duration could not be measured", "err", err)
 		return 0
 	}
 	return duration
@@ -95,6 +95,11 @@ func (c *TrackConverter) Convert(item Item) error {
 
 func (c *TrackConverter) checkDuration(id string) (time.Duration, error) {
 	filePath := c.OutputFile(id)
+
+	// check if a file exists at all
+	if _, err := os.Stat(filePath); err != nil {
+		return 0, errors.Wrap(err, "stat failed")
+	}
 
 	args := []string{
 		"-v",
