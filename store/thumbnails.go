@@ -16,8 +16,9 @@ import (
 )
 
 func NewThumbnailStore(cacheDir string) (*Store, error) {
+	log := logging.New("thumbnailStore")
 	converter := NewThumbnailConverter(cacheDir)
-	return NewStore(converter)
+	return NewStore(log, converter)
 }
 
 func NewThumbnailConverter(cacheDir string) *ThumbnailConverter {

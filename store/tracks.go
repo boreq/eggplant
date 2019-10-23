@@ -14,15 +14,16 @@ import (
 )
 
 func NewTrackStore(cacheDir string) (*TrackStore, error) {
+	log := logging.New("trackStore")
 	converter := NewTrackConverter(cacheDir)
-	store, err := NewStore(converter)
+	store, err := NewStore(log, converter)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a store")
 	}
 	s := &TrackStore{
 		Store:     store,
 		converter: converter,
-		log:       logging.New("trackStore"),
+		log:       log,
 	}
 	return s, nil
 }

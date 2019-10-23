@@ -27,11 +27,11 @@ type Converter interface {
 	Convert(item Item) error
 }
 
-func NewStore(converter Converter) (*Store, error) {
+func NewStore(log logging.Logger, converter Converter) (*Store, error) {
 	s := &Store{
 		converter: converter,
 		ch:        make(chan []Item),
-		log:       logging.New("store"),
+		log:       log,
 	}
 	go s.receive()
 	go s.process()
@@ -53,7 +53,7 @@ func (s *Store) GetStats() (Stats, error) {
 
 	converted, err := s.countConvertedItems()
 	if err != nil {
-		return Stats{}, errors.Wrap(err, "could not count counverted items")
+		return Stats{}, errors.Wrap(err, "could not count converted items")
 	}
 
 	stats := Stats{
@@ -73,19 +73,16 @@ func (s *Store) ServeFile(w http.ResponseWriter, r *http.Request, id string) {
 
 func (s *Store) receive() {
 	for items := range s.ch {
-		if err := s.handle(items); err != nil {
-			s.log.Error("could not handle updates", "err", err)
-		}
+		s.handleReceivedItems(items)
 	}
 }
 
-func (s *Store) handle(items []Item) error {
+func (s *Store) handleReceivedItems(items []Item) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.items = items
 	s.itemsSet = true
-	return nil
 }
 
 func (s *Store) process() {
@@ -99,7 +96,7 @@ func (s *Store) process() {
 
 		s.log.Debug("converting an item", "item", item)
 		if err := s.converter.Convert(item); err != nil {
-			s.log.Error("conversion failed", "err", err)
+			s.log.Error("conversion failed", "err", err, "item", item)
 			<-time.After(time.Second)
 		}
 	}
@@ -137,7 +134,7 @@ func (s *Store) countConvertedItems() (int, error) {
 	return counter, nil
 }
 
-const scanEvery = 10 * time.Second
+const scanEvery = 30 * time.Second
 
 func makeDirectory(file string) error {
 	dir, _ := path.Split(file)
