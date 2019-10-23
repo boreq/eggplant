@@ -35,9 +35,9 @@ func (h *handler) Browse(r *http.Request, ps httprouter.Params) (interface{}, ap
 		dirs = strings.Split(path, "/")
 	}
 
-	var ids []library.Id
+	var ids []library.AlbumId
 	for _, name := range dirs {
-		ids = append(ids, library.Id(name))
+		ids = append(ids, library.AlbumId(name))
 	}
 
 	d, err := h.library.Browse(ids)

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"os"
 	"sort"
 	"sync"
 
@@ -14,27 +16,37 @@ import (
 	"github.com/pkg/errors"
 )
 
-const rootAlbumTitle = "Eggplant"
+type AlbumId string
 
-type Id string
+func (id AlbumId) String() string {
+	return string(id)
+}
 
-func (id Id) String() string {
+type TrackId string
+
+func (id TrackId) String() string {
+	return string(id)
+}
+
+type FileId string
+
+func (id FileId) String() string {
 	return string(id)
 }
 
 type Thumbnail struct {
-	Id string `json:"id,omitempty"`
+	FileId FileId `json:"fileId,omitempty"`
 }
 
 type Track struct {
-	Id       string  `json:"id,omitempty"`
+	Id       TrackId `json:"id,omitempty"`
+	FileId   FileId  `json:"fileId,omitempty"`
 	Title    string  `json:"title,omitempty"`
-	FileHash string  `json:"fileHash,omitempty"`
 	Duration float64 `json:"duration,omitempty"`
 }
 
 type Album struct {
-	Id        string     `json:"id,omitempty"`
+	Id        AlbumId    `json:"id,omitempty"`
 	Title     string     `json:"title,omitempty"`
 	Thumbnail *Thumbnail `json:"thumbnail,imitempty"`
 
@@ -43,32 +55,40 @@ type Album struct {
 	Tracks  []Track `json:"tracks,omitempty"`
 }
 
+const rootAlbumTitle = "Eggplant"
+
 type track struct {
-	title string
-	path  string
+	title  string
+	path   string
+	fileId FileId
 }
 
-func newTrack(title string, path string) track {
-	t := track{
-		title: title,
-		path:  path,
+func newTrack(title string, path string) (track, error) {
+	fileId, err := newFileId(path)
+	if err != nil {
+		return track{}, errors.Wrap(err, "could not create file id")
 	}
-	return t
+	t := track{
+		title:  title,
+		path:   path,
+		fileId: fileId,
+	}
+	return t, nil
 }
 
 type album struct {
 	title         string
 	thumbnailPath string
-	thumbnailId   Id
-	albums        map[Id]*album
-	tracks        map[Id]track
+	thumbnailId   FileId
+	albums        map[AlbumId]*album
+	tracks        map[TrackId]track
 }
 
 func newAlbum(title string) *album {
 	return &album{
 		title:  title,
-		albums: make(map[Id]*album),
-		tracks: make(map[Id]track),
+		albums: make(map[AlbumId]*album),
+		tracks: make(map[TrackId]track),
 	}
 }
 
@@ -90,6 +110,77 @@ func New(ch <-chan loader.Album, thumbnailStore *store.Store, trackStore *store.
 	go l.receiveLoaderUpdates(ch)
 	return l, nil
 
+}
+
+func (l *Library) Browse(ids []AlbumId) (Album, error) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	album, err := l.getAlbum(ids)
+	if err != nil {
+		return Album{}, errors.Wrap(err, "failed to get directory")
+	}
+
+	parents, err := l.getParents(ids)
+	if err != nil {
+		return Album{}, errors.Wrap(err, "failed to get parents")
+	}
+
+	listed := Album{
+		Title:   album.title,
+		Parents: parents,
+	}
+
+	if album.thumbnailId != "" {
+		listed.Thumbnail = &Thumbnail{
+			FileId: album.thumbnailId,
+		}
+	}
+
+	for id, album := range album.albums {
+		d := Album{
+			Id:    id,
+			Title: album.title,
+		}
+		if album.thumbnailId != "" {
+			d.Thumbnail = &Thumbnail{
+				FileId: album.thumbnailId,
+			}
+		}
+		listed.Albums = append(listed.Albums, d)
+	}
+	sort.Slice(listed.Albums, func(i, j int) bool { return listed.Albums[i].Title < listed.Albums[j].Title })
+
+	for id, track := range album.tracks {
+		t := Track{
+			Id:       id,
+			FileId:   track.fileId,
+			Title:    track.title,
+			Duration: l.trackStore.GetDuration(track.fileId.String()).Seconds(),
+		}
+		listed.Tracks = append(listed.Tracks, t)
+	}
+	sort.Slice(listed.Tracks, func(i, j int) bool { return listed.Tracks[i].Title < listed.Tracks[j].Title })
+
+	return listed, nil
+}
+
+func (l *Library) getParents(ids []AlbumId) ([]Album, error) {
+	parents := make([]Album, 0)
+	for i := 0; i < len(ids); i++ {
+		parentIds := ids[:i+1]
+		dir, err := l.getAlbum(parentIds)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get a parent album")
+		}
+		parent := Album{
+			Id:    parentIds[len(parentIds)-1],
+			Title: dir.title,
+		}
+		parents = append(parents, parent)
+
+	}
+	return parents, nil
 }
 
 func (l *Library) receiveLoaderUpdates(ch <-chan loader.Album) {
@@ -129,7 +220,7 @@ func (l *Library) handleLoaderUpdate(album loader.Album) error {
 
 func (l *Library) mergeAlbum(target *album, album loader.Album) error {
 	if album.Thumbnail != "" {
-		thumbnailId, err := longId(album.Thumbnail)
+		thumbnailId, err := newFileId(album.Thumbnail)
 		if err != nil {
 			return errors.Wrap(err, "could not create a thumbnail id")
 		}
@@ -176,9 +267,9 @@ func (l *Library) getThumbnails(thumbnails *[]store.Item, current *album) error 
 }
 
 func (l *Library) getTracks(tracks *[]store.Item, current *album) error {
-	for id, track := range current.tracks {
+	for _, track := range current.tracks {
 		track := store.Item{
-			Id:   id.String(),
+			Id:   track.fileId.String(),
 			Path: track.path,
 		}
 		*tracks = append(*tracks, track)
@@ -193,25 +284,7 @@ func (l *Library) getTracks(tracks *[]store.Item, current *album) error {
 	return nil
 }
 
-func toTrack(title string, loaderTrack loader.Track) (Id, track, error) {
-	id, err := longId(loaderTrack.Path)
-	if err != nil {
-		return "", track{}, errors.Wrap(err, "could not create an id")
-	}
-	track := newTrack(title, loaderTrack.Path)
-	return id, track, nil
-}
-
-func toAlbum(title string, loaderAlbum loader.Album) (Id, *album, error) {
-	id, err := shortId(title)
-	if err != nil {
-		return "", nil, errors.Wrap(err, "could not create an id")
-	}
-	album := newAlbum(title)
-	return id, album, nil
-}
-
-func (l *Library) getAlbum(ids []Id) (*album, error) {
+func (l *Library) getAlbum(ids []AlbumId) (*album, error) {
 	var current *album = l.root
 	for _, id := range ids {
 		child, ok := current.albums[id]
@@ -223,89 +296,71 @@ func (l *Library) getAlbum(ids []Id) (*album, error) {
 	return current, nil
 }
 
-func (l *Library) Browse(ids []Id) (Album, error) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	listed := Album{}
-
-	for i := 0; i < len(ids); i++ {
-		parentIds := ids[:i+1]
-		dir, err := l.getAlbum(parentIds)
-		if err != nil {
-			return Album{}, errors.Wrap(err, "failed to get directory")
-		}
-		parent := Album{
-			Id:    parentIds[len(parentIds)-1].String(),
-			Title: dir.title,
-		}
-		listed.Parents = append(listed.Parents, parent)
-	}
-
-	dir, err := l.getAlbum(ids)
+func toTrack(title string, loaderTrack loader.Track) (TrackId, track, error) {
+	id, err := newTrackId(title)
 	if err != nil {
-		return Album{}, errors.Wrap(err, "failed to get directory")
+		return "", track{}, errors.Wrap(err, "could not create a track id")
 	}
-
-	listed.Title = dir.title
-	if dir.thumbnailId != "" {
-		t := &Thumbnail{
-			Id: dir.thumbnailId.String(),
-		}
-		listed.Thumbnail = t
+	t, err := newTrack(title, loaderTrack.Path)
+	if err != nil {
+		return "", track{}, errors.Wrap(err, "could not create a track")
 	}
-
-	for id, album := range dir.albums {
-		d := Album{
-			Id:    id.String(),
-			Title: album.title,
-		}
-		if album.thumbnailId != "" {
-			t := &Thumbnail{
-				Id: album.thumbnailId.String(),
-			}
-			d.Thumbnail = t
-		}
-		listed.Albums = append(listed.Albums, d)
-	}
-	sort.Slice(listed.Albums, func(i, j int) bool { return listed.Albums[i].Title < listed.Albums[j].Title })
-
-	for id, track := range dir.tracks {
-		t := Track{
-			Id:       id.String(),
-			Title:    track.title,
-			Duration: l.trackStore.GetDuration(id.String()).Seconds(),
-		}
-		listed.Tracks = append(listed.Tracks, t)
-	}
-	sort.Slice(listed.Tracks, func(i, j int) bool { return listed.Tracks[i].Title < listed.Tracks[j].Title })
-
-	return listed, nil
+	return id, t, nil
 }
 
-func longId(s string) (Id, error) {
-	sum, err := getHash(s)
+func toAlbum(title string, loaderAlbum loader.Album) (AlbumId, *album, error) {
+	id, err := newAlbumId(title)
+	if err != nil {
+		return "", nil, errors.Wrap(err, "could not create an album id")
+	}
+	album := newAlbum(title)
+	return id, album, nil
+}
+
+func newAlbumId(title string) (AlbumId, error) {
+	h, err := shortHash(title)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
-	return Id(hex.EncodeToString(sum)), nil
+	return AlbumId(h), nil
 }
 
-func shortId(s string) (Id, error) {
-	sum, err := getHash(s)
+func newTrackId(title string) (TrackId, error) {
+	h, err := shortHash(title)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
-	return Id(hex.EncodeToString(sum)[:20]), nil
+	return TrackId(h), nil
 }
 
-func getHash(s string) ([]byte, error) {
+func newFileId(path string) (FileId, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return "", errors.Wrap(err, "os stat failed")
+	}
+	s := fmt.Sprintf("%s-%s-%s", path, fileInfo.Size(), fileInfo.ModTime())
+	h, err := longHash(s)
+	if err != nil {
+		return "", errors.Wrap(err, "hashing failed")
+	}
+	return FileId(h), nil
+}
+
+func shortHash(s string) (string, error) {
+	sum, err := longHash(s)
+	if err != nil {
+		return "", errors.Wrap(err, "hashing failed")
+	}
+	return sum[:20], nil
+}
+
+func longHash(s string) (string, error) {
 	buf := bytes.NewBuffer([]byte(s))
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, buf); err != nil {
-		return nil, err
+		return "", err
 	}
 	var sum []byte
 	sum = hasher.Sum(sum)
-	return sum, nil
+	return hex.EncodeToString(sum), nil
 }

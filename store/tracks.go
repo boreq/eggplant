@@ -37,6 +37,7 @@ func (s *TrackStore) GetDuration(id string) time.Duration {
 	duration, err := s.converter.checkDuration(id)
 	if err != nil {
 		s.log.Error("duration could not be measured", "err", err)
+		return 0
 	}
 	return duration
 }
