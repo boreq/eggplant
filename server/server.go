@@ -28,8 +28,6 @@ func (h *handler) Browse(r *http.Request, ps httprouter.Params) (interface{}, ap
 	path := ps.ByName("path")
 	path = strings.Trim(path, "/")
 
-	log.Debug("path", "path", path)
-
 	var dirs []string
 	if path != "" {
 		dirs = strings.Split(path, "/")
