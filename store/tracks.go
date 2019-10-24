@@ -13,6 +13,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+const trackExtension = "ogg"
+const trackDirectory = "tracks"
+
 func NewTrackStore(cacheDir string) (*TrackStore, error) {
 	log := logging.New("trackStore")
 	converter := NewTrackConverter(cacheDir)
@@ -128,17 +131,16 @@ func (c *TrackConverter) checkDuration(id string) (time.Duration, error) {
 	return duration, nil
 }
 
-const trackExtension = "ogg"
-const trackDirectory = "tracks"
-
 func (c *TrackConverter) OutputFile(id string) string {
-	dir := path.Join(c.cacheDir, trackDirectory)
 	file := fmt.Sprintf("%s.%s", id, trackExtension)
-	return path.Join(dir, file)
+	return path.Join(c.OutputDirectory(), file)
+}
+
+func (c *TrackConverter) OutputDirectory() string {
+	return path.Join(c.cacheDir, trackDirectory)
 }
 
 func (c *TrackConverter) tmpOutputFile(id string) string {
-	dir := path.Join(c.cacheDir, trackDirectory)
 	file := fmt.Sprintf("_%s.%s", id, trackExtension)
-	return path.Join(dir, file)
+	return path.Join(c.OutputDirectory(), file)
 }

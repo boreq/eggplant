@@ -15,6 +15,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const thumbnailSize = 200
+const thumbnailExtension = "png"
+const thumbnailDirectory = "thumbnails"
+
 func NewThumbnailStore(cacheDir string) (*Store, error) {
 	log := logging.New("thumbnailStore")
 	converter := NewThumbnailConverter(cacheDir)
@@ -73,18 +77,16 @@ func (c *ThumbnailConverter) Convert(item Item) error {
 	return nil
 }
 
-const thumbnailSize = 200
-const thumbnailExtension = "png"
-const thumbnailDirectory = "thumbnails"
-
 func (c *ThumbnailConverter) OutputFile(id string) string {
-	dir := path.Join(c.cacheDir, thumbnailDirectory)
 	file := fmt.Sprintf("%s.%s", id, thumbnailExtension)
-	return path.Join(dir, file)
+	return path.Join(c.OutputDirectory(), file)
+}
+
+func (c *ThumbnailConverter) OutputDirectory() string {
+	return path.Join(c.cacheDir, thumbnailDirectory)
 }
 
 func (c *ThumbnailConverter) tmpOutputFile(id string) string {
-	dir := path.Join(c.cacheDir, thumbnailDirectory)
 	file := fmt.Sprintf("_%s.%s", id, thumbnailExtension)
-	return path.Join(dir, file)
+	return path.Join(c.OutputDirectory(), file)
 }
