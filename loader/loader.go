@@ -147,6 +147,10 @@ func (l *Loader) findAlbum(root *Album, file string) (*Album, error) {
 	}
 
 	dir, _ := filepath.Split(relativePath)
+	if dir == "" {
+		return root, nil
+	}
+
 	names := strings.Split(strings.Trim(dir, string(os.PathSeparator)), string(os.PathSeparator))
 
 	var album *Album = root
