@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/boreq/eggplant/logging"
@@ -24,26 +25,58 @@ func NewTrackStore(cacheDir string) (*TrackStore, error) {
 		return nil, errors.Wrap(err, "could not create a store")
 	}
 	s := &TrackStore{
-		Store:     store,
-		converter: converter,
-		log:       log,
+		Store:         store,
+		durationCache: make(map[string]time.Duration),
+		converter:     converter,
+		log:           log,
 	}
 	return s, nil
 }
 
 type TrackStore struct {
 	*Store
-	converter *TrackConverter
-	log       logging.Logger
+	durationCache      map[string]time.Duration
+	durationCacheMutex sync.Mutex
+	converter          *TrackConverter
+	log                logging.Logger
 }
 
 func (s *TrackStore) GetDuration(id string) time.Duration {
+	s.durationCacheMutex.Lock()
+	defer s.durationCacheMutex.Unlock()
+
+	if duration, ok := s.durationCache[id]; ok {
+		return duration
+	}
+
 	duration, err := s.converter.checkDuration(id)
 	if err != nil {
 		s.log.Warn("duration could not be measured", "err", err)
 		return 0
 	}
+	s.durationCache[id] = duration
 	return duration
+}
+
+func (s *TrackStore) SetItems(items []Item) {
+	s.cleanupDurationCache(items)
+	s.Store.SetItems(items)
+}
+
+func (s *TrackStore) cleanupDurationCache(items []Item) {
+	s.durationCacheMutex.Lock()
+	defer s.durationCacheMutex.Unlock()
+
+	existingItems := make(map[string]bool)
+	for _, item := range items {
+		existingItems[item.Id] = true
+	}
+
+	for id, _ := range s.durationCache {
+		if _, exists := existingItems[id]; !exists {
+			delete(s.durationCache, id)
+		}
+	}
 }
 
 func NewTrackConverter(cacheDir string) *TrackConverter {
