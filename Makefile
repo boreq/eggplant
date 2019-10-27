@@ -1,7 +1,7 @@
 BUILD_DIRECTORY=_build
 PROGRAM_NAME=eggplant
 
-all: test build
+all: test lint build
 
 build-directory:
 	mkdir -p ./${BUILD_DIRECTORY}

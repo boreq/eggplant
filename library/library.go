@@ -52,7 +52,7 @@ type Track struct {
 type Album struct {
 	Id        AlbumId    `json:"id,omitempty"`
 	Title     string     `json:"title,omitempty"`
-	Thumbnail *Thumbnail `json:"thumbnail,imitempty"`
+	Thumbnail *Thumbnail `json:"thumbnail,omitempty"`
 
 	Parents []Album `json:"parents,omitempty"`
 	Albums  []Album `json:"albums,omitempty"`
@@ -345,7 +345,7 @@ func newFileId(path string) (FileId, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "os stat failed")
 	}
-	s := fmt.Sprintf("%s-%s-%s", path, fileInfo.Size(), fileInfo.ModTime())
+	s := fmt.Sprintf("%s-%d-%d", path, fileInfo.Size(), fileInfo.ModTime().Unix())
 	h, err := longHash(s)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")

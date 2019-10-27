@@ -72,7 +72,7 @@ func (s *TrackStore) cleanupDurationCache(items []Item) {
 		existingItems[item.Id] = true
 	}
 
-	for id, _ := range s.durationCache {
+	for id := range s.durationCache {
 		if _, exists := existingItems[id]; !exists {
 			delete(s.durationCache, id)
 		}
