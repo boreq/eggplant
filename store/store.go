@@ -112,21 +112,9 @@ func (s *Store) scheduleCleanup() {
 
 func (s *Store) process() {
 	for {
-		item, ok, err := s.getNextItem()
-		if err != nil {
-			s.log.Error("could not get a next item for conversion", "err", err)
+		if err := s.considerConversion(); err != nil {
+			s.log.Error("conversion failed", "err", err)
 			<-time.After(errorDelay)
-		} else {
-			if !ok {
-				s.log.Debug("no items to convert")
-				<-time.After(scanEvery)
-			} else {
-				s.log.Debug("converting an item", "item", item)
-				if err := s.converter.Convert(item); err != nil {
-					s.log.Error("conversion failed", "err", err, "item", item)
-					<-time.After(errorDelay)
-				}
-			}
 		}
 
 		if err := s.considerCleanup(); err != nil {
@@ -134,6 +122,26 @@ func (s *Store) process() {
 			<-time.After(errorDelay)
 		}
 	}
+}
+
+func (s *Store) considerConversion() error {
+	item, ok, err := s.getNextItem()
+	if err != nil {
+		return errors.Wrap(err, "could not get a next item for conversion")
+	}
+
+	if !ok {
+		s.log.Debug("no items to convert")
+		<-time.After(scanEvery)
+		return nil
+	}
+
+	s.log.Debug("converting an item", "item", item)
+	if err := s.converter.Convert(item); err != nil {
+		return errors.Wrapf(err, "conversion of '%s' failed", item.Path)
+	}
+
+	return nil
 }
 
 func (s *Store) considerCleanup() error {
