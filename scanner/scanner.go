@@ -87,11 +87,15 @@ func (s *Scanner) Start() (<-chan Album, error) {
 
 	ch := make(chan Album)
 	go func() {
+		defer close(ch)
 		ch <- album
 
 		for {
 			select {
-			case <-w.Event:
+			case _, ok := <-w.Event:
+				if !ok {
+					return
+				}
 				album, err := s.load()
 				if err != nil {
 					s.log.Error("load error", "err", err)
