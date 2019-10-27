@@ -109,8 +109,6 @@ func (c *TrackConverter) Convert(item Item) error {
 		"libopus",
 		"-b:a",
 		"96K",
-		"-threads",
-		"4",
 		tmpOutputPath,
 	}
 	cmd := exec.Command("ffmpeg", args...)
