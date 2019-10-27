@@ -1,3 +1,5 @@
+// Package library is responsible for orchestrating actions related to
+// providing a navigable representation of the audio library.
 package library
 
 import (
@@ -15,6 +17,8 @@ import (
 	"github.com/boreq/eggplant/store"
 	"github.com/pkg/errors"
 )
+
+const rootAlbumTitle = "Eggplant"
 
 type AlbumId string
 
@@ -55,8 +59,6 @@ type Album struct {
 	Tracks  []Track `json:"tracks,omitempty"`
 }
 
-const rootAlbumTitle = "Eggplant"
-
 type track struct {
 	title  string
 	path   string
@@ -66,7 +68,7 @@ type track struct {
 func newTrack(title string, path string) (track, error) {
 	fileId, err := newFileId(path)
 	if err != nil {
-		return track{}, errors.Wrap(err, "could not create file id")
+		return track{}, errors.Wrap(err, "could not create a file id")
 	}
 	t := track{
 		title:  title,
@@ -92,6 +94,8 @@ func newAlbum(title string) *album {
 	}
 }
 
+// Library receives scanner updates, dispatches them to appropriate stores and
+// builds a navigable representation of the music collection.
 type Library struct {
 	root           *album
 	trackStore     *store.TrackStore
@@ -100,6 +104,7 @@ type Library struct {
 	log            logging.Logger
 }
 
+// New creates a library which receives updates from the specified channel.
 func New(ch <-chan scanner.Album, thumbnailStore *store.Store, trackStore *store.TrackStore) (*Library, error) {
 	l := &Library{
 		log:            logging.New("library"),
@@ -112,13 +117,15 @@ func New(ch <-chan scanner.Album, thumbnailStore *store.Store, trackStore *store
 
 }
 
+// Browse lists the specified album. Provide a zero-length slice to list the
+// root album.
 func (l *Library) Browse(ids []AlbumId) (Album, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	album, err := l.getAlbum(ids)
 	if err != nil {
-		return Album{}, errors.Wrap(err, "failed to get directory")
+		return Album{}, errors.Wrap(err, "failed to get an album")
 	}
 
 	parents, err := l.getParents(ids)

@@ -1,3 +1,4 @@
+// Package logging provides a layer of abstraction around external loggers.
 package logging
 
 import (

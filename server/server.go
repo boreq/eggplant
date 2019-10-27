@@ -1,3 +1,4 @@
+// Package server exposes an HTTP API and serves the static files.
 package server
 
 import (
