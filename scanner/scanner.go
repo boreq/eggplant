@@ -1,4 +1,6 @@
-package loader
+// Package scanner is responsible for generating a tree-like structure of
+// albums and tracks based on the contents of a directory.
+package scanner
 
 import (
 	"os"
@@ -11,6 +13,7 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
+// Track represents an audio track.
 type Track struct {
 	Path string
 }
@@ -21,10 +24,17 @@ func newTrack(path string) Track {
 	}
 }
 
+// Album is a collection of songs and albums.
 type Album struct {
+	// Thumbnail is a path of an album cover. If the thumbnail is not
+	// available then this field is set to an empty string.
 	Thumbnail string
-	Albums    map[string]*Album
-	Tracks    map[string]Track
+
+	// Albums uses album titles as its keys.
+	Albums map[string]*Album
+
+	// Tracks uses track titles as its keys.
+	Tracks map[string]Track
 }
 
 func newAlbum() *Album {
@@ -34,23 +44,30 @@ func newAlbum() *Album {
 	}
 }
 
-type Loader struct {
+// Scanner watches a hard drive directory containing audio files and produces
+// updates whenever its contents change.
+type Scanner struct {
 	directory string
 	log       logging.Logger
 }
 
-func New(directory string) (*Loader, error) {
-	l := &Loader{
+// New creates a new scanner which will watch the specified directory when
+// started.
+func New(directory string) (*Scanner, error) {
+	l := &Scanner{
 		directory: directory,
-		log:       logging.New("loader"),
+		log:       logging.New("scanner"),
 	}
 	return l, nil
 }
 
-func (l *Loader) Start() (<-chan Album, error) {
+// Start starts the watcher and returns a channel on which the updates are
+// sent whenever available. At least one update will be sent on the channel
+// immidiately after calling this method.
+func (s *Scanner) Start() (<-chan Album, error) {
 	// fail early since the initial load carries the highest failure
 	// possiblity
-	album, err := l.load()
+	album, err := s.load()
 	if err != nil {
 		return nil, errors.Wrap(err, "initial load failed")
 	}
@@ -58,13 +75,13 @@ func (l *Loader) Start() (<-chan Album, error) {
 	w := watcher.New()
 	w.SetMaxEvents(1)
 
-	if err := w.AddRecursive(l.directory); err != nil {
-		return nil, errors.Wrap(err, "could not add a watcher")
+	if err := w.AddRecursive(s.directory); err != nil {
+		return nil, errors.Wrap(err, "could not add a recursive watcher")
 	}
 
 	go func() {
 		if err := w.Start(time.Second * 10); err != nil {
-			l.log.Error("watcher start returned an error", "err", err)
+			s.log.Error("error starting the watcher", "err", err)
 		}
 	}()
 
@@ -75,34 +92,32 @@ func (l *Loader) Start() (<-chan Album, error) {
 		for {
 			select {
 			case <-w.Event:
-				l.log.Debug("reloading")
-				album, err := l.load()
+				album, err := s.load()
 				if err != nil {
-					l.log.Error("load error", "err", err)
+					s.log.Error("load error", "err", err)
 					continue
 				}
 				ch <- album
 			case err := <-w.Error:
-				l.log.Error("watcher error", "err", err)
+				s.log.Error("watcher error", "err", err)
 			case <-w.Closed:
 				return
 			}
-			<-time.After(10 * time.Second) // in case something goes crazy
 		}
 	}()
 	return ch, nil
 }
 
-func (l *Loader) load() (Album, error) {
+func (s *Scanner) load() (Album, error) {
 	root := *newAlbum()
-	if err := filepath.Walk(l.directory, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			if l.isThumbnail(path) {
-				if err := l.addThumbnail(&root, path); err != nil {
+			if s.isThumbnail(path) {
+				if err := s.addThumbnail(&root, path); err != nil {
 					return errors.Wrap(err, "could not add a thumbnail")
 				}
 			} else {
-				if err := l.addTrack(&root, path); err != nil {
+				if err := s.addTrack(&root, path); err != nil {
 					return errors.Wrap(err, "could not add a track")
 				}
 			}
@@ -114,8 +129,8 @@ func (l *Loader) load() (Album, error) {
 	return root, nil
 }
 
-func (l *Loader) addTrack(root *Album, file string) error {
-	album, err := l.findAlbum(root, file)
+func (s *Scanner) addTrack(root *Album, file string) error {
+	album, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
 	}
@@ -125,8 +140,8 @@ func (l *Loader) addTrack(root *Album, file string) error {
 	return nil
 }
 
-func (l *Loader) addThumbnail(root *Album, file string) error {
-	album, err := l.findAlbum(root, file)
+func (s *Scanner) addThumbnail(root *Album, file string) error {
+	album, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
 	}
@@ -135,13 +150,13 @@ func (l *Loader) addThumbnail(root *Album, file string) error {
 	return nil
 }
 
-func (l *Loader) isThumbnail(path string) bool {
+func (s *Scanner) isThumbnail(path string) bool {
 	filename := filenameWithoutExtension(path)
 	return filename == "thumbnail"
 }
 
-func (l *Loader) findAlbum(root *Album, file string) (*Album, error) {
-	relativePath, err := filepath.Rel(l.directory, file)
+func (s *Scanner) findAlbum(root *Album, file string) (*Album, error) {
+	relativePath, err := filepath.Rel(s.directory, file)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get a relative filepath")
 	}

@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/boreq/eggplant/config"
 	"github.com/boreq/eggplant/library"
-	"github.com/boreq/eggplant/loader"
+	"github.com/boreq/eggplant/scanner"
 	"github.com/boreq/eggplant/server"
 	"github.com/boreq/eggplant/store"
 	"github.com/boreq/guinea"
@@ -45,14 +45,14 @@ func runRun(c guinea.Context) error {
 
 	errC := make(chan error)
 
-	loader, err := loader.New(conf.MusicDirectory)
+	scan, err := scanner.New(conf.MusicDirectory)
 	if err != nil {
-		return errors.Wrap(err, "could not create a loader")
+		return errors.Wrap(err, "could not create a scanner")
 	}
 
-	ch, err := loader.Start()
+	ch, err := scan.Start()
 	if err != nil {
-		return errors.Wrap(err, "could not start a loader")
+		return errors.Wrap(err, "could not start a scanner")
 	}
 
 	trackStore, err := store.NewTrackStore(conf.CacheDirectory)

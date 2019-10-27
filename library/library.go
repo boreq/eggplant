@@ -10,8 +10,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/boreq/eggplant/loader"
 	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/scanner"
 	"github.com/boreq/eggplant/store"
 	"github.com/pkg/errors"
 )
@@ -100,14 +100,14 @@ type Library struct {
 	log            logging.Logger
 }
 
-func New(ch <-chan loader.Album, thumbnailStore *store.Store, trackStore *store.TrackStore) (*Library, error) {
+func New(ch <-chan scanner.Album, thumbnailStore *store.Store, trackStore *store.TrackStore) (*Library, error) {
 	l := &Library{
 		log:            logging.New("library"),
 		root:           newAlbum(rootAlbumTitle),
 		thumbnailStore: thumbnailStore,
 		trackStore:     trackStore,
 	}
-	go l.receiveLoaderUpdates(ch)
+	go l.receiveUpdates(ch)
 	return l, nil
 
 }
@@ -183,15 +183,15 @@ func (l *Library) getParents(ids []AlbumId) ([]Album, error) {
 	return parents, nil
 }
 
-func (l *Library) receiveLoaderUpdates(ch <-chan loader.Album) {
+func (l *Library) receiveUpdates(ch <-chan scanner.Album) {
 	for album := range ch {
-		if err := l.handleLoaderUpdate(album); err != nil {
-			l.log.Error("could not handle a loader update", "err", err)
+		if err := l.handleUpdate(album); err != nil {
+			l.log.Error("could not handle a scanner update", "err", err)
 		}
 	}
 }
 
-func (l *Library) handleLoaderUpdate(album loader.Album) error {
+func (l *Library) handleUpdate(album scanner.Album) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
@@ -218,7 +218,7 @@ func (l *Library) handleLoaderUpdate(album loader.Album) error {
 	return nil
 }
 
-func (l *Library) mergeAlbum(target *album, album loader.Album) error {
+func (l *Library) mergeAlbum(target *album, album scanner.Album) error {
 	if album.Thumbnail != "" {
 		thumbnailId, err := newFileId(album.Thumbnail)
 		if err != nil {
@@ -228,21 +228,21 @@ func (l *Library) mergeAlbum(target *album, album loader.Album) error {
 		target.thumbnailId = thumbnailId
 	}
 
-	for title, loaderTrack := range album.Tracks {
-		id, track, err := toTrack(title, loaderTrack)
+	for title, scannerTrack := range album.Tracks {
+		id, track, err := toTrack(title, scannerTrack)
 		if err != nil {
 			return errors.Wrap(err, "could not convert to a track")
 		}
 		target.tracks[id] = track
 	}
 
-	for title, loaderAlbum := range album.Albums {
-		id, album, err := toAlbum(title, *loaderAlbum)
+	for title, scannerAlbum := range album.Albums {
+		id, album, err := toAlbum(title, *scannerAlbum)
 		if err != nil {
 			return errors.Wrap(err, "could not convert to an album")
 		}
 		target.albums[id] = album
-		l.mergeAlbum(album, *loaderAlbum)
+		l.mergeAlbum(album, *scannerAlbum)
 	}
 
 	return nil
@@ -296,19 +296,19 @@ func (l *Library) getAlbum(ids []AlbumId) (*album, error) {
 	return current, nil
 }
 
-func toTrack(title string, loaderTrack loader.Track) (TrackId, track, error) {
+func toTrack(title string, scannerTrack scanner.Track) (TrackId, track, error) {
 	id, err := newTrackId(title)
 	if err != nil {
 		return "", track{}, errors.Wrap(err, "could not create a track id")
 	}
-	t, err := newTrack(title, loaderTrack.Path)
+	t, err := newTrack(title, scannerTrack.Path)
 	if err != nil {
 		return "", track{}, errors.Wrap(err, "could not create a track")
 	}
 	return id, t, nil
 }
 
-func toAlbum(title string, loaderAlbum loader.Album) (AlbumId, *album, error) {
+func toAlbum(title string, scannerAlbum scanner.Album) (AlbumId, *album, error) {
 	id, err := newAlbumId(title)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "could not create an album id")
