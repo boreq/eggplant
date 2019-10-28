@@ -138,6 +138,10 @@ func (l *Library) Browse(ids []AlbumId) (Album, error) {
 		Parents: parents,
 	}
 
+	if len(ids) > 0 {
+		listed.Id = ids[len(ids)-1]
+	}
+
 	if album.thumbnailId != "" {
 		listed.Thumbnail = &Thumbnail{
 			FileId: album.thumbnailId,
