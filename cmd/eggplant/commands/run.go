@@ -14,16 +14,16 @@ var runCmd = guinea.Command{
 	Run: runRun,
 	Arguments: []guinea.Argument{
 		{
-			Name:        "directory",
+			Name:        "music_directory",
 			Optional:    false,
 			Multiple:    false,
 			Description: "Path to a directory containing your music",
 		},
 		{
-			Name:        "cache_directory",
+			Name:        "data_directory",
 			Optional:    false,
 			Multiple:    false,
-			Description: "Path to a directory which will be used for caching",
+			Description: "Path to a directory which will be used for data storage",
 		},
 	},
 	Options: []guinea.Option{
@@ -41,7 +41,7 @@ func runRun(c guinea.Context) error {
 	conf := config.Default()
 	conf.ServeAddress = c.Options["address"].Str()
 	conf.MusicDirectory = c.Arguments[0]
-	conf.CacheDirectory = c.Arguments[1]
+	conf.DataDirectory = c.Arguments[1]
 
 	errC := make(chan error)
 
@@ -55,12 +55,12 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not start a scanner")
 	}
 
-	trackStore, err := store.NewTrackStore(conf.CacheDirectory)
+	trackStore, err := store.NewTrackStore(conf.DataDirectory)
 	if err != nil {
 		return errors.Wrap(err, "could not create a track store")
 	}
 
-	thumbnailStore, err := store.NewThumbnailStore(conf.CacheDirectory)
+	thumbnailStore, err := store.NewThumbnailStore(conf.DataDirectory)
 	if err != nil {
 		return errors.Wrap(err, "could not create a thumbnail store")
 	}

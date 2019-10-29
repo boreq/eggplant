@@ -4,7 +4,7 @@ package config
 type Config struct {
 	ServeAddress   string
 	MusicDirectory string
-	CacheDirectory string
+	DataDirectory  string
 }
 
 // Default returns the default config.

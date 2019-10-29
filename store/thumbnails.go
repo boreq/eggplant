@@ -19,23 +19,23 @@ const thumbnailSize = 200
 const thumbnailExtension = "png"
 const thumbnailDirectory = "thumbnails"
 
-func NewThumbnailStore(cacheDir string) (*Store, error) {
+func NewThumbnailStore(dataDir string) (*Store, error) {
 	log := logging.New("thumbnailStore")
-	converter := NewThumbnailConverter(cacheDir)
+	converter := NewThumbnailConverter(dataDir)
 	return NewStore(log, converter)
 }
 
-func NewThumbnailConverter(cacheDir string) *ThumbnailConverter {
+func NewThumbnailConverter(dataDir string) *ThumbnailConverter {
 	converter := &ThumbnailConverter{
-		cacheDir: cacheDir,
-		log:      logging.New("thumbnailConverter"),
+		dataDir: dataDir,
+		log:     logging.New("thumbnailConverter"),
 	}
 	return converter
 }
 
 type ThumbnailConverter struct {
-	cacheDir string
-	log      logging.Logger
+	dataDir string
+	log     logging.Logger
 }
 
 func (c *ThumbnailConverter) Convert(item Item) error {
@@ -83,7 +83,7 @@ func (c *ThumbnailConverter) OutputFile(id string) string {
 }
 
 func (c *ThumbnailConverter) OutputDirectory() string {
-	return path.Join(c.cacheDir, thumbnailDirectory)
+	return path.Join(c.dataDir, thumbnailDirectory)
 }
 
 func (c *ThumbnailConverter) tmpOutputFile(id string) string {

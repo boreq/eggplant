@@ -17,9 +17,9 @@ import (
 const trackExtension = "ogg"
 const trackDirectory = "tracks"
 
-func NewTrackStore(cacheDir string) (*TrackStore, error) {
+func NewTrackStore(dataDir string) (*TrackStore, error) {
 	log := logging.New("trackStore")
-	converter := NewTrackConverter(cacheDir)
+	converter := NewTrackConverter(dataDir)
 	store, err := NewStore(log, converter)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a store")
@@ -79,17 +79,17 @@ func (s *TrackStore) cleanupDurationCache(items []Item) {
 	}
 }
 
-func NewTrackConverter(cacheDir string) *TrackConverter {
+func NewTrackConverter(dataDir string) *TrackConverter {
 	converter := &TrackConverter{
-		cacheDir: cacheDir,
-		log:      logging.New("trackConverter"),
+		dataDir: dataDir,
+		log:     logging.New("trackConverter"),
 	}
 	return converter
 }
 
 type TrackConverter struct {
-	cacheDir string
-	log      logging.Logger
+	dataDir string
+	log     logging.Logger
 }
 
 func (c *TrackConverter) Convert(item Item) error {
@@ -168,7 +168,7 @@ func (c *TrackConverter) OutputFile(id string) string {
 }
 
 func (c *TrackConverter) OutputDirectory() string {
-	return path.Join(c.cacheDir, trackDirectory)
+	return path.Join(c.dataDir, trackDirectory)
 }
 
 func (c *TrackConverter) tmpOutputFile(id string) string {
