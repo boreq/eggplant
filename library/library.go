@@ -3,6 +3,7 @@
 package library
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
@@ -53,10 +54,15 @@ type Album struct {
 	Id        AlbumId    `json:"id,omitempty"`
 	Title     string     `json:"title,omitempty"`
 	Thumbnail *Thumbnail `json:"thumbnail,omitempty"`
+	Access    Access     `json:"access,omitempty"`
 
 	Parents []Album `json:"parents,omitempty"`
 	Albums  []Album `json:"albums,omitempty"`
 	Tracks  []Track `json:"tracks,omitempty"`
+}
+
+type Access struct {
+	NoPublic bool `json:"noPublic"`
 }
 
 type track struct {
@@ -82,6 +88,7 @@ type album struct {
 	title         string
 	thumbnailPath string
 	thumbnailId   FileId
+	access        Access
 	albums        map[AlbumId]*album
 	tracks        map[TrackId]track
 }
@@ -136,6 +143,7 @@ func (l *Library) Browse(ids []AlbumId) (Album, error) {
 	listed := Album{
 		Title:   album.title,
 		Parents: parents,
+		Access:  album.access,
 	}
 
 	if len(ids) > 0 {
@@ -150,8 +158,9 @@ func (l *Library) Browse(ids []AlbumId) (Album, error) {
 
 	for id, album := range album.albums {
 		d := Album{
-			Id:    id,
-			Title: album.title,
+			Id:     id,
+			Title:  album.title,
+			Access: album.access,
 		}
 		if album.thumbnailId != "" {
 			d.Thumbnail = &Thumbnail{
@@ -239,6 +248,14 @@ func (l *Library) mergeAlbum(target *album, album scanner.Album) error {
 		target.thumbnailId = thumbnailId
 	}
 
+	if album.AccessFile != "" {
+		acc, err := l.loadAccess(album.AccessFile)
+		if err != nil {
+			return errors.Wrap(err, "could not load the access file")
+		}
+		target.access = acc
+	}
+
 	for title, scannerTrack := range album.Tracks {
 		id, track, err := toTrack(title, scannerTrack)
 		if err != nil {
@@ -253,7 +270,9 @@ func (l *Library) mergeAlbum(target *album, album scanner.Album) error {
 			return errors.Wrap(err, "could not convert to an album")
 		}
 		target.albums[id] = album
-		l.mergeAlbum(album, *scannerAlbum)
+		if err := l.mergeAlbum(album, *scannerAlbum); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -305,6 +324,32 @@ func (l *Library) getAlbum(ids []AlbumId) (*album, error) {
 		current = child
 	}
 	return current, nil
+}
+
+func (l *Library) loadAccess(file string) (Access, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return Access{}, errors.Wrap(err, "could not open the file")
+	}
+	defer f.Close()
+
+	acc := Access{}
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		switch scanner.Text() {
+		case "no-public":
+			acc.NoPublic = true
+		default:
+			return Access{}, fmt.Errorf("unrecognized line: %s", scanner.Text())
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return Access{}, errors.Wrap(err, "scanner error")
+	}
+
+	return acc, nil
 }
 
 func toTrack(title string, scannerTrack scanner.Track) (TrackId, track, error) {

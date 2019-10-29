@@ -30,6 +30,10 @@ type Album struct {
 	// available then this field is set to an empty string.
 	Thumbnail string
 
+	// AccessFile is a path of an access file. If the access file is not
+	// available then this field is set to an empty string.
+	AccessFile string
+
 	// Albums uses album titles as its keys.
 	Albums map[string]*Album
 
@@ -120,10 +124,18 @@ func (s *Scanner) load() (Album, error) {
 				if err := s.addThumbnail(&root, path); err != nil {
 					return errors.Wrap(err, "could not add a thumbnail")
 				}
-			} else {
-				if err := s.addTrack(&root, path); err != nil {
-					return errors.Wrap(err, "could not add a track")
+				return nil
+			}
+
+			if s.isAccessFile(path) {
+				if err := s.addAccessFile(&root, path); err != nil {
+					return errors.Wrap(err, "could not add an access file")
 				}
+				return nil
+			}
+
+			if err := s.addTrack(&root, path); err != nil {
+				return errors.Wrap(err, "could not add a track")
 			}
 		}
 		return nil
@@ -152,6 +164,21 @@ func (s *Scanner) addThumbnail(root *Album, file string) error {
 
 	album.Thumbnail = file
 	return nil
+}
+
+func (s *Scanner) addAccessFile(root *Album, file string) error {
+	album, err := s.findAlbum(root, file)
+	if err != nil {
+		return errors.Wrap(err, "could not find an album")
+	}
+
+	album.AccessFile = file
+	return nil
+}
+
+func (s *Scanner) isAccessFile(path string) bool {
+	_, filename := filepath.Split(path)
+	return filename == "eggplant.access"
 }
 
 func (s *Scanner) isThumbnail(path string) bool {
