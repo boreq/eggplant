@@ -8,6 +8,6 @@ rm -rf dist
 yarn build
 
 # Build backend
-cd ../eggplant
+cd ../eggplant/ports/http/frontend
 echo "Running https://github.com/rakyll/statik"
-statik -f -src=../eggplant-frontend/dist
+statik -f -src=../../../../eggplant-frontend/dist

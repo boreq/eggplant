@@ -3,7 +3,7 @@ package frontend
 import (
 	"net/http"
 
-	_ "github.com/boreq/eggplant/statik"
+	_ "github.com/boreq/eggplant/ports/http/frontend/statik"
 	"github.com/boreq/errors"
 	"github.com/rakyll/statik/fs"
 )
