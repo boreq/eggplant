@@ -1,4 +1,4 @@
-package di
+package service
 
 import (
 	httpPort "github.com/boreq/eggplant/pkg/service/ports/http"

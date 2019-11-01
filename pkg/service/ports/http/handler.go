@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/boreq/eggplant/errors"
-	"github.com/boreq/eggplant/library"
 	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/pkg/service/adapters/music/library"
+	"github.com/boreq/eggplant/pkg/service/adapters/music/store"
 	"github.com/boreq/eggplant/pkg/service/application"
 	"github.com/boreq/eggplant/pkg/service/application/auth"
 	"github.com/boreq/eggplant/pkg/service/ports/http/api"
 	"github.com/boreq/eggplant/pkg/service/ports/http/frontend"
-	"github.com/boreq/eggplant/store"
 	"github.com/julienschmidt/httprouter"
 )
 

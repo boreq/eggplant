@@ -3,22 +3,21 @@
 //go:generate wire
 //+build !wireinject
 
-package di
+package wire
 
 import (
-	"github.com/boreq/eggplant/config"
-	"github.com/boreq/eggplant/library"
+	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
+	"github.com/boreq/eggplant/cmd/eggplant/commands/service"
 	"github.com/boreq/eggplant/pkg/service/adapters/auth"
 	"github.com/boreq/eggplant/pkg/service/application"
 	auth2 "github.com/boreq/eggplant/pkg/service/application/auth"
 	"github.com/boreq/eggplant/pkg/service/application/queries"
 	"github.com/boreq/eggplant/pkg/service/ports/http"
-	"github.com/boreq/eggplant/store"
 )
 
 // Injectors from wire.go:
 
-func BuildService(lib *library.Library, trackStore *store.TrackStore, thumbnailStore *store.Store, conf *config.Config) (*Service, error) {
+func BuildService(conf *config.Config) (*service.Service, error) {
 	db, err := newBolt(conf)
 	if err != nil {
 		return nil, err
@@ -55,11 +54,23 @@ func BuildService(lib *library.Library, trackStore *store.TrackStore, thumbnailS
 		Commands: commands,
 		Queries:  applicationQueries,
 	}
-	handler, err := http.NewHandler(applicationApplication, lib, trackStore, thumbnailStore)
+	trackStore, err := newTrackStore(conf)
+	if err != nil {
+		return nil, err
+	}
+	store, err := newThumbnailStore(conf)
+	if err != nil {
+		return nil, err
+	}
+	library, err := newLibrary(trackStore, store, conf)
+	if err != nil {
+		return nil, err
+	}
+	handler, err := http.NewHandler(applicationApplication, library, trackStore, store)
 	if err != nil {
 		return nil, err
 	}
 	server := http.NewServer(handler)
-	service := NewService(server)
-	return service, nil
+	serviceService := service.NewService(server)
+	return serviceService, nil
 }

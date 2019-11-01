@@ -14,8 +14,8 @@ import (
 	"sync"
 
 	"github.com/boreq/eggplant/logging"
-	"github.com/boreq/eggplant/scanner"
-	"github.com/boreq/eggplant/store"
+	"github.com/boreq/eggplant/pkg/service/adapters/music/scanner"
+	"github.com/boreq/eggplant/pkg/service/adapters/music/store"
 	"github.com/pkg/errors"
 )
 

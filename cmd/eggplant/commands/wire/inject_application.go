@@ -1,9 +1,9 @@
-package di
+package wire
 
 import (
 	"path/filepath"
 
-	"github.com/boreq/eggplant/config"
+	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
 	"github.com/boreq/eggplant/pkg/service/adapters"
 	authAdapters "github.com/boreq/eggplant/pkg/service/adapters/auth"
 	"github.com/boreq/eggplant/pkg/service/application"

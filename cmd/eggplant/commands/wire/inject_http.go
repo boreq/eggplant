@@ -1,4 +1,4 @@
-package di
+package wire
 
 import (
 	"net/http"
