@@ -17,6 +17,10 @@ frontend:
 
 tools:
 	 go get -u honnef.co/go/tools/cmd/staticcheck
+	 go get -u github.com/google/wire/cmd/wire
+
+generate:
+	 go generate ./...
 
 lint: 
 	go vet ./...

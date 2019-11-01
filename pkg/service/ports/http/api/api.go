@@ -15,6 +15,8 @@ var log = logging.New("api")
 var InternalServerError = NewError(500, "Internal server error.")
 var BadRequest = NewError(400, "Bad request.")
 var NotFound = NewError(404, "Not found.")
+var Unauthorized = NewError(401, "Unauthorized.")
+var Forbidden = NewError(403, "Forbidden.")
 
 type Error interface {
 	GetCode() int

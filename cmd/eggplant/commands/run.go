@@ -1,13 +1,13 @@
 package commands
 
 import (
+	"github.com/boreq/eggplant/cmd/eggplant/commands/di"
 	"github.com/boreq/eggplant/config"
+	"github.com/boreq/eggplant/errors"
 	"github.com/boreq/eggplant/library"
 	"github.com/boreq/eggplant/scanner"
-	"github.com/boreq/eggplant/server"
 	"github.com/boreq/eggplant/store"
 	"github.com/boreq/guinea"
-	"github.com/pkg/errors"
 )
 
 var runCmd = guinea.Command{
@@ -70,8 +70,13 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not create a library")
 	}
 
+	service, err := di.BuildService(lib, trackStore, thumbnailStore, conf)
+	if err != nil {
+		return errors.Wrap(err, "could not create a service")
+	}
+
 	go func() {
-		errC <- server.Serve(lib, trackStore, thumbnailStore, conf.ServeAddress)
+		errC <- service.HTTPServer.Serve(conf.ServeAddress)
 	}()
 
 	return <-errC
