@@ -3,12 +3,12 @@ package wire
 import (
 	"path/filepath"
 
+	"github.com/boreq/eggplant/adapters"
+	authAdapters "github.com/boreq/eggplant/adapters/auth"
+	"github.com/boreq/eggplant/application"
+	"github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
-	"github.com/boreq/eggplant/pkg/service/adapters"
-	authAdapters "github.com/boreq/eggplant/pkg/service/adapters/auth"
-	"github.com/boreq/eggplant/pkg/service/application"
-	"github.com/boreq/eggplant/pkg/service/application/auth"
-	"github.com/boreq/eggplant/pkg/service/application/queries"
 	"github.com/google/wire"
 	bolt "go.etcd.io/bbolt"
 )

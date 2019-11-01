@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/logging"
-	"github.com/pkg/errors"
+	"github.com/boreq/errors"
 )
 
 const trackExtension = "ogg"

@@ -1,10 +1,10 @@
 package wire
 
 import (
+	"github.com/boreq/eggplant/adapters/music/library"
+	"github.com/boreq/eggplant/adapters/music/scanner"
+	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
-	"github.com/boreq/eggplant/pkg/service/adapters/music/library"
-	"github.com/boreq/eggplant/pkg/service/adapters/music/scanner"
-	"github.com/boreq/eggplant/pkg/service/adapters/music/store"
 	"github.com/boreq/errors"
 	"github.com/google/wire"
 )

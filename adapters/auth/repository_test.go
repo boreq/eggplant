@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/boreq/eggplant/adapters/auth"
+	appAuth "github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/internal/fixture"
-	"github.com/boreq/eggplant/pkg/service/adapters/auth"
-	appAuth "github.com/boreq/eggplant/pkg/service/application/auth"
 	"github.com/stretchr/testify/require"
 )
 

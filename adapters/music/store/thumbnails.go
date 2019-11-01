@@ -11,8 +11,8 @@ import (
 	"path"
 
 	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/errors"
 	"github.com/nfnt/resize"
-	"github.com/pkg/errors"
 )
 
 const thumbnailSize = 200

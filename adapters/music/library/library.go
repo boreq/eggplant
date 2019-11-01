@@ -13,10 +13,10 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/boreq/eggplant/adapters/music/scanner"
+	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/logging"
-	"github.com/boreq/eggplant/pkg/service/adapters/music/scanner"
-	"github.com/boreq/eggplant/pkg/service/adapters/music/store"
-	"github.com/pkg/errors"
+	"github.com/boreq/errors"
 )
 
 const rootAlbumTitle = "Eggplant"
@@ -319,7 +319,7 @@ func (l *Library) getAlbum(ids []AlbumId) (*album, error) {
 	for _, id := range ids {
 		child, ok := current.albums[id]
 		if !ok {
-			return nil, errors.Errorf("album '%s' not found", id)
+			return nil, fmt.Errorf("album '%s' not found", id)
 		}
 		current = child
 	}

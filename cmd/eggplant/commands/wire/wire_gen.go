@@ -6,13 +6,13 @@
 package wire
 
 import (
+	"github.com/boreq/eggplant/adapters/auth"
+	"github.com/boreq/eggplant/application"
+	auth2 "github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/service"
-	"github.com/boreq/eggplant/pkg/service/adapters/auth"
-	"github.com/boreq/eggplant/pkg/service/application"
-	auth2 "github.com/boreq/eggplant/pkg/service/application/auth"
-	"github.com/boreq/eggplant/pkg/service/application/queries"
-	"github.com/boreq/eggplant/pkg/service/ports/http"
+	"github.com/boreq/eggplant/ports/http"
 )
 
 // Injectors from wire.go:

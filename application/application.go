@@ -1,8 +1,8 @@
 package application
 
 import (
-	"github.com/boreq/eggplant/pkg/service/application/auth"
-	"github.com/boreq/eggplant/pkg/service/application/queries"
+	"github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/queries"
 )
 
 type Application struct {

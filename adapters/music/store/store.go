@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/logging"
-	"github.com/pkg/errors"
+	"github.com/boreq/errors"
 )
 
 // scanEvery specifies the interval in which the store checks if there are any

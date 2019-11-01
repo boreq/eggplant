@@ -3,7 +3,7 @@ package auth_test
 import (
 	"testing"
 
-	"github.com/boreq/eggplant/pkg/service/adapters/auth"
+	"github.com/boreq/eggplant/adapters/auth"
 	"github.com/stretchr/testify/require"
 )
 
