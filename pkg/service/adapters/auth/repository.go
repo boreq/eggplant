@@ -186,7 +186,36 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 }
 
 func (r *UserRepository) Logout(token auth.AccessToken) error {
-	return errors.New("not implemented")
+	username, err := r.accessTokenGenerator.GetUsername(token)
+	if err != nil {
+		return errors.Wrap(err, "could not extract the username")
+	}
+
+	if err := r.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(r.bucket)
+
+		u, err := r.getUser(b, username)
+		if err != nil {
+			return errors.Wrap(err, "could not get the user")
+		}
+
+		if u == nil {
+			return errors.New("user doesn't exist")
+		}
+
+		for i := range u.Sessions {
+			if u.Sessions[i].Token == token {
+				u.Sessions = append(u.Sessions[:i], u.Sessions[i+1:]...)
+				return r.putUser(b, *u)
+			}
+		}
+
+		return errors.New("session not found")
+	}); err != nil {
+		return errors.Wrap(err, "transaction failed")
+	}
+
+	return nil
 }
 
 func (r *UserRepository) validate(username, password string) error {

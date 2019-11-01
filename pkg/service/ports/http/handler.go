@@ -58,6 +58,7 @@ func NewHandler(app *application.Application, lib *library.Library, trackStore *
 
 	h.router.POST("/api/user/register-initial", api.Wrap(h.registerInitial))
 	h.router.POST("/api/user/login", api.Wrap(h.login))
+	h.router.POST("/api/user/logout", api.Wrap(h.logout))
 	h.router.GET("/api/user", api.Wrap(h.getCurrentUser))
 
 	// Frontend
@@ -208,6 +209,30 @@ func (h *Handler) login(r *http.Request, ps httprouter.Params) (interface{}, api
 	}
 
 	return response, nil
+}
+
+func (h *Handler) logout(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	u, err := h.getUser(r)
+	if err != nil {
+		h.log.Error("could not get the user", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	if u == nil {
+		return nil, api.Unauthorized
+	}
+
+	token := h.getToken(r)
+
+	cmd := auth.Logout{
+		Token: auth.AccessToken(token),
+	}
+
+	if err := h.app.Auth.Logout.Execute(cmd); err != nil {
+		h.log.Error("could not logout the user", "err", err)
+		return nil, api.InternalServerError
+	}
+	return nil, nil
 }
 
 func (h *Handler) getCurrentUser(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
