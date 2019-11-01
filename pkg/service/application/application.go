@@ -16,6 +16,7 @@ type Auth struct {
 	Login            *auth.LoginHandler
 	Logout           *auth.LogoutHandler
 	CheckAccessToken *auth.CheckAccessTokenHandler
+	List             *auth.ListHandler
 }
 
 type Commands struct {

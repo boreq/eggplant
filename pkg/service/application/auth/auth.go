@@ -19,6 +19,9 @@ type UserRepository interface {
 
 	// Logout should invalidate the provided access token.
 	Logout(token AccessToken) error
+
+	// List should return a list of all users.
+	List() ([]User, error)
 }
 
 var ErrUnauthorized = errors.New("unauthorized")
@@ -26,5 +29,6 @@ var ErrUnauthorized = errors.New("unauthorized")
 type AccessToken string
 
 type User struct {
-	Username string `json:"username"`
+	Username      string `json:"username"`
+	Administrator bool   `json:"administrator"`
 }

@@ -23,14 +23,15 @@ type AccessTokenGenerator interface {
 }
 
 type user struct {
-	Username string       `json:"username"`
-	Password PasswordHash `json:"password"`
-	Sessions []session
+	Username      string       `json:"username"`
+	Password      PasswordHash `json:"password"`
+	Administrator bool         `json:"administrator"`
+	Sessions      []session    `json:"sessions"`
 }
 
 type session struct {
-	Token    auth.AccessToken
-	LastSeen time.Time
+	Token    auth.AccessToken `json:"token"`
+	LastSeen time.Time        `json:"lastSeen"`
 }
 
 type UserRepository struct {
@@ -77,8 +78,9 @@ func (r *UserRepository) RegisterInitial(username, password string) error {
 	}
 
 	u := user{
-		Username: username,
-		Password: passwordHash,
+		Username:      username,
+		Password:      passwordHash,
+		Administrator: true,
 	}
 
 	j, err := json.Marshal(u)
@@ -178,11 +180,7 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 		return auth.User{}, errors.Wrap(err, "transaction failed")
 	}
 
-	u := auth.User{
-		Username: foundUser.Username,
-	}
-
-	return u, nil
+	return r.toUser(foundUser), nil
 }
 
 func (r *UserRepository) Logout(token auth.AccessToken) error {
@@ -242,6 +240,27 @@ func (r *UserRepository) Count() (int, error) {
 	return count, nil
 }
 
+func (r *UserRepository) List() ([]auth.User, error) {
+	var users []auth.User
+	if err := r.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(r.bucket)
+		c := b.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			var u user
+			if err := json.Unmarshal(v, &u); err != nil {
+				return errors.Wrap(err, "json unmarshal failed")
+			}
+			users = append(users, r.toUser(u))
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *UserRepository) getUser(b *bolt.Bucket, username string) (*user, error) {
 	j := b.Get([]byte(username))
 	if j == nil {
@@ -263,6 +282,13 @@ func (r *UserRepository) putUser(b *bolt.Bucket, u user) error {
 	}
 
 	return b.Put([]byte(u.Username), j)
+}
+
+func (r *UserRepository) toUser(u user) auth.User {
+	return auth.User{
+		Username:      u.Username,
+		Administrator: u.Administrator,
+	}
 }
 
 func bucketIsEmpty(b *bolt.Bucket) bool {

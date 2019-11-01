@@ -22,6 +22,7 @@ var appSet = wire.NewSet(
 	auth.NewLoginHandler,
 	auth.NewLogoutHandler,
 	auth.NewCheckAccessTokenHandler,
+	auth.NewListHandler,
 
 	wire.Struct(new(application.Commands), "*"),
 

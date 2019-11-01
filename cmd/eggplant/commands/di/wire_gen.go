@@ -33,11 +33,13 @@ func BuildService(lib *library.Library, trackStore *store.TrackStore, thumbnailS
 	loginHandler := auth2.NewLoginHandler(userRepository)
 	logoutHandler := auth2.NewLogoutHandler(userRepository)
 	checkAccessTokenHandler := auth2.NewCheckAccessTokenHandler(userRepository)
+	listHandler := auth2.NewListHandler(userRepository)
 	applicationAuth := application.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Login:            loginHandler,
 		Logout:           logoutHandler,
 		CheckAccessToken: checkAccessTokenHandler,
+		List:             listHandler,
 	}
 	commands := application.Commands{}
 	statsHandler := queries.NewStatsHandler(userRepository)
