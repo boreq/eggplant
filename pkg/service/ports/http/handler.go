@@ -12,10 +12,9 @@ import (
 	"github.com/boreq/eggplant/pkg/service/application"
 	"github.com/boreq/eggplant/pkg/service/application/auth"
 	"github.com/boreq/eggplant/pkg/service/ports/http/api"
-	_ "github.com/boreq/eggplant/statik"
+	"github.com/boreq/eggplant/pkg/service/ports/http/frontend"
 	"github.com/boreq/eggplant/store"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rakyll/statik/fs"
 )
 
 var isIdValid = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
@@ -65,11 +64,11 @@ func NewHandler(app *application.Application, lib *library.Library, trackStore *
 	h.router.POST("/api/auth/create-invitation", api.Wrap(h.createInvitation))
 
 	// Frontend
-	statikFS, err := fs.New()
+	ffs, err := frontend.NewFrontendFileSystem()
 	if err != nil {
 		return nil, err
 	}
-	h.router.NotFound = http.FileServer(newFrontendFileSystem(statikFS))
+	h.router.NotFound = http.FileServer(ffs)
 
 	return h, nil
 }
