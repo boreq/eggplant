@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/boreq/plum/logging"
+	"github.com/boreq/eggplant/logging"
 	"github.com/julienschmidt/httprouter"
 )
 

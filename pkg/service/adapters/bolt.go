@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/boreq/eggplant/errors"
+	"github.com/boreq/errors"
 	bolt "go.etcd.io/bbolt"
 )
 

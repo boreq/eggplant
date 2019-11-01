@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/boreq/eggplant/errors"
 	"github.com/boreq/eggplant/pkg/service/application/auth"
+	"github.com/boreq/errors"
 )
 
 const tokenLengthBytes = 256 / 8

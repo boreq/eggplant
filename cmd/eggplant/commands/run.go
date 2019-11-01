@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/wire"
-	"github.com/boreq/eggplant/errors"
+	"github.com/boreq/errors"
 	"github.com/boreq/guinea"
 )
 

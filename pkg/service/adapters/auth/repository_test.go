@@ -1,9 +1,9 @@
 package auth_test
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/boreq/eggplant/errors"
 	"github.com/boreq/eggplant/internal/fixture"
 	"github.com/boreq/eggplant/pkg/service/adapters/auth"
 	appAuth "github.com/boreq/eggplant/pkg/service/application/auth"

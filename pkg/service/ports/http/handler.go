@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/boreq/eggplant/errors"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/eggplant/pkg/service/adapters/music/library"
 	"github.com/boreq/eggplant/pkg/service/adapters/music/store"
@@ -14,6 +13,7 @@ import (
 	"github.com/boreq/eggplant/pkg/service/application/auth"
 	"github.com/boreq/eggplant/pkg/service/ports/http/api"
 	"github.com/boreq/eggplant/pkg/service/ports/http/frontend"
+	"github.com/boreq/errors"
 	"github.com/julienschmidt/httprouter"
 )
 

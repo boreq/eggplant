@@ -1,6 +1,6 @@
 package queries
 
-import "github.com/boreq/eggplant/errors"
+import "github.com/boreq/errors"
 
 type UserRepository interface {
 	// Count should return the number of users.
