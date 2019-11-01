@@ -28,7 +28,7 @@ type UserRepository interface {
 	CreateInvitation() (InvitationToken, error)
 
 	// Register should create a new user.
-	//Register(username, password string, invitation InvitationToken) error
+	Register(username, password string, token InvitationToken) error
 }
 
 var ErrUnauthorized = errors.New("unauthorized")

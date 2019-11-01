@@ -24,6 +24,7 @@ var appSet = wire.NewSet(
 	auth.NewCheckAccessTokenHandler,
 	auth.NewListHandler,
 	auth.NewCreateInvitationHandler,
+	auth.NewRegisterHandler,
 
 	wire.Struct(new(application.Commands), "*"),
 

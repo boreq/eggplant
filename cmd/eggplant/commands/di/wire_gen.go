@@ -30,6 +30,7 @@ func BuildService(lib *library.Library, trackStore *store.TrackStore, thumbnailS
 		return nil, err
 	}
 	registerInitialHandler := auth2.NewRegisterInitialHandler(userRepository)
+	registerHandler := auth2.NewRegisterHandler(userRepository)
 	loginHandler := auth2.NewLoginHandler(userRepository)
 	logoutHandler := auth2.NewLogoutHandler(userRepository)
 	checkAccessTokenHandler := auth2.NewCheckAccessTokenHandler(userRepository)
@@ -37,6 +38,7 @@ func BuildService(lib *library.Library, trackStore *store.TrackStore, thumbnailS
 	createInvitationHandler := auth2.NewCreateInvitationHandler(userRepository)
 	applicationAuth := application.Auth{
 		RegisterInitial:  registerInitialHandler,
+		Register:         registerHandler,
 		Login:            loginHandler,
 		Logout:           logoutHandler,
 		CheckAccessToken: checkAccessTokenHandler,

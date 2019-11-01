@@ -57,6 +57,7 @@ func NewHandler(app *application.Application, lib *library.Library, trackStore *
 	h.router.GET("/api/stats", api.Wrap(h.stats))
 
 	h.router.POST("/api/auth/register-initial", api.Wrap(h.registerInitial))
+	h.router.POST("/api/auth/register", api.Wrap(h.register))
 	h.router.POST("/api/auth/login", api.Wrap(h.login))
 	h.router.POST("/api/auth/logout", api.Wrap(h.logout))
 	h.router.GET("/api/auth", api.Wrap(h.getCurrentUser))
@@ -301,6 +302,45 @@ func (h *Handler) createInvitation(r *http.Request, ps httprouter.Params) (inter
 
 	return response, nil
 }
+
+type registerInput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Token    string `json:"token"`
+}
+
+func (h *Handler) register(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	u, err := h.getUser(r)
+	if err != nil {
+		h.log.Error("could not the user", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	if u != nil {
+		return nil, api.BadRequest
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var t registerInput
+	if err = decoder.Decode(&t); err != nil {
+		h.log.Warn("register decoding failed", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	cmd := auth.Register{
+		Username: t.Username,
+		Password: t.Password,
+		Token:    auth.InvitationToken(t.Token),
+	}
+
+	if err := h.app.Auth.Register.Execute(cmd); err != nil {
+		h.log.Error("could not list", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	return nil, nil
+}
+
 func (h *Handler) isAdmin(u *auth.User) bool {
 	return u != nil && u.Administrator
 }

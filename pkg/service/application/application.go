@@ -13,6 +13,7 @@ type Application struct {
 
 type Auth struct {
 	RegisterInitial  *auth.RegisterInitialHandler
+	Register         *auth.RegisterHandler
 	Login            *auth.LoginHandler
 	Logout           *auth.LogoutHandler
 	CheckAccessToken *auth.CheckAccessTokenHandler

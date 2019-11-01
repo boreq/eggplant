@@ -161,7 +161,7 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 	username, err := r.accessTokenGenerator.GetUsername(token)
 	if err != nil {
 		r.log.Warn("could not get the username", "err", err)
-		return auth.User{}, auth.ErrUnauthorized
+		return auth.User{}, errors.Wrap(auth.ErrUnauthorized, "could not get the username")
 	}
 
 	var foundUser user
@@ -175,7 +175,7 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 
 		if u == nil {
 			r.log.Warn("user does't exist", "username", username)
-			return auth.ErrUnauthorized
+			return errors.Wrap(auth.ErrUnauthorized, "invalid username")
 		}
 
 		for i := range u.Sessions {
@@ -186,7 +186,7 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 			}
 		}
 
-		return errors.New("invalid token")
+		return errors.Wrap(auth.ErrUnauthorized, "invalid token")
 	}); err != nil {
 		return auth.User{}, errors.Wrap(err, "transaction failed")
 	}
@@ -298,6 +298,53 @@ func (r *UserRepository) CreateInvitation() (auth.InvitationToken, error) {
 	}
 
 	return token, nil
+}
+
+func (r *UserRepository) Register(username, password string, token auth.InvitationToken) error {
+	passwordHash, err := r.passwordHasher.Hash(password)
+	if err != nil {
+		return errors.Wrap(err, "hashing the password failed")
+	}
+
+	u := user{
+		Username:      username,
+		Password:      passwordHash,
+		Administrator: false,
+	}
+
+	if err := r.db.Update(func(tx *bolt.Tx) error {
+		ib := tx.Bucket(r.invitationsBucket)
+		j := ib.Get([]byte(token))
+		if j == nil {
+			return errors.New("token does not exist")
+		}
+
+		i := invitation{}
+		if err := json.Unmarshal(j, &i); err != nil {
+			return errors.Wrap(err, "json unmarshal failed")
+		}
+
+		if err := ib.Delete([]byte(token)); err != nil {
+			return errors.Wrap(err, "could not remove the token")
+		}
+
+		ub := tx.Bucket(r.usersBucket)
+
+		foundUser, err := r.getUser(ub, username)
+		if err != nil {
+			return errors.Wrap(err, "could not get a user")
+		}
+
+		if foundUser != nil {
+			return errors.New("username taken")
+		}
+
+		return r.putUser(ub, u)
+	}); err != nil {
+		return errors.Wrap(err, "transaction failed")
+	}
+
+	return nil
 }
 
 func (r *UserRepository) getUser(b *bolt.Bucket, username string) (*user, error) {
