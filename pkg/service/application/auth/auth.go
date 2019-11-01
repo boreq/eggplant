@@ -8,7 +8,8 @@ type UserRepository interface {
 	RegisterInitial(username, password string) error
 
 	// Login should return an access token which can later be used to
-	// retrieve a user by calling CheckAccessToken.
+	// retrieve a user by calling CheckAccessToken. If the credentials are
+	// invalid then ErrUnauthorized is returned.
 	Login(username, password string) (AccessToken, error)
 
 	// CheckAccessToken should check whether the access token is valid and

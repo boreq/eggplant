@@ -97,7 +97,7 @@ func (r *UserRepository) RegisterInitial(username, password string) error {
 
 func (r *UserRepository) Login(username, password string) (auth.AccessToken, error) {
 	if err := r.validate(username, password); err != nil {
-		return "", errors.Wrap(err, "invalid parameters")
+		return "", auth.ErrUnauthorized
 	}
 
 	var token auth.AccessToken
@@ -106,7 +106,7 @@ func (r *UserRepository) Login(username, password string) (auth.AccessToken, err
 		b := tx.Bucket(r.bucket)
 		j := b.Get([]byte(username))
 		if j == nil {
-			return errors.New("user does not exist")
+			return auth.ErrUnauthorized
 		}
 
 		var u user
@@ -115,7 +115,7 @@ func (r *UserRepository) Login(username, password string) (auth.AccessToken, err
 		}
 
 		if err := r.passwordHasher.Compare(u.Password, password); err != nil {
-			return errors.Wrap(err, "invalid credentials")
+			return auth.ErrUnauthorized
 		}
 
 		t, err := r.accessTokenGenerator.Generate(username)

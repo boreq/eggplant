@@ -200,6 +200,9 @@ func (h *Handler) login(r *http.Request, ps httprouter.Params) (interface{}, api
 
 	token, err := h.app.Auth.Login.Execute(cmd)
 	if err != nil {
+		if errors.Is(err, auth.ErrUnauthorized) {
+			return nil, api.Forbidden
+		}
 		h.log.Error("initialize command failed", "err", err)
 		return nil, api.InternalServerError
 	}
