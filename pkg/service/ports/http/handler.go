@@ -61,6 +61,7 @@ func NewHandler(app *application.Application, lib *library.Library, trackStore *
 	h.router.POST("/api/auth/logout", api.Wrap(h.logout))
 	h.router.GET("/api/auth", api.Wrap(h.getCurrentUser))
 	h.router.GET("/api/auth/users", api.Wrap(h.getUsers))
+	h.router.POST("/api/auth/create-invitation", api.Wrap(h.createInvitation))
 
 	// Frontend
 	statikFS, err := fs.New()
@@ -273,6 +274,33 @@ func (h *Handler) getUsers(r *http.Request, ps httprouter.Params) (interface{}, 
 	return users, nil
 }
 
+type createInvitationResponse struct {
+	Token string `json:"token"`
+}
+
+func (h *Handler) createInvitation(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	u, err := h.getUser(r)
+	if err != nil {
+		h.log.Error("could not the user", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	if !h.isAdmin(u) {
+		return nil, api.Unauthorized
+	}
+
+	token, err := h.app.Auth.CreateInvitation.Execute()
+	if err != nil {
+		h.log.Error("could not list", "err", err)
+		return nil, api.InternalServerError
+	}
+
+	response := createInvitationResponse{
+		Token: string(token),
+	}
+
+	return response, nil
+}
 func (h *Handler) isAdmin(u *auth.User) bool {
 	return u != nil && u.Administrator
 }

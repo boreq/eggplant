@@ -22,11 +22,20 @@ type UserRepository interface {
 
 	// List should return a list of all users.
 	List() ([]User, error)
+
+	// CreateInvitation should return a token which can be used for
+	// registration.
+	CreateInvitation() (InvitationToken, error)
+
+	// Register should create a new user.
+	//Register(username, password string, invitation InvitationToken) error
 }
 
 var ErrUnauthorized = errors.New("unauthorized")
 
 type AccessToken string
+
+type InvitationToken string
 
 type User struct {
 	Username      string `json:"username"`

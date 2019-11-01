@@ -29,6 +29,11 @@ type user struct {
 	Sessions      []session    `json:"sessions"`
 }
 
+type invitation struct {
+	Token   auth.InvitationToken `json:"token"`
+	Created time.Time            `json:"created"`
+}
+
 type session struct {
 	Token    auth.AccessToken `json:"token"`
 	LastSeen time.Time        `json:"lastSeen"`
@@ -38,7 +43,8 @@ type UserRepository struct {
 	db                   *bolt.DB
 	passwordHasher       PasswordHasher
 	accessTokenGenerator AccessTokenGenerator
-	bucket               []byte
+	usersBucket          []byte
+	invitationsBucket    []byte
 	log                  logging.Logger
 }
 
@@ -47,11 +53,15 @@ func NewUserRepository(
 	passwordHasher PasswordHasher,
 	accessTokenGenerator AccessTokenGenerator,
 ) (*UserRepository, error) {
-	bucket := []byte("users")
+	usersBucket := []byte("users")
+	invitationsBucket := []byte("invitations")
 
 	if err := db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(bucket); err != nil {
-			return errors.Wrap(err, "could not create a bucket")
+		if _, err := tx.CreateBucketIfNotExists(usersBucket); err != nil {
+			return errors.Wrap(err, "could not create a users bucket")
+		}
+		if _, err := tx.CreateBucketIfNotExists(invitationsBucket); err != nil {
+			return errors.Wrap(err, "could not create an invitations bucket")
 		}
 		return nil
 	}); err != nil {
@@ -62,7 +72,8 @@ func NewUserRepository(
 		passwordHasher:       passwordHasher,
 		accessTokenGenerator: accessTokenGenerator,
 		db:                   db,
-		bucket:               bucket,
+		usersBucket:          usersBucket,
+		invitationsBucket:    invitationsBucket,
 		log:                  logging.New("userRepository"),
 	}, nil
 }
@@ -89,7 +100,7 @@ func (r *UserRepository) RegisterInitial(username, password string) error {
 	}
 
 	return r.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.bucket)
+		b := tx.Bucket(r.usersBucket)
 		if !bucketIsEmpty(b) {
 			return errors.New("there are existing users")
 		}
@@ -105,7 +116,7 @@ func (r *UserRepository) Login(username, password string) (auth.AccessToken, err
 	var token auth.AccessToken
 
 	if err := r.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.bucket)
+		b := tx.Bucket(r.usersBucket)
 		j := b.Get([]byte(username))
 		if j == nil {
 			return auth.ErrUnauthorized
@@ -155,7 +166,7 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 
 	var foundUser user
 	if err := r.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.bucket)
+		b := tx.Bucket(r.usersBucket)
 
 		u, err := r.getUser(b, username)
 		if err != nil {
@@ -190,7 +201,7 @@ func (r *UserRepository) Logout(token auth.AccessToken) error {
 	}
 
 	if err := r.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.bucket)
+		b := tx.Bucket(r.usersBucket)
 
 		u, err := r.getUser(b, username)
 		if err != nil {
@@ -231,7 +242,7 @@ func (r *UserRepository) validate(username, password string) error {
 func (r *UserRepository) Count() (int, error) {
 	var count int
 	if err := r.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.bucket)
+		b := tx.Bucket(r.usersBucket)
 		count = b.Stats().KeyN
 		return nil
 	}); err != nil {
@@ -243,7 +254,7 @@ func (r *UserRepository) Count() (int, error) {
 func (r *UserRepository) List() ([]auth.User, error) {
 	var users []auth.User
 	if err := r.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.bucket)
+		b := tx.Bucket(r.usersBucket)
 		c := b.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
@@ -259,6 +270,34 @@ func (r *UserRepository) List() ([]auth.User, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func (r *UserRepository) CreateInvitation() (auth.InvitationToken, error) {
+	s, err := generateCryptoString(256 / 8)
+	if err != nil {
+		return "", errors.Wrap(err, "could not create a token")
+	}
+
+	token := auth.InvitationToken(s)
+
+	i := invitation{
+		Token:   token,
+		Created: time.Now(),
+	}
+
+	j, err := json.Marshal(i)
+	if err != nil {
+		return "", errors.Wrap(err, "marshaling to json failed")
+	}
+
+	if err := r.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(r.invitationsBucket)
+		return b.Put([]byte(token), j)
+	}); err != nil {
+		return "", errors.Wrap(err, "transaction failed")
+	}
+
+	return token, nil
 }
 
 func (r *UserRepository) getUser(b *bolt.Bucket, username string) (*user, error) {
