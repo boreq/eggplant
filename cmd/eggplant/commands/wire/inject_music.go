@@ -4,6 +4,7 @@ import (
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
 	"github.com/boreq/errors"
 	"github.com/google/wire"
@@ -14,6 +15,9 @@ var musicSet = wire.NewSet(
 	newLibrary,
 	newTrackStore,
 	newThumbnailStore,
+
+	wire.Bind(new(music.TrackStore), new(*store.TrackStore)),
+	wire.Bind(new(music.ThumbnailStore), new(*store.Store)),
 )
 
 func newLibrary(trackStore *store.TrackStore, thumbnailStore *store.Store, conf *config.Config) (*library.Library, error) {

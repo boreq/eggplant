@@ -5,7 +5,6 @@ package store
 import (
 	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"os"
 	"path"
 	"sync"
@@ -87,8 +86,8 @@ func (s *Store) SetItems(items []Item) {
 	s.ch <- items
 }
 
-func (s *Store) ServeFile(w http.ResponseWriter, r *http.Request, id string) {
-	http.ServeFile(w, r, s.converter.OutputFile(id))
+func (s *Store) GetFilePath(id string) (string, error) {
+	return s.converter.OutputFile(id), nil
 }
 
 func (s *Store) receive() {

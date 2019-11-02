@@ -7,6 +7,7 @@ import (
 	authAdapters "github.com/boreq/eggplant/adapters/auth"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
 	"github.com/google/wire"
@@ -26,7 +27,9 @@ var appSet = wire.NewSet(
 	auth.NewCreateInvitationHandler,
 	auth.NewRegisterHandler,
 
-	wire.Struct(new(application.Commands), "*"),
+	wire.Struct(new(application.Music), "*"),
+	music.NewTrackHandler,
+	music.NewThumbnailHandler,
 
 	wire.Struct(new(application.Queries), "*"),
 	queries.NewStatsHandler,

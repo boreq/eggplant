@@ -2,13 +2,14 @@ package application
 
 import (
 	"github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 )
 
 type Application struct {
-	Auth     Auth
-	Commands Commands
-	Queries  Queries
+	Auth    Auth
+	Music   Music
+	Queries Queries
 }
 
 type Auth struct {
@@ -21,7 +22,9 @@ type Auth struct {
 	CreateInvitation *auth.CreateInvitationHandler
 }
 
-type Commands struct {
+type Music struct {
+	Thumbnail *music.ThumbnailHandler
+	Track     *music.TrackHandler
 }
 
 type Queries struct {

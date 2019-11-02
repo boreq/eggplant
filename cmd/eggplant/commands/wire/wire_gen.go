@@ -9,6 +9,7 @@ import (
 	"github.com/boreq/eggplant/adapters/auth"
 	"github.com/boreq/eggplant/application"
 	auth2 "github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
 	"github.com/boreq/eggplant/cmd/eggplant/commands/service"
@@ -44,23 +45,28 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		List:             listHandler,
 		CreateInvitation: createInvitationHandler,
 	}
-	commands := application.Commands{}
+	store, err := newThumbnailStore(conf)
+	if err != nil {
+		return nil, err
+	}
+	thumbnailHandler := music.NewThumbnailHandler(store)
+	trackStore, err := newTrackStore(conf)
+	if err != nil {
+		return nil, err
+	}
+	trackHandler := music.NewTrackHandler(trackStore)
+	applicationMusic := application.Music{
+		Thumbnail: thumbnailHandler,
+		Track:     trackHandler,
+	}
 	statsHandler := queries.NewStatsHandler(userRepository)
 	applicationQueries := application.Queries{
 		Stats: statsHandler,
 	}
 	applicationApplication := &application.Application{
-		Auth:     applicationAuth,
-		Commands: commands,
-		Queries:  applicationQueries,
-	}
-	trackStore, err := newTrackStore(conf)
-	if err != nil {
-		return nil, err
-	}
-	store, err := newThumbnailStore(conf)
-	if err != nil {
-		return nil, err
+		Auth:    applicationAuth,
+		Music:   applicationMusic,
+		Queries: applicationQueries,
 	}
 	library, err := newLibrary(trackStore, store, conf)
 	if err != nil {

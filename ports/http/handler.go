@@ -103,23 +103,39 @@ func (h *Handler) browse(r *http.Request, ps httprouter.Params) (interface{}, ap
 func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
 	if !isIdValid(id) {
+		h.log.Warn("invalid track id", "id", id)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	p, err := h.app.Music.Track.Execute(id)
+	if err != nil {
+		h.log.Error("track error", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Add("Accept-Ranges", "bytes")
-	h.trackStore.ServeFile(w, r, id)
+	http.ServeFile(w, r, p)
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
 	if !isIdValid(id) {
+		h.log.Warn("invalid thumbnail id", "id", id)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	p, err := h.app.Music.Track.Execute(id)
+	if err != nil {
+		h.log.Error("track error", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Add("Accept-Ranges", "bytes")
-	h.thumbnailStore.ServeFile(w, r, id)
+	http.ServeFile(w, r, p)
 }
 
 func (h *Handler) stats(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
