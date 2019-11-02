@@ -65,7 +65,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		Track:     trackHandler,
 		Browse:    browseHandler,
 	}
-	statsHandler := queries.NewStatsHandler(userRepository)
+	statsHandler := queries.NewStatsHandler(userRepository, trackStore, store)
 	applicationQueries := application.Queries{
 		Stats: statsHandler,
 	}
@@ -74,7 +74,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		Music:   applicationMusic,
 		Queries: applicationQueries,
 	}
-	handler, err := http.NewHandler(applicationApplication, trackStore, store)
+	handler, err := http.NewHandler(applicationApplication)
 	if err != nil {
 		return nil, err
 	}

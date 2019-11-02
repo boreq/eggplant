@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 )
@@ -29,11 +30,6 @@ const errorDelay = 10 * time.Second
 // for the store to start a cleanup process. This is done to make sure that the
 // cleanups don't occur too often.
 const cleanupDelay = 60 * time.Second
-
-type Stats struct {
-	AllItems       int `json:"allItems"`
-	ConvertedItems int `json:"convertedItems"`
-}
 
 type Item struct {
 	Id   string
@@ -66,16 +62,16 @@ type Store struct {
 	log         logging.Logger
 }
 
-func (s *Store) GetStats() (Stats, error) {
+func (s *Store) GetStats() (queries.StoreStats, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	converted, err := s.countConvertedItems()
 	if err != nil {
-		return Stats{}, errors.Wrap(err, "could not count converted items")
+		return queries.StoreStats{}, errors.Wrap(err, "could not count converted items")
 	}
 
-	stats := Stats{
+	stats := queries.StoreStats{
 		AllItems:       len(s.items),
 		ConvertedItems: converted,
 	}

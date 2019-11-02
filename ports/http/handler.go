@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
@@ -19,32 +18,17 @@ import (
 
 var isIdValid = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
 
-type Stats struct {
-	Conversion ConversionStats `json:"conversion"`
-	Users      int             `json:"users"`
-}
-
-type ConversionStats struct {
-	Thumbnails store.Stats `json:"thumbnails"`
-	Tracks     store.Stats `json:"tracks"`
-}
-
 type Handler struct {
-	app            *application.Application
-	trackStore     *store.TrackStore
-	thumbnailStore *store.Store
-
+	app    *application.Application
 	router *httprouter.Router
 	log    logging.Logger
 }
 
-func NewHandler(app *application.Application, trackStore *store.TrackStore, thumbnailStore *store.Store) (*Handler, error) {
+func NewHandler(app *application.Application) (*Handler, error) {
 	h := &Handler{
-		app:            app,
-		trackStore:     trackStore,
-		thumbnailStore: thumbnailStore,
-		router:         httprouter.New(),
-		log:            logging.New("ports/http.Handler"),
+		app:    app,
+		router: httprouter.New(),
+		log:    logging.New("ports/http.Handler"),
 	}
 
 	// API
@@ -137,31 +121,12 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 }
 
 func (h *Handler) stats(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	thumbnailStats, err := h.thumbnailStore.GetStats()
-	if err != nil {
-		h.log.Error("thumbnail stats error", "err", err)
-		return nil, api.InternalServerError
-	}
-
-	trackStats, err := h.trackStore.GetStats()
-	if err != nil {
-		h.log.Error("track stats error", "err", err)
-		return nil, api.InternalServerError
-	}
-
-	st, err := h.app.Queries.Stats.Execute()
+	stats, err := h.app.Queries.Stats.Execute()
 	if err != nil {
 		h.log.Error("stats query error", "err", err)
 		return nil, api.InternalServerError
 	}
 
-	stats := Stats{
-		Conversion: ConversionStats{
-			Thumbnails: thumbnailStats,
-			Tracks:     trackStats,
-		},
-		Users: st.Users,
-	}
 	return stats, nil
 }
 
