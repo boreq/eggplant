@@ -2,6 +2,11 @@ package music
 
 import "github.com/boreq/errors"
 
+type Browse struct {
+	Ids        []AlbumId
+	PublicOnly bool
+}
+
 type BrowseHandler struct {
 	library Library
 }
@@ -12,8 +17,8 @@ func NewBrowseHandler(library Library) *BrowseHandler {
 	}
 }
 
-func (h *BrowseHandler) Execute(ids []AlbumId) (Album, error) {
-	album, err := h.library.Browse(ids)
+func (h *BrowseHandler) Execute(cmd Browse) (Album, error) {
+	album, err := h.library.Browse(cmd.Ids, cmd.PublicOnly)
 	if err != nil {
 		return Album{}, errors.Wrap(err, "could not browse the album")
 	}

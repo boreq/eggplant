@@ -7,6 +7,7 @@ package wire
 
 import (
 	"github.com/boreq/eggplant/adapters/auth"
+	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/application"
 	auth2 "github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
@@ -55,11 +56,13 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		return nil, err
 	}
 	trackHandler := music.NewTrackHandler(trackStore)
-	library, err := newLibrary(trackStore, store, conf)
+	delimiterAccessLoader := library.NewDelimiterAccessLoader()
+	idGenerator := library.NewIdGenerator()
+	libraryLibrary, err := newLibrary(delimiterAccessLoader, trackStore, store, idGenerator, conf)
 	if err != nil {
 		return nil, err
 	}
-	browseHandler := music.NewBrowseHandler(library)
+	browseHandler := music.NewBrowseHandler(libraryLibrary)
 	applicationMusic := application.Music{
 		Thumbnail: thumbnailHandler,
 		Track:     trackHandler,

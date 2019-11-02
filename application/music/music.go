@@ -1,5 +1,7 @@
 package music
 
+import "errors"
+
 type ThumbnailStore interface {
 	GetFilePath(id string) (string, error)
 }
@@ -9,7 +11,7 @@ type TrackStore interface {
 }
 
 type Library interface {
-	Browse(ids []AlbumId) (Album, error)
+	Browse(ids []AlbumId, publicOnly bool) (Album, error)
 }
 
 type Thumbnail struct {
@@ -29,14 +31,19 @@ type Album struct {
 	Thumbnail *Thumbnail `json:"thumbnail,omitempty"`
 	Access    Access     `json:"access,omitempty"`
 
+	// Parents list the parents of this album starting from the one
+	// furthest away from this album. The list of parent albums includes
+	// this particular album. Only fields Id and TItle are filled in.
 	Parents []Album `json:"parents,omitempty"`
 	Albums  []Album `json:"albums,omitempty"`
 	Tracks  []Track `json:"tracks,omitempty"`
 }
 
 type Access struct {
-	NoPublic bool `json:"noPublic"`
+	Public bool `json:"public"`
 }
+
+var ErrAccessDenied = errors.New("access denied")
 
 type AlbumId string
 

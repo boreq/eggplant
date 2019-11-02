@@ -60,6 +60,12 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) browse(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	u, err := h.getUser(r)
+	if err != nil {
+		h.log.Error("could not get the user", "err", err)
+		return nil, api.InternalServerError
+	}
+
 	path := ps.ByName("path")
 	path = strings.Trim(path, "/")
 
@@ -73,7 +79,12 @@ func (h *Handler) browse(r *http.Request, ps httprouter.Params) (interface{}, ap
 		ids = append(ids, music.AlbumId(name))
 	}
 
-	album, err := h.app.Music.Browse.Execute(ids)
+	cmd := music.Browse{
+		Ids:        ids,
+		PublicOnly: u == nil,
+	}
+
+	album, err := h.app.Music.Browse.Execute(cmd)
 	if err != nil {
 		h.log.Error("browse error", "err", err)
 		return nil, api.InternalServerError
@@ -109,7 +120,7 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	p, err := h.app.Music.Track.Execute(id)
+	p, err := h.app.Music.Thumbnail.Execute(id)
 	if err != nil {
 		h.log.Error("track error", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)

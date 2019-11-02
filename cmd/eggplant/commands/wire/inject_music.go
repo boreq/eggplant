@@ -16,7 +16,12 @@ var musicSet = wire.NewSet(
 	newLibrary,
 	newTrackStore,
 	newThumbnailStore,
+	library.NewDelimiterAccessLoader,
+	library.NewIdGenerator,
 
+	wire.Bind(new(library.AccessLoader), new(*library.DelimiterAccessLoader)),
+	wire.Bind(new(library.TrackStore), new(*store.TrackStore)),
+	wire.Bind(new(library.ThumbnailStore), new(*store.Store)),
 	wire.Bind(new(music.TrackStore), new(*store.TrackStore)),
 	wire.Bind(new(music.ThumbnailStore), new(*store.Store)),
 	wire.Bind(new(music.Library), new(*library.Library)),
@@ -24,7 +29,13 @@ var musicSet = wire.NewSet(
 	wire.Bind(new(queries.ThumbnailStore), new(*store.Store)),
 )
 
-func newLibrary(trackStore *store.TrackStore, thumbnailStore *store.Store, conf *config.Config) (*library.Library, error) {
+func newLibrary(
+	accessLoader library.AccessLoader,
+	trackStore library.TrackStore,
+	thumbnailStore library.ThumbnailStore,
+	idGenerator library.IdGenerator,
+	conf *config.Config,
+) (*library.Library, error) {
 	scan, err := scanner.New(conf.MusicDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a scanner")
@@ -35,7 +46,7 @@ func newLibrary(trackStore *store.TrackStore, thumbnailStore *store.Store, conf 
 		return nil, errors.Wrap(err, "could not start a scanner")
 	}
 
-	lib, err := library.New(ch, thumbnailStore, trackStore)
+	lib, err := library.New(ch, trackStore, thumbnailStore, accessLoader, idGenerator)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a library")
 	}
