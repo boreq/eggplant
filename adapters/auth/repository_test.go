@@ -197,6 +197,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 
 	err = r.Register(username, password, token)
 	require.Error(t, err)
+	require.True(t, errors.Is(err, appAuth.ErrUsernameTaken))
 	require.EqualError(t, err, "transaction failed: username taken")
 }
 

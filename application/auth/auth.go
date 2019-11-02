@@ -32,6 +32,7 @@ type UserRepository interface {
 }
 
 var ErrUnauthorized = errors.New("unauthorized")
+var ErrUsernameTaken = errors.New("username taken")
 
 type AccessToken string
 

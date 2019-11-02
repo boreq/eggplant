@@ -336,7 +336,7 @@ func (r *UserRepository) Register(username, password string, token auth.Invitati
 		}
 
 		if foundUser != nil {
-			return errors.New("username taken")
+			return auth.ErrUsernameTaken
 		}
 
 		return r.putUser(ub, u)

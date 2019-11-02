@@ -17,6 +17,7 @@ var BadRequest = NewError(400, "Bad request.")
 var NotFound = NewError(404, "Not found.")
 var Unauthorized = NewError(401, "Unauthorized.")
 var Forbidden = NewError(403, "Forbidden.")
+var Conflict = NewError(409, "Conflict.")
 
 type Error interface {
 	GetCode() int

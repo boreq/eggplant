@@ -333,6 +333,9 @@ func (h *Handler) register(r *http.Request, ps httprouter.Params) (interface{}, 
 	}
 
 	if err := h.app.Auth.Register.Execute(cmd); err != nil {
+		if errors.Is(err, auth.ErrUsernameTaken) {
+			return nil, api.Conflict
+		}
 		h.log.Error("could not list", "err", err)
 		return nil, api.InternalServerError
 	}
