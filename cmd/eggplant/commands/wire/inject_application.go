@@ -30,6 +30,7 @@ var appSet = wire.NewSet(
 	wire.Struct(new(application.Music), "*"),
 	music.NewTrackHandler,
 	music.NewThumbnailHandler,
+	music.NewBrowseHandler,
 
 	wire.Struct(new(application.Queries), "*"),
 	queries.NewStatsHandler,

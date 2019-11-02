@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/eggplant/ports/http/api"
 	"github.com/boreq/eggplant/ports/http/frontend"
@@ -31,7 +31,6 @@ type ConversionStats struct {
 
 type Handler struct {
 	app            *application.Application
-	lib            *library.Library
 	trackStore     *store.TrackStore
 	thumbnailStore *store.Store
 
@@ -39,10 +38,9 @@ type Handler struct {
 	log    logging.Logger
 }
 
-func NewHandler(app *application.Application, lib *library.Library, trackStore *store.TrackStore, thumbnailStore *store.Store) (*Handler, error) {
+func NewHandler(app *application.Application, trackStore *store.TrackStore, thumbnailStore *store.Store) (*Handler, error) {
 	h := &Handler{
 		app:            app,
-		lib:            lib,
 		trackStore:     trackStore,
 		thumbnailStore: thumbnailStore,
 		router:         httprouter.New(),
@@ -86,18 +84,18 @@ func (h *Handler) browse(r *http.Request, ps httprouter.Params) (interface{}, ap
 		dirs = strings.Split(path, "/")
 	}
 
-	var ids []library.AlbumId
+	var ids []music.AlbumId
 	for _, name := range dirs {
-		ids = append(ids, library.AlbumId(name))
+		ids = append(ids, music.AlbumId(name))
 	}
 
-	d, err := h.lib.Browse(ids)
+	album, err := h.app.Music.Browse.Execute(ids)
 	if err != nil {
 		h.log.Error("browse error", "err", err)
 		return nil, api.InternalServerError
 	}
 
-	return d, nil
+	return album, nil
 }
 
 func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

@@ -15,60 +15,17 @@ import (
 
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 )
 
 const rootAlbumTitle = "Eggplant"
 
-type AlbumId string
-
-func (id AlbumId) String() string {
-	return string(id)
-}
-
-type TrackId string
-
-func (id TrackId) String() string {
-	return string(id)
-}
-
-type FileId string
-
-func (id FileId) String() string {
-	return string(id)
-}
-
-type Thumbnail struct {
-	FileId FileId `json:"fileId,omitempty"`
-}
-
-type Track struct {
-	Id       TrackId `json:"id,omitempty"`
-	FileId   FileId  `json:"fileId,omitempty"`
-	Title    string  `json:"title,omitempty"`
-	Duration float64 `json:"duration,omitempty"`
-}
-
-type Album struct {
-	Id        AlbumId    `json:"id,omitempty"`
-	Title     string     `json:"title,omitempty"`
-	Thumbnail *Thumbnail `json:"thumbnail,omitempty"`
-	Access    Access     `json:"access,omitempty"`
-
-	Parents []Album `json:"parents,omitempty"`
-	Albums  []Album `json:"albums,omitempty"`
-	Tracks  []Track `json:"tracks,omitempty"`
-}
-
-type Access struct {
-	NoPublic bool `json:"noPublic"`
-}
-
 type track struct {
 	title  string
 	path   string
-	fileId FileId
+	fileId music.FileId
 }
 
 func newTrack(title string, path string) (track, error) {
@@ -87,17 +44,17 @@ func newTrack(title string, path string) (track, error) {
 type album struct {
 	title         string
 	thumbnailPath string
-	thumbnailId   FileId
-	access        Access
-	albums        map[AlbumId]*album
-	tracks        map[TrackId]track
+	thumbnailId   music.FileId
+	access        music.Access
+	albums        map[music.AlbumId]*album
+	tracks        map[music.TrackId]track
 }
 
 func newAlbum(title string) *album {
 	return &album{
 		title:  title,
-		albums: make(map[AlbumId]*album),
-		tracks: make(map[TrackId]track),
+		albums: make(map[music.AlbumId]*album),
+		tracks: make(map[music.TrackId]track),
 	}
 }
 
@@ -126,21 +83,21 @@ func New(ch <-chan scanner.Album, thumbnailStore *store.Store, trackStore *store
 
 // Browse lists the specified album. Provide a zero-length slice to list the
 // root album.
-func (l *Library) Browse(ids []AlbumId) (Album, error) {
+func (l *Library) Browse(ids []music.AlbumId) (music.Album, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	album, err := l.getAlbum(ids)
 	if err != nil {
-		return Album{}, errors.Wrap(err, "failed to get an album")
+		return music.Album{}, errors.Wrap(err, "failed to get an album")
 	}
 
 	parents, err := l.getParents(ids)
 	if err != nil {
-		return Album{}, errors.Wrap(err, "failed to get parents")
+		return music.Album{}, errors.Wrap(err, "failed to get parents")
 	}
 
-	listed := Album{
+	listed := music.Album{
 		Title:   album.title,
 		Parents: parents,
 		Access:  album.access,
@@ -151,19 +108,19 @@ func (l *Library) Browse(ids []AlbumId) (Album, error) {
 	}
 
 	if album.thumbnailId != "" {
-		listed.Thumbnail = &Thumbnail{
+		listed.Thumbnail = &music.Thumbnail{
 			FileId: album.thumbnailId,
 		}
 	}
 
 	for id, album := range album.albums {
-		d := Album{
+		d := music.Album{
 			Id:     id,
 			Title:  album.title,
 			Access: album.access,
 		}
 		if album.thumbnailId != "" {
-			d.Thumbnail = &Thumbnail{
+			d.Thumbnail = &music.Thumbnail{
 				FileId: album.thumbnailId,
 			}
 		}
@@ -172,7 +129,7 @@ func (l *Library) Browse(ids []AlbumId) (Album, error) {
 	sort.Slice(listed.Albums, func(i, j int) bool { return listed.Albums[i].Title < listed.Albums[j].Title })
 
 	for id, track := range album.tracks {
-		t := Track{
+		t := music.Track{
 			Id:       id,
 			FileId:   track.fileId,
 			Title:    track.title,
@@ -185,15 +142,15 @@ func (l *Library) Browse(ids []AlbumId) (Album, error) {
 	return listed, nil
 }
 
-func (l *Library) getParents(ids []AlbumId) ([]Album, error) {
-	parents := make([]Album, 0)
+func (l *Library) getParents(ids []music.AlbumId) ([]music.Album, error) {
+	parents := make([]music.Album, 0)
 	for i := 0; i < len(ids); i++ {
 		parentIds := ids[:i+1]
 		dir, err := l.getAlbum(parentIds)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get a parent album")
 		}
-		parent := Album{
+		parent := music.Album{
 			Id:    parentIds[len(parentIds)-1],
 			Title: dir.title,
 		}
@@ -314,7 +271,7 @@ func (l *Library) getTracks(tracks *[]store.Item, current *album) error {
 	return nil
 }
 
-func (l *Library) getAlbum(ids []AlbumId) (*album, error) {
+func (l *Library) getAlbum(ids []music.AlbumId) (*album, error) {
 	var current *album = l.root
 	for _, id := range ids {
 		child, ok := current.albums[id]
@@ -326,14 +283,14 @@ func (l *Library) getAlbum(ids []AlbumId) (*album, error) {
 	return current, nil
 }
 
-func (l *Library) loadAccess(file string) (Access, error) {
+func (l *Library) loadAccess(file string) (music.Access, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return Access{}, errors.Wrap(err, "could not open the file")
+		return music.Access{}, errors.Wrap(err, "could not open the file")
 	}
 	defer f.Close()
 
-	acc := Access{}
+	acc := music.Access{}
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -341,18 +298,18 @@ func (l *Library) loadAccess(file string) (Access, error) {
 		case "no-public":
 			acc.NoPublic = true
 		default:
-			return Access{}, fmt.Errorf("unrecognized line: %s", scanner.Text())
+			return music.Access{}, fmt.Errorf("unrecognized line: %s", scanner.Text())
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return Access{}, errors.Wrap(err, "scanner error")
+		return music.Access{}, errors.Wrap(err, "scanner error")
 	}
 
 	return acc, nil
 }
 
-func toTrack(title string, scannerTrack scanner.Track) (TrackId, track, error) {
+func toTrack(title string, scannerTrack scanner.Track) (music.TrackId, track, error) {
 	id, err := newTrackId(title)
 	if err != nil {
 		return "", track{}, errors.Wrap(err, "could not create a track id")
@@ -364,7 +321,7 @@ func toTrack(title string, scannerTrack scanner.Track) (TrackId, track, error) {
 	return id, t, nil
 }
 
-func toAlbum(title string, scannerAlbum scanner.Album) (AlbumId, *album, error) {
+func toAlbum(title string, scannerAlbum scanner.Album) (music.AlbumId, *album, error) {
 	id, err := newAlbumId(title)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "could not create an album id")
@@ -373,23 +330,23 @@ func toAlbum(title string, scannerAlbum scanner.Album) (AlbumId, *album, error) 
 	return id, album, nil
 }
 
-func newAlbumId(title string) (AlbumId, error) {
+func newAlbumId(title string) (music.AlbumId, error) {
 	h, err := shortHash(title)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
-	return AlbumId(h), nil
+	return music.AlbumId(h), nil
 }
 
-func newTrackId(title string) (TrackId, error) {
+func newTrackId(title string) (music.TrackId, error) {
 	h, err := shortHash(title)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
-	return TrackId(h), nil
+	return music.TrackId(h), nil
 }
 
-func newFileId(path string) (FileId, error) {
+func newFileId(path string) (music.FileId, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return "", errors.Wrap(err, "os stat failed")
@@ -399,7 +356,7 @@ func newFileId(path string) (FileId, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
-	return FileId(h), nil
+	return music.FileId(h), nil
 }
 
 func shortHash(s string) (string, error) {

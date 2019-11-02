@@ -55,9 +55,15 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		return nil, err
 	}
 	trackHandler := music.NewTrackHandler(trackStore)
+	library, err := newLibrary(trackStore, store, conf)
+	if err != nil {
+		return nil, err
+	}
+	browseHandler := music.NewBrowseHandler(library)
 	applicationMusic := application.Music{
 		Thumbnail: thumbnailHandler,
 		Track:     trackHandler,
+		Browse:    browseHandler,
 	}
 	statsHandler := queries.NewStatsHandler(userRepository)
 	applicationQueries := application.Queries{
@@ -68,11 +74,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		Music:   applicationMusic,
 		Queries: applicationQueries,
 	}
-	library, err := newLibrary(trackStore, store, conf)
-	if err != nil {
-		return nil, err
-	}
-	handler, err := http.NewHandler(applicationApplication, library, trackStore, store)
+	handler, err := http.NewHandler(applicationApplication, trackStore, store)
 	if err != nil {
 		return nil, err
 	}

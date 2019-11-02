@@ -25,6 +25,7 @@ type Auth struct {
 type Music struct {
 	Thumbnail *music.ThumbnailHandler
 	Track     *music.TrackHandler
+	Browse    *music.BrowseHandler
 }
 
 type Queries struct {

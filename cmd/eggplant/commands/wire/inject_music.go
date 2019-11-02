@@ -18,6 +18,7 @@ var musicSet = wire.NewSet(
 
 	wire.Bind(new(music.TrackStore), new(*store.TrackStore)),
 	wire.Bind(new(music.ThumbnailStore), new(*store.Store)),
+	wire.Bind(new(music.Library), new(*library.Library)),
 )
 
 func newLibrary(trackStore *store.TrackStore, thumbnailStore *store.Store, conf *config.Config) (*library.Library, error) {
