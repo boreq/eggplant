@@ -330,6 +330,52 @@ func TestLibrary(t *testing.T) {
 			ExpectedError: nil,
 		},
 		{
+			Name: "list_root_only_public",
+			Access: map[string]music.Access{
+				"public": {
+					Public: true,
+				},
+				"no-public": {
+					Public: false,
+				},
+			},
+			Album: &scanner.Album{
+				Thumbnail: "",
+				Albums: map[string]*scanner.Album{
+					"a1": &scanner.Album{
+						AccessFile: "public",
+					},
+					"a2": &scanner.Album{},
+				},
+				Tracks: map[string]scanner.Track{
+					"t1": scanner.Track{
+						Path: "t1_path",
+					},
+				},
+			},
+			Ids:        nil,
+			PublicOnly: true,
+			ExpectedAlbum: &music.Album{
+				Id:        "",
+				Title:     "Eggplant",
+				Thumbnail: nil,
+				Access: music.Access{
+					Public: false,
+				},
+				Parents: []music.Album{},
+				Albums: []music.Album{
+					{
+						Title: "a1",
+						Id:    "a1",
+						Access: music.Access{
+							Public: true,
+						},
+					},
+				},
+			},
+			ExpectedError: nil,
+		},
+		{
 			Name: "list_child_public_only",
 			Access: map[string]music.Access{
 				"public": {
