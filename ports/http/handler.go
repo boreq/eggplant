@@ -36,9 +36,10 @@ type Handler struct {
 
 func NewHandler(app *application.Application, authProvider AuthProvider) (*Handler, error) {
 	h := &Handler{
-		app:    app,
-		router: httprouter.New(),
-		log:    logging.New("ports/http.Handler"),
+		app:          app,
+		authProvider: authProvider,
+		router:       httprouter.New(),
+		log:          logging.New("ports/http.Handler"),
 	}
 
 	// API
