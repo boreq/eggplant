@@ -10,9 +10,9 @@ import (
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/logging"
-	"github.com/boreq/eggplant/ports/http/api"
 	"github.com/boreq/eggplant/ports/http/frontend"
 	"github.com/boreq/errors"
+	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -32,18 +32,19 @@ func NewHandler(app *application.Application) (*Handler, error) {
 	}
 
 	// API
-	h.router.GET("/api/browse/*path", api.Wrap(h.browse))
+	h.router.HandlerFunc(http.MethodGet, "/api/browse/*path", rest.Wrap(h.browse))
+	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(h.stats))
+
 	h.router.GET("/api/track/:id", h.track)
 	h.router.GET("/api/thumbnail/:id", h.thumbnail)
-	h.router.GET("/api/stats", api.Wrap(h.stats))
 
-	h.router.POST("/api/auth/register-initial", api.Wrap(h.registerInitial))
-	h.router.POST("/api/auth/register", api.Wrap(h.register))
-	h.router.POST("/api/auth/login", api.Wrap(h.login))
-	h.router.POST("/api/auth/logout", api.Wrap(h.logout))
-	h.router.GET("/api/auth", api.Wrap(h.getCurrentUser))
-	h.router.GET("/api/auth/users", api.Wrap(h.getUsers))
-	h.router.POST("/api/auth/create-invitation", api.Wrap(h.createInvitation))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/register-initial", rest.Wrap(h.registerInitial))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/register", rest.Wrap(h.register))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/login", rest.Wrap(h.login))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/logout", rest.Wrap(h.logout))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/create-invitation", rest.Wrap(h.createInvitation))
+	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.getCurrentUser))
+	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
 
 	// Frontend
 	ffs, err := frontend.NewFrontendFileSystem()
@@ -59,15 +60,15 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	h.router.ServeHTTP(rw, req)
 }
 
-func (h *Handler) browse(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) browse(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+	path := strings.Trim(ps.ByName("path"), "/")
+
 	u, err := h.getUser(r)
 	if err != nil {
 		h.log.Error("could not get the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
-
-	path := ps.ByName("path")
-	path = strings.Trim(path, "/")
 
 	var dirs []string
 	if path != "" {
@@ -87,10 +88,10 @@ func (h *Handler) browse(r *http.Request, ps httprouter.Params) (interface{}, ap
 	album, err := h.app.Music.Browse.Execute(cmd)
 	if err != nil {
 		h.log.Error("browse error", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
-	return album, nil
+	return rest.NewResponse(album)
 }
 
 func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -131,14 +132,14 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 	http.ServeFile(w, r, p)
 }
 
-func (h *Handler) stats(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) stats(r *http.Request) rest.RestResponse {
 	stats, err := h.app.Queries.Stats.Execute()
 	if err != nil {
 		h.log.Error("stats query error", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
-	return stats, nil
+	return rest.NewResponse(stats)
 }
 
 type registerInitialInput struct {
@@ -146,13 +147,11 @@ type registerInitialInput struct {
 	Password string `json:"password"`
 }
 
-func (h *Handler) registerInitial(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	decoder := json.NewDecoder(r.Body)
+func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 	var t registerInitialInput
-	err := decoder.Decode(&t)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register initial decoding failed", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	cmd := auth.RegisterInitial{
@@ -162,10 +161,10 @@ func (h *Handler) registerInitial(r *http.Request, ps httprouter.Params) (interf
 
 	if err := h.app.Auth.RegisterInitial.Execute(cmd); err != nil {
 		h.log.Error("register initial command failed", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
-	return nil, nil
+	return rest.NewResponse(nil)
 }
 
 type loginInput struct {
@@ -177,12 +176,11 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
-func (h *Handler) login(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
-	decoder := json.NewDecoder(r.Body)
+func (h *Handler) login(r *http.Request) rest.RestResponse {
 	var t loginInput
-	if err := decoder.Decode(&t); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("login decoding failed", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	cmd := auth.Login{
@@ -193,28 +191,28 @@ func (h *Handler) login(r *http.Request, ps httprouter.Params) (interface{}, api
 	token, err := h.app.Auth.Login.Execute(cmd)
 	if err != nil {
 		if errors.Is(err, auth.ErrUnauthorized) {
-			return nil, api.Forbidden
+			return rest.ErrForbidden
 		}
 		h.log.Error("initialize command failed", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	response := loginResponse{
 		Token: string(token),
 	}
 
-	return response, nil
+	return rest.NewResponse(response)
 }
 
-func (h *Handler) logout(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) logout(r *http.Request) rest.RestResponse {
 	u, err := h.getUser(r)
 	if err != nil {
 		h.log.Error("could not get the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	if u == nil {
-		return nil, api.Unauthorized
+		return rest.ErrUnauthorized
 	}
 
 	token := h.getToken(r)
@@ -225,71 +223,71 @@ func (h *Handler) logout(r *http.Request, ps httprouter.Params) (interface{}, ap
 
 	if err := h.app.Auth.Logout.Execute(cmd); err != nil {
 		h.log.Error("could not logout the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
-	return nil, nil
+	return rest.NewResponse(nil)
 }
 
-func (h *Handler) getCurrentUser(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
 	u, err := h.getUser(r)
 	if err != nil {
 		h.log.Error("could not the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	if u == nil {
-		return nil, api.Unauthorized
+		return rest.ErrUnauthorized
 	}
 
-	return u, nil
+	return rest.NewResponse(u)
 }
 
-func (h *Handler) getUsers(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
 	u, err := h.getUser(r)
 	if err != nil {
 		h.log.Error("could not the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	if !h.isAdmin(u) {
-		return nil, api.Unauthorized
+		return rest.ErrUnauthorized
 	}
 
 	users, err := h.app.Auth.List.Execute()
 	if err != nil {
 		h.log.Error("could not list", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
-	return users, nil
+	return rest.NewResponse(users)
 }
 
 type createInvitationResponse struct {
 	Token string `json:"token"`
 }
 
-func (h *Handler) createInvitation(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 	u, err := h.getUser(r)
 	if err != nil {
 		h.log.Error("could not the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	if !h.isAdmin(u) {
-		return nil, api.Unauthorized
+		return rest.ErrUnauthorized
 	}
 
 	token, err := h.app.Auth.CreateInvitation.Execute()
 	if err != nil {
 		h.log.Error("could not list", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	response := createInvitationResponse{
 		Token: string(token),
 	}
 
-	return response, nil
+	return rest.NewResponse(response)
 }
 
 type registerInput struct {
@@ -298,22 +296,21 @@ type registerInput struct {
 	Token    string `json:"token"`
 }
 
-func (h *Handler) register(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) register(r *http.Request) rest.RestResponse {
 	u, err := h.getUser(r)
 	if err != nil {
 		h.log.Error("could not the user", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	if u != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
-	decoder := json.NewDecoder(r.Body)
 	var t registerInput
-	if err = decoder.Decode(&t); err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register decoding failed", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
 	cmd := auth.Register{
@@ -324,13 +321,13 @@ func (h *Handler) register(r *http.Request, ps httprouter.Params) (interface{}, 
 
 	if err := h.app.Auth.Register.Execute(cmd); err != nil {
 		if errors.Is(err, auth.ErrUsernameTaken) {
-			return nil, api.Conflict
+			return rest.ErrConflict
 		}
 		h.log.Error("could not list", "err", err)
-		return nil, api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 
-	return nil, nil
+	return rest.NewResponse(nil)
 }
 
 func (h *Handler) isAdmin(u *auth.User) bool {
