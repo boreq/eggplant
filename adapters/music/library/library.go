@@ -3,7 +3,6 @@
 package library
 
 import (
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -298,7 +297,7 @@ func (l *Library) getAlbum(ids []music.AlbumId) (*album, error) {
 	for _, id := range ids {
 		child, ok := current.albums[id]
 		if !ok {
-			return nil, fmt.Errorf("album '%s' not found", id)
+			return nil, errors.Wrapf(music.ErrNotFound, "album '%s' not found", id)
 		}
 		current = child
 	}

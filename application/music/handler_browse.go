@@ -22,5 +22,8 @@ func (h *BrowseHandler) Execute(cmd Browse) (Album, error) {
 	if err != nil {
 		return Album{}, errors.Wrap(err, "could not browse the album")
 	}
+	if len(album.Albums) == 0 && len(album.Tracks) == 0 {
+		return Album{}, ErrForbidden
+	}
 	return album, nil
 }

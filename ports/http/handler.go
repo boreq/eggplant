@@ -98,6 +98,9 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 
 	album, err := h.app.Music.Browse.Execute(cmd)
 	if err != nil {
+		if errors.Is(err, music.ErrForbidden) {
+			return rest.ErrForbidden
+		}
 		h.log.Error("browse error", "err", err)
 		return rest.ErrInternalServerError
 	}

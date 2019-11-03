@@ -2,6 +2,9 @@ package music
 
 import "errors"
 
+var ErrForbidden = errors.New("forbidden")
+var ErrNotFound = errors.New("not found")
+
 type ThumbnailStore interface {
 	GetFilePath(id string) (string, error)
 }
@@ -42,8 +45,6 @@ type Album struct {
 type Access struct {
 	Public bool `json:"public"`
 }
-
-var ErrAccessDenied = errors.New("access denied")
 
 type AlbumId string
 
