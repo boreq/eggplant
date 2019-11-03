@@ -18,13 +18,23 @@ import (
 
 var isIdValid = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
 
-type Handler struct {
-	app    *application.Application
-	router *httprouter.Router
-	log    logging.Logger
+type AuthenticatedUser struct {
+	User  auth.User
+	Token auth.AccessToken
 }
 
-func NewHandler(app *application.Application) (*Handler, error) {
+type AuthProvider interface {
+	Get(r *http.Request) (*AuthenticatedUser, error)
+}
+
+type Handler struct {
+	app          *application.Application
+	authProvider AuthProvider
+	router       *httprouter.Router
+	log          logging.Logger
+}
+
+func NewHandler(app *application.Application, authProvider AuthProvider) (*Handler, error) {
 	h := &Handler{
 		app:    app,
 		router: httprouter.New(),
@@ -64,9 +74,9 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 	path := strings.Trim(ps.ByName("path"), "/")
 
-	u, err := h.getUser(r)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not get the user", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
@@ -151,7 +161,7 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 	var t registerInitialInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register initial decoding failed", "err", err)
-		return rest.ErrInternalServerError
+		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
 
 	cmd := auth.RegisterInitial{
@@ -177,10 +187,20 @@ type loginResponse struct {
 }
 
 func (h *Handler) login(r *http.Request) rest.RestResponse {
+	u, err := h.authProvider.Get(r)
+	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	if u != nil {
+		return rest.ErrBadRequest.WithMessage("You are already signed in.")
+	}
+
 	var t loginInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("login decoding failed", "err", err)
-		return rest.ErrInternalServerError
+		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
 
 	cmd := auth.Login{
@@ -191,9 +211,9 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 	token, err := h.app.Auth.Login.Execute(cmd)
 	if err != nil {
 		if errors.Is(err, auth.ErrUnauthorized) {
-			return rest.ErrForbidden
+			return rest.ErrForbidden.WithMessage("Invalid credentials.")
 		}
-		h.log.Error("initialize command failed", "err", err)
+		h.log.Error("login command failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
@@ -205,9 +225,9 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) logout(r *http.Request) rest.RestResponse {
-	u, err := h.getUser(r)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not get the user", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
@@ -215,10 +235,8 @@ func (h *Handler) logout(r *http.Request) rest.RestResponse {
 		return rest.ErrUnauthorized
 	}
 
-	token := h.getToken(r)
-
 	cmd := auth.Logout{
-		Token: auth.AccessToken(token),
+		Token: u.Token,
 	}
 
 	if err := h.app.Auth.Logout.Execute(cmd); err != nil {
@@ -229,9 +247,9 @@ func (h *Handler) logout(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
-	u, err := h.getUser(r)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not the user", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
@@ -239,18 +257,18 @@ func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
 		return rest.ErrUnauthorized
 	}
 
-	return rest.NewResponse(u)
+	return rest.NewResponse(u.User)
 }
 
 func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
-	u, err := h.getUser(r)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not the user", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
 	if !h.isAdmin(u) {
-		return rest.ErrUnauthorized
+		return rest.ErrForbidden.WithMessage("Only an administrator can list users.")
 	}
 
 	users, err := h.app.Auth.List.Execute()
@@ -267,19 +285,19 @@ type createInvitationResponse struct {
 }
 
 func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
-	u, err := h.getUser(r)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not the user", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
 	if !h.isAdmin(u) {
-		return rest.ErrUnauthorized
+		return rest.ErrForbidden.WithMessage("Only an administrator can create invites.")
 	}
 
 	token, err := h.app.Auth.CreateInvitation.Execute()
 	if err != nil {
-		h.log.Error("could not list", "err", err)
+		h.log.Error("could not create an invitation", "err", err)
 		return rest.ErrInternalServerError
 	}
 
@@ -297,20 +315,20 @@ type registerInput struct {
 }
 
 func (h *Handler) register(r *http.Request) rest.RestResponse {
-	u, err := h.getUser(r)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not the user", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
 	if u != nil {
-		return rest.ErrBadRequest
+		return rest.ErrBadRequest.WithMessage("You are signed in.")
 	}
 
 	var t registerInput
 	if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register decoding failed", "err", err)
-		return rest.ErrInternalServerError
+		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
 
 	cmd := auth.Register{
@@ -321,40 +339,15 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 
 	if err := h.app.Auth.Register.Execute(cmd); err != nil {
 		if errors.Is(err, auth.ErrUsernameTaken) {
-			return rest.ErrConflict
+			return rest.ErrConflict.WithMessage("Username is taken.")
 		}
-		h.log.Error("could not list", "err", err)
+		h.log.Error("could not register a user", "err", err)
 		return rest.ErrInternalServerError
 	}
 
 	return rest.NewResponse(nil)
 }
 
-func (h *Handler) isAdmin(u *auth.User) bool {
-	return u != nil && u.Administrator
-}
-
-func (h *Handler) getUser(r *http.Request) (*auth.User, error) {
-	token := h.getToken(r)
-	if token == "" {
-		return nil, nil
-	}
-
-	cmd := auth.CheckAccessToken{
-		Token: auth.AccessToken(token),
-	}
-
-	user, err := h.app.Auth.CheckAccessToken.Execute(cmd)
-	if err != nil {
-		if errors.Is(err, auth.ErrUnauthorized) {
-			return nil, nil
-		}
-		return nil, errors.Wrap(err, "could not check the access token")
-	}
-
-	return &user, nil
-}
-
-func (h *Handler) getToken(r *http.Request) string {
-	return r.Header.Get("Access-Token")
+func (h *Handler) isAdmin(u *AuthenticatedUser) bool {
+	return u != nil && u.User.Administrator
 }

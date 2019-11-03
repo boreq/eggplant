@@ -77,7 +77,8 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		Music:   applicationMusic,
 		Queries: applicationQueries,
 	}
-	handler, err := http.NewHandler(applicationApplication)
+	httpAuthProvider := http.NewHttpAuthProvider(applicationApplication)
+	handler, err := http.NewHandler(applicationApplication, httpAuthProvider)
 	if err != nil {
 		return nil, err
 	}
