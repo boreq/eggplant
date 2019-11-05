@@ -1,6 +1,9 @@
 package auth
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type UserRepository interface {
 	// RegisterInitial should create a new user. If there are existing
@@ -39,6 +42,8 @@ type AccessToken string
 type InvitationToken string
 
 type User struct {
-	Username      string `json:"username"`
-	Administrator bool   `json:"administrator"`
+	Username      string    `json:"username"`
+	Administrator bool      `json:"administrator"`
+	Created       time.Time `json:"created"`
+	LastSeen      time.Time `json:"lastSeen"`
 }

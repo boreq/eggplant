@@ -26,6 +26,8 @@ type user struct {
 	Username      string       `json:"username"`
 	Password      PasswordHash `json:"password"`
 	Administrator bool         `json:"administrator"`
+	Created       time.Time    `json:"created"`
+	LastSeen      time.Time    `json:"lastSeen"`
 	Sessions      []session    `json:"sessions"`
 }
 
@@ -76,36 +78,6 @@ func NewUserRepository(
 		invitationsBucket:    invitationsBucket,
 		log:                  logging.New("userRepository"),
 	}, nil
-}
-
-func (r *UserRepository) RegisterInitial(username, password string) error {
-	if err := r.validate(username, password); err != nil {
-		return errors.Wrap(err, "invalid parameters")
-	}
-
-	passwordHash, err := r.passwordHasher.Hash(password)
-	if err != nil {
-		return errors.Wrap(err, "hashing the password failed")
-	}
-
-	u := user{
-		Username:      username,
-		Password:      passwordHash,
-		Administrator: true,
-	}
-
-	j, err := json.Marshal(u)
-	if err != nil {
-		return errors.Wrap(err, "marshaling to json failed")
-	}
-
-	return r.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(r.usersBucket)
-		if !bucketIsEmpty(b) {
-			return errors.New("there are existing users")
-		}
-		return b.Put([]byte(u.Username), j)
-	})
 }
 
 func (r *UserRepository) Login(username, password string) (auth.AccessToken, error) {
@@ -180,6 +152,7 @@ func (r *UserRepository) CheckAccessToken(token auth.AccessToken) (auth.User, er
 
 		for i := range u.Sessions {
 			if u.Sessions[i].Token == token {
+				u.LastSeen = time.Now()
 				u.Sessions[i].LastSeen = time.Now()
 				foundUser = *u
 				return r.putUser(b, *u)
@@ -300,7 +273,38 @@ func (r *UserRepository) CreateInvitation() (auth.InvitationToken, error) {
 	return token, nil
 }
 
+func (r *UserRepository) RegisterInitial(username, password string) error {
+	if err := r.validate(username, password); err != nil {
+		return errors.Wrap(err, "invalid parameters")
+	}
+
+	passwordHash, err := r.passwordHasher.Hash(password)
+	if err != nil {
+		return errors.Wrap(err, "hashing the password failed")
+	}
+
+	u := user{
+		Username:      username,
+		Password:      passwordHash,
+		Administrator: true,
+		Created:       time.Now(),
+		LastSeen:      time.Now(),
+	}
+
+	return r.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(r.usersBucket)
+		if !bucketIsEmpty(b) {
+			return errors.New("there are existing users")
+		}
+		return r.putUser(b, u)
+	})
+}
+
 func (r *UserRepository) Register(username, password string, token auth.InvitationToken) error {
+	if err := r.validate(username, password); err != nil {
+		return errors.Wrap(err, "invalid parameters")
+	}
+
 	passwordHash, err := r.passwordHasher.Hash(password)
 	if err != nil {
 		return errors.Wrap(err, "hashing the password failed")
@@ -310,6 +314,8 @@ func (r *UserRepository) Register(username, password string, token auth.Invitati
 		Username:      username,
 		Password:      passwordHash,
 		Administrator: false,
+		Created:       time.Now(),
+		LastSeen:      time.Now(),
 	}
 
 	if err := r.db.Update(func(tx *bolt.Tx) error {
@@ -332,7 +338,7 @@ func (r *UserRepository) Register(username, password string, token auth.Invitati
 
 		foundUser, err := r.getUser(ub, username)
 		if err != nil {
-			return errors.Wrap(err, "could not get a user")
+			return errors.Wrap(err, "could not check if a user already exists")
 		}
 
 		if foundUser != nil {
@@ -374,6 +380,8 @@ func (r *UserRepository) toUser(u user) auth.User {
 	return auth.User{
 		Username:      u.Username,
 		Administrator: u.Administrator,
+		Created:       u.Created,
+		LastSeen:      u.LastSeen,
 	}
 }
 
