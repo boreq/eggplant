@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/boreq/eggplant/application/auth"
@@ -200,18 +201,6 @@ func (r *UserRepository) Logout(token auth.AccessToken) error {
 	return nil
 }
 
-func (r *UserRepository) validate(username, password string) error {
-	if username == "" {
-		return errors.New("username can't be empty")
-	}
-
-	if password == "" {
-		return errors.New("password can't be empty")
-	}
-
-	return nil
-}
-
 func (r *UserRepository) Count() (int, error) {
 	var count int
 	if err := r.db.View(func(tx *bolt.Tx) error {
@@ -383,6 +372,29 @@ func (r *UserRepository) toUser(u user) auth.User {
 		Created:       u.Created,
 		LastSeen:      u.LastSeen,
 	}
+}
+
+const maxUsernameLen = 100
+const maxPasswordLen = 10000
+
+func (r *UserRepository) validate(username, password string) error {
+	if username == "" {
+		return errors.New("username can't be empty")
+	}
+
+	if len(username) > 100 {
+		return fmt.Errorf("username length can't exceed %d characters", maxUsernameLen)
+	}
+
+	if password == "" {
+		return errors.New("password can't be empty")
+	}
+
+	if len(password) > maxPasswordLen {
+		return fmt.Errorf("password length can't exceed %d characters", maxPasswordLen)
+	}
+
+	return nil
 }
 
 func bucketIsEmpty(b *bolt.Bucket) bool {

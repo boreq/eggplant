@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -344,5 +345,17 @@ var registerTestCases = []struct {
 		Username:      "username",
 		Password:      "",
 		ExpectedError: errors.New("invalid parameters: password can't be empty"),
+	},
+	{
+		Name:          "username_too_long",
+		Username:      strings.Repeat("a", 101),
+		Password:      "password",
+		ExpectedError: errors.New("invalid parameters: username length can't exceed 100 characters"),
+	},
+	{
+		Name:          "password_too_long",
+		Username:      "username",
+		Password:      strings.Repeat("a", 10001),
+		ExpectedError: errors.New("invalid parameters: password length can't exceed 10000 characters"),
 	},
 }
