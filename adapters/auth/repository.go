@@ -382,7 +382,7 @@ func (r *UserRepository) validate(username, password string) error {
 		return errors.New("username can't be empty")
 	}
 
-	if len(username) > 100 {
+	if len(username) > maxUsernameLen {
 		return fmt.Errorf("username length can't exceed %d characters", maxUsernameLen)
 	}
 
