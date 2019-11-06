@@ -56,6 +56,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/create-invitation", rest.Wrap(h.createInvitation))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.getCurrentUser))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.removeUser))
 
 	// Frontend
 	ffs, err := frontend.NewFrontendFileSystem()
@@ -346,6 +347,36 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 			return rest.ErrConflict.WithMessage("Username is taken.")
 		}
 		h.log.Error("could not register a user", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(nil)
+}
+
+func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+	username := ps.ByName("username")
+
+	u, err := h.authProvider.Get(r)
+	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	if !h.isAdmin(u) {
+		return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
+	}
+
+	if username == u.User.Username {
+		return rest.ErrBadRequest.WithMessage("You can not remove yourself.")
+	}
+
+	cmd := auth.Remove{
+		Username: username,
+	}
+
+	if err := h.app.Auth.Remove.Execute(cmd); err != nil {
+		h.log.Error("could not remove a user", "err", err)
 		return rest.ErrInternalServerError
 	}
 

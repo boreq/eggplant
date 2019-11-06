@@ -342,6 +342,16 @@ func (r *UserRepository) Register(username, password string, token auth.Invitati
 	return nil
 }
 
+func (r *UserRepository) Remove(username string) error {
+	if err := r.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(r.usersBucket)
+		return b.Delete([]byte(username))
+	}); err != nil {
+		return errors.Wrap(err, "transaction failed")
+	}
+	return nil
+}
+
 func (r *UserRepository) getUser(b *bolt.Bucket, username string) (*user, error) {
 	j := b.Get([]byte(username))
 	if j == nil {

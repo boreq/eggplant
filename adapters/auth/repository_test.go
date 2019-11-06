@@ -305,6 +305,53 @@ func TestLogin(t *testing.T) {
 	require.True(t, errors.Is(err, appAuth.ErrUnauthorized))
 }
 
+func TestRemove(t *testing.T) {
+	const username = "username"
+	const password = "password"
+
+	r, cleanup := NewRepository(t)
+	defer cleanup()
+
+	invitationToken, err := r.CreateInvitation()
+	require.NoError(t, err)
+
+	err = r.Register(username, password, invitationToken)
+	require.NoError(t, err)
+
+	users, err := r.List()
+	require.NoError(t, err)
+
+	require.Equal(t, 1, len(users))
+
+	err = r.Remove(username)
+	require.NoError(t, err)
+
+	users, err = r.List()
+	require.NoError(t, err)
+
+	require.Equal(t, 0, len(users))
+}
+
+func TestRemoveNoUser(t *testing.T) {
+	const username = "username"
+
+	r, cleanup := NewRepository(t)
+	defer cleanup()
+
+	users, err := r.List()
+	require.NoError(t, err)
+
+	require.Equal(t, 0, len(users))
+
+	err = r.Remove(username)
+	require.NoError(t, err)
+
+	users, err = r.List()
+	require.NoError(t, err)
+
+	require.Equal(t, 0, len(users))
+}
+
 func NewRepository(t *testing.T) (*auth.UserRepository, fixture.CleanupFunc) {
 	db, cleanup := fixture.Bolt(t)
 

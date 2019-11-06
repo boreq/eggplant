@@ -32,6 +32,9 @@ type UserRepository interface {
 
 	// Register should create a new user.
 	Register(username, password string, token InvitationToken) error
+
+	// Remove should remove a user.
+	Remove(username string) error
 }
 
 var ErrUnauthorized = errors.New("unauthorized")

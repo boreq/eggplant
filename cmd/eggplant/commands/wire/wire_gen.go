@@ -37,6 +37,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 	checkAccessTokenHandler := auth2.NewCheckAccessTokenHandler(userRepository)
 	listHandler := auth2.NewListHandler(userRepository)
 	createInvitationHandler := auth2.NewCreateInvitationHandler(userRepository)
+	removeHandler := auth2.NewRemoveHandler(userRepository)
 	applicationAuth := application.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Register:         registerHandler,
@@ -45,6 +46,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		CheckAccessToken: checkAccessTokenHandler,
 		List:             listHandler,
 		CreateInvitation: createInvitationHandler,
+		Remove:           removeHandler,
 	}
 	store, err := newThumbnailStore(conf)
 	if err != nil {

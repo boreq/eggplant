@@ -20,6 +20,7 @@ type Auth struct {
 	CheckAccessToken *auth.CheckAccessTokenHandler
 	List             *auth.ListHandler
 	CreateInvitation *auth.CreateInvitationHandler
+	Remove           *auth.RemoveHandler
 }
 
 type Music struct {
