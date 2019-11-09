@@ -3,7 +3,7 @@ PROGRAM_NAME=eggplant
 
 all: test lint build
 
-ci: tools generate check-repository-unchanged test-ci lint build
+ci: tools dependencies generate check-repository-unchanged test-ci lint build
 
 build-directory:
 	mkdir -p ./${BUILD_DIRECTORY}
@@ -23,6 +23,9 @@ check-repository-unchanged:
 tools:
 	 go get -u honnef.co/go/tools/cmd/staticcheck
 	 go get -u github.com/google/wire/cmd/wire
+
+dependencies:
+	go get ./...
 
 generate:
 	 go generate ./...
@@ -47,4 +50,4 @@ test-verbose:
 clean:
 	rm -rf ./${BUILD_DIRECTORY}
 
-.PHONY: all build build-directory frontend build-race tools lint doc test test-verbose clean
+.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-ci test-verbose clean

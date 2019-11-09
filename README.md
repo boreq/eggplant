@@ -1,4 +1,4 @@
-# Eggplant
+# Eggplant [![Build Status](https://travis-ci.com/boreq/eggplant.svg?branch=master)](https://travis-ci.com/boreq/eggplant) [![codecov](https://codecov.io/gh/boreq/eggplant/branch/master/graph/badge.svg)](https://codecov.io/gh/boreq/eggplant)
 
 Eggplant is a music streaming service.
 
