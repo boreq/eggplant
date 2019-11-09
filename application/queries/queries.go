@@ -22,3 +22,13 @@ type StoreStats struct {
 	AllItems       int `json:"allItems"`
 	ConvertedItems int `json:"convertedItems"`
 }
+
+type TransactionProvider interface {
+	Read(handler TransactionHandler) error
+}
+
+type TransactionHandler func(repositories *TransactableRepositories) error
+
+type TransactableRepositories struct {
+	Users UserRepository
+}

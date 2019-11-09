@@ -19,7 +19,7 @@ import (
 var isIdValid = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
 
 type AuthenticatedUser struct {
-	User  auth.User
+	User  auth.ReadUser
 	Token auth.AccessToken
 }
 

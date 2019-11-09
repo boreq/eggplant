@@ -7,20 +7,9 @@ import (
 )
 
 type Application struct {
-	Auth    Auth
+	Auth    auth.Auth
 	Music   Music
 	Queries Queries
-}
-
-type Auth struct {
-	RegisterInitial  *auth.RegisterInitialHandler
-	Register         *auth.RegisterHandler
-	Login            *auth.LoginHandler
-	Logout           *auth.LogoutHandler
-	CheckAccessToken *auth.CheckAccessTokenHandler
-	List             *auth.ListHandler
-	CreateInvitation *auth.CreateInvitationHandler
-	Remove           *auth.RemoveHandler
 }
 
 type Music struct {

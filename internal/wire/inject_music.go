@@ -6,7 +6,7 @@ import (
 	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	"github.com/boreq/eggplant/cmd/eggplant/commands/config"
+	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/errors"
 	"github.com/google/wire"
 )

@@ -37,7 +37,7 @@ func (h *HttpAuthProvider) Get(r *http.Request) (*AuthenticatedUser, error) {
 	}
 
 	u := AuthenticatedUser{
-		User:  user,
+		User:  *user,
 		Token: token,
 	}
 

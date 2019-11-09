@@ -5,15 +5,17 @@ type Remove struct {
 }
 
 type RemoveHandler struct {
-	userRepository UserRepository
+	transactionProvider TransactionProvider
 }
 
-func NewRemoveHandler(userRepository UserRepository) *RemoveHandler {
+func NewRemoveHandler(transactionProvider TransactionProvider) *RemoveHandler {
 	return &RemoveHandler{
-		userRepository: userRepository,
+		transactionProvider: transactionProvider,
 	}
 }
 
 func (h *RemoveHandler) Execute(cmd Remove) error {
-	return h.userRepository.Remove(cmd.Username)
+	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
+		return r.Users.Remove(cmd.Username)
+	})
 }

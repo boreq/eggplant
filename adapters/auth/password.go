@@ -1,6 +1,9 @@
 package auth
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"github.com/boreq/eggplant/application/auth"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type BcryptPasswordHasher struct {
 	cost int
@@ -12,10 +15,10 @@ func NewBcryptPasswordHasher() *BcryptPasswordHasher {
 	}
 }
 
-func (p *BcryptPasswordHasher) Hash(password string) (PasswordHash, error) {
+func (p *BcryptPasswordHasher) Hash(password string) (auth.PasswordHash, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), p.cost)
 }
 
-func (p *BcryptPasswordHasher) Compare(hashedPassword PasswordHash, password string) error {
+func (p *BcryptPasswordHasher) Compare(hashedPassword auth.PasswordHash, password string) error {
 	return bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
 }

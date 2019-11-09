@@ -3,27 +3,34 @@ package queries
 import "github.com/boreq/errors"
 
 type StatsHandler struct {
-	userRepository UserRepository
-	trackStore     TrackStore
-	thumbnailStore ThumbnailStore
+	trackStore          TrackStore
+	thumbnailStore      ThumbnailStore
+	transactionProvider TransactionProvider
 }
 
 func NewStatsHandler(
-	userRepository UserRepository,
 	trackStore TrackStore,
 	thumbnailStore ThumbnailStore,
+	transactionProvider TransactionProvider,
 ) *StatsHandler {
 	return &StatsHandler{
-		userRepository: userRepository,
-		trackStore:     trackStore,
-		thumbnailStore: thumbnailStore,
+		trackStore:          trackStore,
+		thumbnailStore:      thumbnailStore,
+		transactionProvider: transactionProvider,
 	}
 }
 
 func (h *StatsHandler) Execute() (Stats, error) {
-	users, err := h.userRepository.Count()
-	if err != nil {
-		return Stats{}, errors.Wrap(err, "could not count the users")
+	var users int
+	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
+		n, err := r.Users.Count()
+		if err != nil {
+			return errors.Wrap(err, "count failed")
+		}
+		users = n
+		return nil
+	}); err != nil {
+		return Stats{}, errors.Wrap(err, "transaction failed")
 	}
 
 	tracks, err := h.trackStore.GetStats()
