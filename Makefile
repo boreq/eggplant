@@ -3,6 +3,8 @@ PROGRAM_NAME=eggplant
 
 all: test lint build
 
+ci: tools generate check-repository-unchanged test-ci lint build
+
 build-directory:
 	mkdir -p ./${BUILD_DIRECTORY}
 
@@ -14,6 +16,9 @@ build-race: build-directory
 
 frontend:
 	./_tools/build_frontend.sh
+
+check-repository-unchanged:
+	./_tools/check_repository_unchanged.sh
 
 tools:
 	 go get -u honnef.co/go/tools/cmd/staticcheck
@@ -32,6 +37,9 @@ doc:
 
 test:
 	go test ./...
+
+test-ci:
+	go test -coverprofile=coverage.txt -covermode=atomic ./...
 
 test-verbose:
 	go test -v ./...
