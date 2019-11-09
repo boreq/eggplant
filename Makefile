@@ -3,7 +3,7 @@ PROGRAM_NAME=eggplant
 
 all: test lint build
 
-ci: tools dependencies generate check-repository-unchanged test-ci lint build
+ci: tools dependencies generate check-repository-unchanged test lint build
 
 build-directory:
 	mkdir -p ./${BUILD_DIRECTORY}
@@ -41,13 +41,10 @@ doc:
 test:
 	go test ./...
 
-test-ci:
-	./_tools/coverage.sh
-
 test-verbose:
 	go test -v ./...
 
 clean:
 	rm -rf ./${BUILD_DIRECTORY}
 
-.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-ci test-verbose clean
+.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean
