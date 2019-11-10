@@ -496,10 +496,55 @@ func TestRemoveNoUser(t *testing.T) {
 	require.Equal(t, 0, len(users))
 }
 
+func TestSetPassword(t *testing.T) {
+	const username = "username"
+	const password = "password"
+	const newPassword = "new-password"
+
+	a, cleanup := NewAuth(t)
+	defer cleanup()
+
+	invitationToken, err := a.CreateInvitation.Execute()
+	require.NoError(t, err)
+
+	err = a.Register.Execute(
+		auth.Register{
+			Username: username,
+			Password: password,
+			Token:    invitationToken,
+		},
+	)
+	require.NoError(t, err)
+
+	_, err = a.Login.Execute(
+		auth.Login{
+			Username: username,
+			Password: password,
+		},
+	)
+	require.NoError(t, err)
+
+	err = a.SetPassword.Execute(
+		auth.SetPassword{
+			Username: username,
+			Password: newPassword,
+		},
+	)
+	require.NoError(t, err)
+
+	_, err = a.Login.Execute(
+		auth.Login{
+			Username: username,
+			Password: newPassword,
+		},
+	)
+	require.NoError(t, err)
+}
+
 func NewAuth(t *testing.T) (*auth.Auth, fixture.CleanupFunc) {
 	db, cleanup := fixture.Bolt(t)
 
-	a, err := wire.BuildAuth(db)
+	a, err := wire.BuildAuthForTest(db)
 	if err != nil {
 		t.Fatal(err)
 	}

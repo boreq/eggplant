@@ -27,9 +27,18 @@ func BuildTransactableQueryRepositories(tx *bolt.Tx) (*queries.TransactableRepos
 	return nil, nil
 }
 
-func BuildAuth(db *bolt.DB) (*auth.Auth, error) {
+func BuildAuthForTest(db *bolt.DB) (*auth.Auth, error) {
 	wire.Build(
 		appSet,
+	)
+
+	return nil, nil
+}
+
+func BuildAuth(conf *config.Config) (*auth.Auth, error) {
+	wire.Build(
+		appSet,
+		boltSet,
 	)
 
 	return nil, nil

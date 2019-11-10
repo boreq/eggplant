@@ -1,13 +1,15 @@
 package commands
 
 import (
+	"github.com/boreq/eggplant/cmd/eggplant/commands/users"
 	"github.com/boreq/guinea"
 )
 
 var MainCmd = guinea.Command{
 	Run: runMain,
 	Subcommands: map[string]*guinea.Command{
-		"run": &runCmd,
+		"run":   &runCmd,
+		"users": &users.UsersCmd,
 	},
 	ShortDescription: "a music streaming service",
 	Description: `

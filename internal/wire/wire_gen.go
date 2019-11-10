@@ -47,7 +47,7 @@ func BuildTransactableQueryRepositories(tx *bbolt.Tx) (*queries.TransactableRepo
 	return transactableRepositories, nil
 }
 
-func BuildAuth(db *bbolt.DB) (*auth.Auth, error) {
+func BuildAuthForTest(db *bbolt.DB) (*auth.Auth, error) {
 	bcryptPasswordHasher := auth2.NewBcryptPasswordHasher()
 	wireAuthRepositoriesProvider := newAuthRepositoriesProvider()
 	authTransactionProvider := auth2.NewAuthTransactionProvider(db, wireAuthRepositoriesProvider)
@@ -61,6 +61,7 @@ func BuildAuth(db *bbolt.DB) (*auth.Auth, error) {
 	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
 	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
+	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	authAuth := &auth.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Register:         registerHandler,
@@ -70,6 +71,40 @@ func BuildAuth(db *bbolt.DB) (*auth.Auth, error) {
 		List:             listHandler,
 		CreateInvitation: createInvitationHandler,
 		Remove:           removeHandler,
+		SetPassword:      setPasswordHandler,
+	}
+	return authAuth, nil
+}
+
+func BuildAuth(conf *config.Config) (*auth.Auth, error) {
+	bcryptPasswordHasher := auth2.NewBcryptPasswordHasher()
+	db, err := newBolt(conf)
+	if err != nil {
+		return nil, err
+	}
+	wireAuthRepositoriesProvider := newAuthRepositoriesProvider()
+	authTransactionProvider := auth2.NewAuthTransactionProvider(db, wireAuthRepositoriesProvider)
+	registerInitialHandler := auth.NewRegisterInitialHandler(bcryptPasswordHasher, authTransactionProvider)
+	registerHandler := auth.NewRegisterHandler(bcryptPasswordHasher, authTransactionProvider)
+	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
+	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
+	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	listHandler := auth.NewListHandler(authTransactionProvider)
+	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
+	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
+	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
+	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
+	authAuth := &auth.Auth{
+		RegisterInitial:  registerInitialHandler,
+		Register:         registerHandler,
+		Login:            loginHandler,
+		Logout:           logoutHandler,
+		CheckAccessToken: checkAccessTokenHandler,
+		List:             listHandler,
+		CreateInvitation: createInvitationHandler,
+		Remove:           removeHandler,
+		SetPassword:      setPasswordHandler,
 	}
 	return authAuth, nil
 }
@@ -92,6 +127,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
 	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
+	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	authAuth := auth.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Register:         registerHandler,
@@ -101,6 +137,7 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		List:             listHandler,
 		CreateInvitation: createInvitationHandler,
 		Remove:           removeHandler,
+		SetPassword:      setPasswordHandler,
 	}
 	store, err := newThumbnailStore(conf)
 	if err != nil {
