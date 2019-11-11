@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
@@ -44,7 +45,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 
 	// API
 	h.router.HandlerFunc(http.MethodGet, "/api/browse/*path", rest.Wrap(h.browse))
-	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(h.stats))
+	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 
 	h.router.GET("/api/track/:id", h.track)
 	h.router.GET("/api/thumbnail/:id", h.thumbnail)
