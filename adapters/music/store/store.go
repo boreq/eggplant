@@ -71,9 +71,21 @@ func (s *Store) GetStats() (queries.StoreStats, error) {
 		return queries.StoreStats{}, errors.Wrap(err, "could not count converted items")
 	}
 
+	originalSize, err := s.getOriginalSize()
+	if err != nil {
+		return queries.StoreStats{}, errors.Wrap(err, "could not get the original size")
+	}
+
+	convertedSize, err := s.getConvertedSize()
+	if err != nil {
+		return queries.StoreStats{}, errors.Wrap(err, "could not get the converted size")
+	}
+
 	stats := queries.StoreStats{
 		AllItems:       len(s.items),
 		ConvertedItems: converted,
+		OriginalSize:   originalSize,
+		ConvertedSize:  convertedSize,
 	}
 	return stats, nil
 }
@@ -215,6 +227,33 @@ func (s *Store) countConvertedItems() (int, error) {
 		}
 	}
 	return counter, nil
+}
+
+func (s *Store) getOriginalSize() (int64, error) {
+	var sum int64
+	for _, item := range s.items {
+		fileInfo, err := os.Stat(item.Path)
+		if err != nil {
+			return 0, errors.Wrap(err, "could not stat")
+		}
+		sum += fileInfo.Size()
+	}
+	return sum, nil
+}
+
+func (s *Store) getConvertedSize() (int64, error) {
+	var sum int64
+	for _, item := range s.items {
+		fileInfo, err := os.Stat(s.converter.OutputFile(item.Id))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return 0, errors.Wrap(err, "could not stat")
+		}
+		sum += fileInfo.Size()
+	}
+	return sum, nil
 }
 
 func exists(file string) (bool, error) {
