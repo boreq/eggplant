@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"runtime"
 	"sync"
 	"time"
 
@@ -16,20 +17,16 @@ import (
 )
 
 // scanEvery specifies the interval in which the store checks if there are any
-// items that need to be converted. This is done periodically to make sure that
-// the data will be regenerated in case of some kind of a failure.
-const scanEvery = 60 * time.Second
+// items that need to be converted or cleaned up. This is done periodically on
+// top of performing this check every time new items are received to make sure
+// that the data will be regenerated in case of a failure.
+const scanEvery = 30 * time.Minute
 
 // errorDelay specifies the delay after a failed conversion or cleanup. As most
 // errors are I/O related this ensures that the store will not be using up too
 // much resources attempting to convert the files over and over again and
 // encountering the same issue with each conversion.
 const errorDelay = 10 * time.Second
-
-// cleanupDelay specifies how much time has to pass without receiving any items
-// for the store to start a cleanup process. This is done to make sure that the
-// cleanups don't occur too often.
-const cleanupDelay = 60 * time.Second
 
 type Item struct {
 	Id   string
@@ -46,20 +43,23 @@ func NewStore(log logging.Logger, converter Converter) (*Store, error) {
 	s := &Store{
 		converter: converter,
 		ch:        make(chan []Item),
+		wg:        &sync.WaitGroup{},
 		log:       log,
 	}
-	go s.receive()
-	go s.process()
+
+	ch := make(chan Item)
+	s.startWorkers(runtime.NumCPU(), ch)
+	go s.run(ch)
 	return s, nil
 }
 
 type Store struct {
-	converter   Converter
-	ch          chan []Item
-	items       []Item
-	nextCleanup time.Time
-	mutex       sync.Mutex
-	log         logging.Logger
+	converter Converter
+	ch        chan []Item
+	items     []Item
+	mutex     sync.Mutex
+	wg        *sync.WaitGroup
+	log       logging.Logger
 }
 
 func (s *Store) GetStats() (queries.StoreStats, error) {
@@ -98,70 +98,88 @@ func (s *Store) GetFilePath(id string) (string, error) {
 	return s.converter.OutputFile(id), nil
 }
 
-func (s *Store) receive() {
-	for items := range s.ch {
-		s.handleReceivedItems(items)
+func (s *Store) startWorkers(n int, ch <-chan Item) {
+	s.log.Debug("starting workers", "n", n)
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go s.worker(ch)
 	}
 }
 
-func (s *Store) handleReceivedItems(items []Item) {
+func (s *Store) setItems(items []Item) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	s.log.Debug("received items")
 	s.items = items
-	s.scheduleCleanup()
 }
 
-func (s *Store) scheduleCleanup() {
-	s.nextCleanup = time.Now().Add(cleanupDelay)
-}
-
-func (s *Store) process() {
+func (s *Store) run(ch chan<- Item) {
+outer:
 	for {
-		if err := s.considerConversion(); err != nil {
+		s.log.Debug("starting cleanup and conversion")
+
+		if err := s.performCleanup(); err != nil {
+			s.log.Error("could not perform the cleanup", "err", err)
+			<-time.After(errorDelay)
+			continue
+		}
+
+		items := make([]Item, len(s.items))
+		copy(items, s.items)
+
+		rand.Shuffle(len(items), func(i, j int) {
+			items[i], items[j] = items[j], items[i]
+		})
+
+		for _, item := range items {
+			convert, err := s.needsConversion(item)
+			if err != nil {
+				s.log.Error("could not check if an item needs conversion", "err", err)
+				<-time.After(errorDelay)
+				continue outer
+			}
+
+			if convert {
+				select {
+				case items := <-s.ch:
+					s.wg.Wait()
+					s.setItems(items)
+					continue outer
+				case ch <- item:
+					s.wg.Add(1)
+				}
+			}
+		}
+
+		s.wg.Wait()
+
+		select {
+		case items := <-s.ch:
+			s.wg.Wait()
+			s.setItems(items)
+		case <-time.After(scanEvery):
+		}
+	}
+}
+
+func (s *Store) worker(ch <-chan Item) {
+	for {
+		item, ok := <-ch
+		if !ok {
+			return
+		}
+
+		if err := s.convert(item); err != nil {
 			s.log.Error("conversion failed", "err", err)
 			<-time.After(errorDelay)
 		}
-
-		if err := s.considerCleanup(); err != nil {
-			s.log.Error("cleanup failed", "err", err)
-			<-time.After(errorDelay)
-		}
 	}
 }
 
-func (s *Store) considerConversion() error {
-	item, ok, err := s.getNextItem()
-	if err != nil {
-		return errors.Wrap(err, "could not get a next item for conversion")
-	}
+func (s *Store) convert(item Item) error {
+	defer s.wg.Done()
 
-	if !ok {
-		s.log.Debug("no items to convert")
-		<-time.After(scanEvery)
-		return nil
-	}
-
-	s.log.Debug("converting an item", "item", item)
 	if err := s.converter.Convert(item); err != nil {
 		return errors.Wrapf(err, "conversion of '%s' failed", item.Path)
-	}
-
-	return nil
-}
-
-func (s *Store) considerCleanup() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.log.Debug("considering a cleanup")
-	if !s.nextCleanup.IsZero() && time.Now().After(s.nextCleanup) {
-		s.nextCleanup = time.Time{}
-		s.log.Debug("performing a cleanup")
-		if err := s.performCleanup(); err != nil {
-			return errors.Wrap(err, "cleanup error")
-		}
 	}
 	return nil
 }
@@ -177,6 +195,9 @@ func (s *Store) performCleanup() error {
 	dir := s.converter.OutputDirectory()
 	fileInfos, err := ioutil.ReadDir(dir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return errors.Wrap(err, "could not read the output directory")
 	}
 
@@ -193,36 +214,23 @@ func (s *Store) performCleanup() error {
 	return nil
 }
 
-func (s *Store) getNextItem() (Item, bool, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	rand.Shuffle(len(s.items), func(i, j int) {
-		s.items[i], s.items[j] = s.items[j], s.items[i]
-	})
-
-	for _, item := range s.items {
-		file := s.converter.OutputFile(item.Id)
-		isConverted, err := exists(file)
-		if err != nil {
-			return Item{}, false, errors.Wrap(err, "could not check if a file exists")
-		}
-		if !isConverted {
-			return item, true, nil
-		}
+func (s *Store) needsConversion(item Item) (bool, error) {
+	file := s.converter.OutputFile(item.Id)
+	isConverted, err := exists(file)
+	if err != nil {
+		return false, errors.Wrap(err, "could not check if a file exists")
 	}
-	return Item{}, false, nil
+	return !isConverted, nil
 }
 
 func (s *Store) countConvertedItems() (int, error) {
 	counter := 0
 	for _, item := range s.items {
-		file := s.converter.OutputFile(item.Id)
-		isConverted, err := exists(file)
+		needsConversion, err := s.needsConversion(item)
 		if err != nil {
 			return 0, errors.Wrap(err, "could not check if a file exists")
 		}
-		if isConverted {
+		if !needsConversion {
 			counter++
 		}
 	}
