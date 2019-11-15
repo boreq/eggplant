@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"image"
 	_ "image/gif"
-	_ "image/jpeg"
-	"image/png"
+	"image/jpeg"
 	_ "image/png"
 	"os"
 	"path"
@@ -16,7 +15,7 @@ import (
 )
 
 const thumbnailSize = 200
-const thumbnailExtension = "png"
+const thumbnailExtension = "jpg"
 const thumbnailDirectory = "thumbnails"
 
 func NewThumbnailStore(dataDir string) (*Store, error) {
@@ -65,8 +64,10 @@ func (c *ThumbnailConverter) Convert(item Item) error {
 
 	resized := resize.Resize(thumbnailSize, thumbnailSize, img, resize.Lanczos3)
 
-	encoder := png.Encoder{CompressionLevel: png.BestCompression}
-	if err := encoder.Encode(output, resized); err != nil {
+	options := &jpeg.Options{
+		Quality: 95,
+	}
+	if err := jpeg.Encode(output, resized, options); err != nil {
 		return errors.Wrap(err, "encoding failed")
 	}
 
