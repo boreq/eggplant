@@ -42,7 +42,7 @@ type Converter interface {
 func NewStore(log logging.Logger, converter Converter) (*Store, error) {
 	s := &Store{
 		converter: converter,
-		ch:        make(chan []Item),
+		itemsCh:   make(chan []Item),
 		wg:        &sync.WaitGroup{},
 		log:       log,
 	}
@@ -55,7 +55,7 @@ func NewStore(log logging.Logger, converter Converter) (*Store, error) {
 
 type Store struct {
 	converter Converter
-	ch        chan []Item
+	itemsCh   chan []Item
 	items     []Item
 	mutex     sync.Mutex
 	wg        *sync.WaitGroup
@@ -91,7 +91,7 @@ func (s *Store) GetStats() (queries.StoreStats, error) {
 }
 
 func (s *Store) SetItems(items []Item) {
-	s.ch <- items
+	s.itemsCh <- items
 }
 
 func (s *Store) GetFilePath(id string) (string, error) {
@@ -113,7 +113,7 @@ func (s *Store) setItems(items []Item) {
 }
 
 func (s *Store) run(ch chan<- Item) {
-	itemsCh := onlyLast(s.ch)
+	itemsCh := onlyLast(s.itemsCh)
 outer:
 	for {
 		s.log.Debug("starting cleanup and conversion")
