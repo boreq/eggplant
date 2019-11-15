@@ -31,7 +31,7 @@ func (c *cache) Handler(r *http.Request) rest.RestResponse {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	if c.recorded.IsZero() || c.recorded.Add(c.duration).After(time.Now()) {
+	if c.recorded.IsZero() || c.recorded.Add(c.duration).Before(time.Now()) {
 		c.recorded = time.Now()
 		c.response = c.handler(r)
 	}
