@@ -114,6 +114,8 @@ func (s *Store) setItems(items []Item) {
 
 func (s *Store) run(ch chan<- Item) {
 	itemsCh := onlyLast(s.itemsCh)
+	s.setItems(<-itemsCh)
+
 outer:
 	for {
 		s.log.Debug("starting cleanup and conversion")
