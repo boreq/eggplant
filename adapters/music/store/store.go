@@ -113,6 +113,7 @@ func (s *Store) setItems(items []Item) {
 }
 
 func (s *Store) run(ch chan<- Item) {
+	itemsCh := onlyLast(s.ch)
 outer:
 	for {
 		s.log.Debug("starting cleanup and conversion")
@@ -140,7 +141,7 @@ outer:
 
 			if convert {
 				select {
-				case items := <-s.ch:
+				case items := <-itemsCh:
 					s.wg.Wait()
 					s.setItems(items)
 					continue outer
@@ -153,7 +154,7 @@ outer:
 		s.wg.Wait()
 
 		select {
-		case items := <-s.ch:
+		case items := <-itemsCh:
 			s.wg.Wait()
 			s.setItems(items)
 		case <-time.After(scanEvery):
@@ -277,4 +278,36 @@ func exists(file string) (bool, error) {
 func makeDirectory(file string) error {
 	dir, _ := path.Split(file)
 	return os.MkdirAll(dir, os.ModePerm)
+}
+
+func onlyLast(inCh <-chan []Item) <-chan []Item {
+	ch := make(chan []Item)
+	go func() {
+		defer close(ch)
+
+		var received *[]Item
+
+		for {
+			if received != nil {
+				select {
+				case item, ok := <-inCh:
+					if !ok {
+						return
+					}
+					tmp := item
+					received = &tmp
+				case ch <- *received:
+					received = nil
+				}
+			} else {
+				item, ok := <-inCh
+				if !ok {
+					return
+				}
+				tmp := item
+				received = &tmp
+			}
+		}
+	}()
+	return ch
 }
