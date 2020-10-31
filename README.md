@@ -2,7 +2,7 @@
 
 Eggplant is a music streaming service.
 
-![Eggplant](./screenshot.png)
+![Eggplant](https://user-images.githubusercontent.com/1935975/97783231-444af080-1b8e-11eb-8652-8eea2766d6d4.png)
 
 ## Installation
 
