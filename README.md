@@ -1,6 +1,6 @@
 # Eggplant [![Build Status](https://travis-ci.com/boreq/eggplant.svg?branch=master)](https://travis-ci.com/boreq/eggplant)
 
-Eggplant is a music streaming service.
+Eggplant is a self-hosted music streaming service.
 
 ![Eggplant](https://user-images.githubusercontent.com/1935975/97783231-444af080-1b8e-11eb-8652-8eea2766d6d4.png)
 
