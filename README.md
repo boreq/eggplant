@@ -2,6 +2,8 @@
 
 Eggplant is a music streaming service.
 
+![Eggplant](./screenshot.png)
+
 ## Installation
 
 Eggplant is written in Go which means that the Go tools can be used to install
