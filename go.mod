@@ -7,9 +7,10 @@ require (
 	github.com/boreq/rest v0.1.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/google/wire v0.3.0
+	github.com/google/wire v0.5.0
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
 	github.com/julienschmidt/httprouter v1.2.0
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pkg/errors v0.8.1
 	github.com/radovskyb/watcher v1.0.7
