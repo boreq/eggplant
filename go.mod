@@ -18,7 +18,8 @@ require (
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/testify v1.4.0
 	go.etcd.io/bbolt v1.3.3
-	golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 )
 
 go 1.13
