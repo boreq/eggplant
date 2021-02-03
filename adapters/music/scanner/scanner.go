@@ -182,7 +182,7 @@ func (s *Scanner) isAccessFile(path string) bool {
 }
 
 func (s *Scanner) isThumbnail(path string) bool {
-	filename := filenameWithoutExtension(path)
+	filename := strings.ToLower(filenameWithoutExtension(path))
 	return filename == "thumbnail" || filename == "album" || filename == "cover"
 }
 
