@@ -105,6 +105,10 @@ func (s *Scanner) Start() (<-chan Album, error) {
 					s.log.Error("load error", "err", err)
 					continue
 				}
+				if len(album.Tracks) < 1 {
+					// empty album
+					continue
+				}
 				ch <- album
 			case err := <-w.Error:
 				s.log.Error("watcher error", "err", err)
@@ -118,6 +122,7 @@ func (s *Scanner) Start() (<-chan Album, error) {
 
 func (s *Scanner) load() (Album, error) {
 	root := *newAlbum()
+	albumEmpty := true
 	if err := filepath.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			if s.isThumbnail(path) {
@@ -134,13 +139,19 @@ func (s *Scanner) load() (Album, error) {
 				return nil
 			}
 
-			if err := s.addTrack(&root, path); err != nil {
-				return errors.Wrap(err, "could not add a track")
+			if s.isTrack(path) {
+				if err := s.addTrack(&root, path); err != nil {
+					return errors.Wrap(err, "could not add a track")
+				}
+				albumEmpty = false
 			}
 		}
 		return nil
 	}); err != nil {
 		return Album{}, errors.Wrap(err, "walk failed")
+	}
+	if albumEmpty {
+		return Album{}, nil
 	}
 	return root, nil
 }
@@ -184,6 +195,12 @@ func (s *Scanner) isAccessFile(path string) bool {
 func (s *Scanner) isThumbnail(path string) bool {
 	filename := filenameWithoutExtension(path)
 	return filename == "thumbnail"
+}
+
+func (s *Scanner) isTrack(path string) bool {
+	ext := strings.ToLower(filepath.Ext(s)[1:])
+	
+	return ext == "flac" || ext == "mp3" || ext == "ogg" || ext == "aac" || ext == "wav" || ext == "wma" || ext == "aiff"
 }
 
 func (s *Scanner) findAlbum(root *Album, file string) (*Album, error) {
