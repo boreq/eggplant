@@ -3,7 +3,7 @@ PROGRAM_NAME=eggplant
 
 all: test lint build
 
-ci: tools dependencies generate check-repository-unchanged test lint build
+ci: tools dependencies generate fmt check-repository-unchanged test lint build
 
 build-directory:
 	mkdir -p ./${BUILD_DIRECTORY}
@@ -23,6 +23,7 @@ check-repository-unchanged:
 tools:
 	 go get -u honnef.co/go/tools/cmd/staticcheck
 	 go get -u github.com/google/wire/cmd/wire
+	 go get -u golang.org/x/tools/cmd/goimports
 
 dependencies:
 	go get ./...
@@ -47,4 +48,12 @@ test-verbose:
 clean:
 	rm -rf ./${BUILD_DIRECTORY}
 
-.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean
+fmt:
+	goimports -w -l adapters/
+	goimports -w -l application/
+	goimports -w -l cmd/
+	goimports -w -l internal/
+	goimports -w -l logging/
+	goimports -w -l ports/
+
+.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean fmt

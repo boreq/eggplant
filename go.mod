@@ -7,6 +7,7 @@ require (
 	github.com/boreq/rest v0.1.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/google/subcommands v1.2.0 // indirect
 	github.com/google/wire v0.5.0
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
 	github.com/julienschmidt/httprouter v1.2.0
@@ -19,7 +20,9 @@ require (
 	github.com/stretchr/testify v1.4.0
 	go.etcd.io/bbolt v1.3.3
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
+	honnef.co/go/tools v0.1.1 // indirect
 )
 
 go 1.13
