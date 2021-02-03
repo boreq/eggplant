@@ -199,7 +199,7 @@ func (s *Scanner) isThumbnail(path string) bool {
 
 func (s *Scanner) isTrack(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path)[1:])
-	
+
 	return ext == "flac" || ext == "mp3" || ext == "ogg" || ext == "aac" || ext == "wav" || ext == "wma" || ext == "aiff"
 }
 
