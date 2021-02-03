@@ -183,7 +183,7 @@ func (s *Scanner) isAccessFile(path string) bool {
 
 func (s *Scanner) isThumbnail(path string) bool {
 	filename := filenameWithoutExtension(path)
-	return filename == "thumbnail"
+	return filename == "thumbnail" || filename == "album" || filename == "cover"
 }
 
 func (s *Scanner) findAlbum(root *Album, file string) (*Album, error) {
