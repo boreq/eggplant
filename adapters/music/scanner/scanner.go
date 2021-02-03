@@ -151,7 +151,7 @@ func (s *Scanner) load() (Album, error) {
 		return Album{}, errors.Wrap(err, "walk failed")
 	}
 	if albumEmpty {
-		return Album{}, nil
+		return *newAlbum(), nil
 	}
 	return root, nil
 }
