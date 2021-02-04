@@ -170,11 +170,107 @@ func TestScanner(t *testing.T) {
 				Tracks:     map[string]scanner.Track{},
 			},
 		},
+		{
+			Name: "mixed",
+			Result: scanner.Album{
+				Thumbnail:  "",
+				AccessFile: "",
+				Albums: map[string]*scanner.Album{
+					"mixed": {
+						Thumbnail:  "",
+						AccessFile: "",
+						Albums: map[string]*scanner.Album{
+							"songs": {
+								Thumbnail:  "test_data/mixed/mixed/songs/thumbnail.jpg",
+								AccessFile: "",
+								Albums:     map[string]*scanner.Album{},
+								Tracks: map[string]scanner.Track{
+									"a": {
+										Path: "test_data/mixed/mixed/songs/a.mp3",
+									},
+									"b": {
+										Path: "test_data/mixed/mixed/songs/b.mp3",
+									},
+								},
+							},
+						},
+						Tracks: map[string]scanner.Track{},
+					},
+					"songs": {
+						Thumbnail:  "test_data/mixed/songs/thumbnail.jpg",
+						AccessFile: "",
+						Albums:     map[string]*scanner.Album{},
+						Tracks: map[string]scanner.Track{
+
+							"a": {
+								Path: "test_data/mixed/songs/a.mp3",
+							},
+							"b": {
+								Path: "test_data/mixed/songs/b.mp3",
+							},
+						},
+					},
+				},
+				Tracks: map[string]scanner.Track{},
+			},
+		},
+		{
+			Name: "some_empty",
+			Result: scanner.Album{
+				Thumbnail:  "",
+				AccessFile: "",
+				Albums: map[string]*scanner.Album{
+					"a": {
+						Thumbnail:  "",
+						AccessFile: "",
+						Albums: map[string]*scanner.Album{
+							"a": {
+								Thumbnail:  "test_data/some_empty/a/a/thumbnail.jpg",
+								AccessFile: "",
+								Albums:     map[string]*scanner.Album{},
+								Tracks: map[string]scanner.Track{
+									"a": {
+										Path: "test_data/some_empty/a/a/a.mp3",
+									},
+									"b": {
+										Path: "test_data/some_empty/a/a/b.mp3",
+									},
+								},
+							},
+						},
+						Tracks: map[string]scanner.Track{},
+					},
+				},
+				Tracks: map[string]scanner.Track{},
+			},
+		},
+		{
+			Name: "case_insensitive_extensions",
+			Result: scanner.Album{
+				Thumbnail:  "",
+				AccessFile: "",
+				Albums:     map[string]*scanner.Album{},
+				Tracks: map[string]scanner.Track{
+					"a": {
+						Path: "test_data/case_insensitive_extensions/a.mp3",
+					},
+					"b": {
+						Path: "test_data/case_insensitive_extensions/b.MP3",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			s, err := scanner.New(testDirectory(testCase.Name))
+			config := scanner.Config{
+				TrackExtensions: []string{
+					".mp3",
+				},
+			}
+
+			s, err := scanner.New(testDirectory(testCase.Name), config)
 			require.NoError(t, err)
 
 			c, err := s.Start()

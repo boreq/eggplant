@@ -151,7 +151,8 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 	trackHandler := music.NewTrackHandler(trackStore)
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
 	idGenerator := library.NewIdGenerator()
-	libraryLibrary, err := newLibrary(delimiterAccessLoader, trackStore, store, idGenerator, conf)
+	scannerConfig := newScannerConfig(conf)
+	libraryLibrary, err := newLibrary(delimiterAccessLoader, trackStore, store, idGenerator, conf, scannerConfig)
 	if err != nil {
 		return nil, err
 	}

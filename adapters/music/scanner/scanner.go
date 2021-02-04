@@ -3,6 +3,7 @@
 package scanner
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,18 +49,42 @@ func newAlbum() *Album {
 	}
 }
 
+type Config struct {
+	TrackExtensions []string
+}
+
+func (c Config) Validate() error {
+	if len(c.TrackExtensions) == 0 {
+		return errors.New("missing track extensions")
+	}
+
+	for _, ext := range c.TrackExtensions {
+		if !strings.HasPrefix(ext, ".") {
+			return fmt.Errorf("track extension '%s' should start with a dot", ext)
+		}
+	}
+
+	return nil
+}
+
 // Scanner watches a hard drive directory containing audio files and produces
 // updates whenever its contents change.
 type Scanner struct {
 	directory string
+	config    Config
 	log       logging.Logger
 }
 
 // New creates a new scanner which will watch the specified directory when
 // started.
-func New(directory string) (*Scanner, error) {
+func New(directory string, config Config) (*Scanner, error) {
+	if err := config.Validate(); err != nil {
+		return nil, errors.Wrap(err, "invalid configuration")
+	}
+
 	l := &Scanner{
 		directory: directory,
+		config:    config,
 		log:       logging.New("scanner"),
 	}
 	return l, nil
@@ -119,6 +144,7 @@ func (s *Scanner) Start() (<-chan Album, error) {
 func (s *Scanner) load() (Album, error) {
 	root := *newAlbum()
 	if err := filepath.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
+		fmt.Println(path)
 		if info.Mode()&os.ModeDir != 0 { // skip directories
 			return nil
 		}
@@ -146,14 +172,20 @@ func (s *Scanner) load() (Album, error) {
 			return nil
 		}
 
-		if err := s.addTrack(&root, path); err != nil {
-			return errors.Wrap(err, "could not add a track")
+		if s.isTrack(path) {
+			if err := s.addTrack(&root, path); err != nil {
+				return errors.Wrap(err, "could not add a track")
+			}
+			return nil
 		}
 
 		return nil
 	}); err != nil {
 		return Album{}, errors.Wrap(err, "walk failed")
 	}
+
+	removeEmptyAlbums(&root)
+
 	return root, nil
 }
 
@@ -198,6 +230,16 @@ func (s *Scanner) isThumbnail(path string) bool {
 	return filename == "thumbnail" || filename == "album" || filename == "cover"
 }
 
+func (s *Scanner) isTrack(path string) bool {
+	ext := filepath.Ext(path)
+	for _, trackExt := range s.config.TrackExtensions {
+		if strings.EqualFold(ext, trackExt) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Scanner) findAlbum(root *Album, file string) (*Album, error) {
 	relativePath, err := filepath.Rel(s.directory, file)
 	if err != nil {
@@ -229,4 +271,14 @@ func filenameWithoutExtension(file string) string {
 		return filename[:index]
 	}
 	return filename
+}
+
+func removeEmptyAlbums(root *Album) {
+	for name, album := range root.Albums {
+		removeEmptyAlbums(album)
+
+		if len(album.Albums) == 0 && len(album.Tracks) == 0 {
+			delete(root.Albums, name)
+		}
+	}
 }

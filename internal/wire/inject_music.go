@@ -16,6 +16,7 @@ var musicSet = wire.NewSet(
 	newLibrary,
 	newTrackStore,
 	newThumbnailStore,
+	newScannerConfig,
 	library.NewDelimiterAccessLoader,
 	library.NewIdGenerator,
 
@@ -35,8 +36,9 @@ func newLibrary(
 	thumbnailStore library.ThumbnailStore,
 	idGenerator library.IdGenerator,
 	conf *config.Config,
+	scannerConf scanner.Config,
 ) (*library.Library, error) {
-	scan, err := scanner.New(conf.MusicDirectory)
+	scan, err := scanner.New(conf.MusicDirectory, scannerConf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a scanner")
 	}
@@ -68,4 +70,10 @@ func newThumbnailStore(conf *config.Config) (*store.Store, error) {
 		return nil, errors.Wrap(err, "could not create a thumbnail store")
 	}
 	return thumbnailStore, nil
+}
+
+func newScannerConfig(conf *config.Config) scanner.Config {
+	return scanner.Config{
+		TrackExtensions: conf.TrackExtensions,
+	}
 }
