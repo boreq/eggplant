@@ -161,6 +161,15 @@ func TestScanner(t *testing.T) {
 				Tracks: map[string]scanner.Track{},
 			},
 		},
+		{
+			Name: "symlinks",
+			Result: scanner.Album{
+				Thumbnail:  "",
+				AccessFile: "",
+				Albums:     map[string]*scanner.Album{},
+				Tracks:     map[string]scanner.Track{},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

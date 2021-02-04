@@ -119,25 +119,37 @@ func (s *Scanner) Start() (<-chan Album, error) {
 func (s *Scanner) load() (Album, error) {
 	root := *newAlbum()
 	if err := filepath.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			if s.isThumbnail(path) {
-				if err := s.addThumbnail(&root, path); err != nil {
-					return errors.Wrap(err, "could not add a thumbnail")
-				}
-				return nil
-			}
-
-			if s.isAccessFile(path) {
-				if err := s.addAccessFile(&root, path); err != nil {
-					return errors.Wrap(err, "could not add an access file")
-				}
-				return nil
-			}
-
-			if err := s.addTrack(&root, path); err != nil {
-				return errors.Wrap(err, "could not add a track")
-			}
+		if info.Mode()&os.ModeDir != 0 { // skip directories
+			return nil
 		}
+
+		if info.Mode()&os.ModeSymlink != 0 { // skip symlinks
+			s.log.Warn(
+				"symlinks are not supported",
+				"issue",
+				"https://github.com/boreq/eggplant/issues/25",
+			)
+			return nil
+		}
+
+		if s.isThumbnail(path) {
+			if err := s.addThumbnail(&root, path); err != nil {
+				return errors.Wrap(err, "could not add a thumbnail")
+			}
+			return nil
+		}
+
+		if s.isAccessFile(path) {
+			if err := s.addAccessFile(&root, path); err != nil {
+				return errors.Wrap(err, "could not add an access file")
+			}
+			return nil
+		}
+
+		if err := s.addTrack(&root, path); err != nil {
+			return errors.Wrap(err, "could not add a track")
+		}
+
 		return nil
 	}); err != nil {
 		return Album{}, errors.Wrap(err, "walk failed")
