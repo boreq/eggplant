@@ -144,7 +144,10 @@ func (s *Scanner) Start() (<-chan Album, error) {
 func (s *Scanner) load() (Album, error) {
 	root := *newAlbum()
 	if err := filepath.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
-		fmt.Println(path)
+		if err != nil {
+			return errors.Wrap(err, "received an error")
+		}
+
 		if info.Mode()&os.ModeDir != 0 { // skip directories
 			return nil
 		}

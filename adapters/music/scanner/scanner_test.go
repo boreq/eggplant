@@ -283,6 +283,20 @@ func TestScanner(t *testing.T) {
 	}
 }
 
+func TestScannerFailsIfDirectoryDoesNotExist(t *testing.T) {
+	config := scanner.Config{
+		TrackExtensions: []string{
+			".mp3",
+		},
+	}
+
+	s, err := scanner.New("some-completely-made-up-file-name-come-on-surely-this-does-not-exist", config)
+	require.NoError(t, err)
+
+	_, err = s.Start()
+	require.EqualError(t, err, "initial load failed: walk failed: received an error: lstat some-completely-made-up-file-name-come-on-surely-this-does-not-exist: no such file or directory")
+}
+
 func testDirectory(name string) string {
 	return path.Join("test_data", name)
 }
