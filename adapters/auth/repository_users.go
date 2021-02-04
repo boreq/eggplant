@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/logging"
@@ -87,6 +88,8 @@ func (r *UserRepository) Get(username string) (*auth.User, error) {
 }
 
 func (r *UserRepository) Put(user auth.User) error {
+	user.Sessions = r.removeOldSessions(user.Sessions)
+
 	j, err := json.Marshal(user)
 	if err != nil {
 		return errors.Wrap(err, "marshaling to json failed")
@@ -97,4 +100,16 @@ func (r *UserRepository) Put(user auth.User) error {
 		return errors.New("bucket does not exist")
 	}
 	return b.Put([]byte(user.Username), j)
+}
+
+func (r *UserRepository) removeOldSessions(sessions []auth.Session) []auth.Session {
+	var result []auth.Session
+
+	for _, session := range sessions {
+		if session.LastSeen.Add(365 * 24 * time.Hour).After(time.Now()) {
+			result = append(result, session)
+		}
+	}
+
+	return result
 }
