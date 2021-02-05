@@ -2,12 +2,15 @@ package auth
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	bolt "go.etcd.io/bbolt"
 )
+
+const maxInvitationAge = 48 * time.Hour
 
 type InvitationRepository struct {
 	tx     *bolt.Tx
@@ -41,6 +44,11 @@ func (r *InvitationRepository) Put(invitation auth.Invitation) error {
 	if b == nil {
 		return errors.New("bucket does not exist")
 	}
+
+	if err := r.removeOldInvitations(b); err != nil {
+		return errors.Wrap(err, "could not remove old invitations")
+	}
+
 	return b.Put([]byte(invitation.Token), j)
 }
 
@@ -59,6 +67,10 @@ func (r *InvitationRepository) Get(token auth.InvitationToken) (*auth.Invitation
 		return nil, errors.Wrap(err, "json unmarshal failed")
 	}
 
+	if time.Now().After(invitation.Created.Add(maxInvitationAge)) {
+		return nil, auth.ErrNotFound
+	}
+
 	return invitation, nil
 }
 
@@ -68,4 +80,31 @@ func (r *InvitationRepository) Remove(token auth.InvitationToken) error {
 		return errors.New("bucket does not exist")
 	}
 	return b.Delete([]byte(token))
+}
+
+func (r *InvitationRepository) removeOldInvitations(b *bolt.Bucket) error {
+	var keysToRemove [][]byte
+
+	if err := b.ForEach(func(key, value []byte) error {
+		invitation := &auth.Invitation{}
+		if err := json.Unmarshal(value, invitation); err != nil {
+			return errors.Wrap(err, "json unmarshal failed")
+		}
+
+		if time.Now().After(invitation.Created.Add(maxInvitationAge)) {
+			keysToRemove = append(keysToRemove, nil)
+		}
+
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "for each failed")
+	}
+
+	for _, key := range keysToRemove {
+		if err := b.Delete(key); err != nil {
+			return errors.Wrap(err, "delete failed")
+		}
+	}
+
+	return nil
 }
