@@ -51,6 +51,7 @@ func newAlbum() *Album {
 
 type Config struct {
 	TrackExtensions []string
+	ThumbnailStems  []string
 }
 
 func (c Config) Validate() error {
@@ -61,6 +62,16 @@ func (c Config) Validate() error {
 	for _, ext := range c.TrackExtensions {
 		if !strings.HasPrefix(ext, ".") {
 			return fmt.Errorf("track extension '%s' should start with a dot", ext)
+		}
+	}
+
+	if len(c.ThumbnailStems) == 0 {
+		return errors.New("missing thumbnail stems")
+	}
+
+	for _, stem := range c.ThumbnailStems {
+		if stem == "" {
+			return errors.New("passed a blank thumbnail stem")
 		}
 	}
 
@@ -229,8 +240,13 @@ func (s *Scanner) isAccessFile(path string) bool {
 }
 
 func (s *Scanner) isThumbnail(path string) bool {
-	filename := strings.ToLower(filenameWithoutExtension(path))
-	return filename == "thumbnail" || filename == "album" || filename == "cover"
+	stem := filenameWithoutExtension(path)
+	for _, thumbnailStem := range s.config.ThumbnailStems {
+		if strings.EqualFold(stem, thumbnailStem) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Scanner) isTrack(path string) bool {

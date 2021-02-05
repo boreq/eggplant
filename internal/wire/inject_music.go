@@ -75,5 +75,6 @@ func newThumbnailStore(conf *config.Config) (*store.Store, error) {
 func newScannerConfig(conf *config.Config) scanner.Config {
 	return scanner.Config{
 		TrackExtensions: conf.TrackExtensions,
+		ThumbnailStems:  conf.ThumbnailStems,
 	}
 }
