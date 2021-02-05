@@ -260,6 +260,42 @@ func TestScanner(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "case_insensitive_thumbnails",
+			Result: scanner.Album{
+				Thumbnail:  "",
+				AccessFile: "",
+				Albums: map[string]*scanner.Album{
+					"a": {
+						Thumbnail:  "test_data/case_insensitive_thumbnails/a/thumbnail.jpg",
+						AccessFile: "",
+						Albums:     map[string]*scanner.Album{},
+						Tracks: map[string]scanner.Track{
+							"a": {
+								Path: "test_data/case_insensitive_thumbnails/a/a.mp3",
+							},
+							"b": {
+								Path: "test_data/case_insensitive_thumbnails/a/b.mp3",
+							},
+						},
+					},
+					"b": {
+						Thumbnail:  "test_data/case_insensitive_thumbnails/b/THUMBNAIL.JPG",
+						AccessFile: "",
+						Albums:     map[string]*scanner.Album{},
+						Tracks: map[string]scanner.Track{
+							"a": {
+								Path: "test_data/case_insensitive_thumbnails/b/a.mp3",
+							},
+							"b": {
+								Path: "test_data/case_insensitive_thumbnails/b/b.mp3",
+							},
+						},
+					},
+				},
+				Tracks: map[string]scanner.Track{},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
