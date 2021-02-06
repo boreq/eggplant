@@ -354,9 +354,6 @@ func TestScanner(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			if testCase.Name != "symlinks" { // TODO remove
-				return
-			}
 			config := testConfig()
 
 			s, err := scanner.New(testDirectory(testCase.Name), config)
