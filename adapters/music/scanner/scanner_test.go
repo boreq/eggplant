@@ -348,7 +348,7 @@ func TestScanner(t *testing.T) {
 		{
 			Name:   "symlinks_loop",
 			Result: scanner.Album{},
-			Error:  errors.New("initial load failed: walk failed: look detected: 'test_data/symlinks_loop/a' visited multiple times"),
+			Error:  errors.New("initial load failed: walk failed: loop detected: 'test_data/symlinks_loop/a' visited multiple times"),
 		},
 	}
 
