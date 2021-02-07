@@ -169,7 +169,7 @@ func (s *Scanner) load() (Album, error) {
 
 		_, ok := visited[realPath]
 		if ok {
-			return fmt.Errorf("look detected: '%s' visited multiple times", realPath)
+			return fmt.Errorf("loop detected: '%s' visited multiple times", realPath)
 		}
 
 		visited[realPath] = struct{}{}
