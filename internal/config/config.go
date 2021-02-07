@@ -44,6 +44,7 @@ func Default() *Config {
 			"thumbnail",
 			"album",
 			"cover",
+			"folder",
 		},
 	}
 	return conf
