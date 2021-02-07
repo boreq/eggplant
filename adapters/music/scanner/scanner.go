@@ -240,7 +240,11 @@ func (s *Scanner) isAccessFile(path string) bool {
 }
 
 func (s *Scanner) isThumbnail(path string) bool {
+	dirname := filepath.Base(filepath.Dir(path))
 	stem := filenameWithoutExtension(path)
+	if strings.EqualFold(stem, dirname) {
+		return true
+	}
 	for _, thumbnailStem := range s.config.ThumbnailStems {
 		if strings.EqualFold(stem, thumbnailStem) {
 			return true
