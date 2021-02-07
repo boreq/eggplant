@@ -37,7 +37,7 @@ func (p *AuthTransactionProvider) Read(handler auth.TransactionHandler) error {
 }
 
 func (p *AuthTransactionProvider) Write(handler auth.TransactionHandler) error {
-	return p.db.Update(func(tx *bolt.Tx) error {
+	return p.db.Batch(func(tx *bolt.Tx) error {
 		repositories, err := p.repositoriesProvider.Provide(tx)
 		if err != nil {
 			return errors.Wrap(err, "could not provide the repositories")
