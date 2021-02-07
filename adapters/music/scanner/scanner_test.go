@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/boreq/eggplant/adapters/music/scanner"
+	"github.com/boreq/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,6 +13,7 @@ func TestScanner(t *testing.T) {
 	testCases := []struct {
 		Name   string
 		Result scanner.Album
+		Error  error
 	}{
 		{
 			Name: "flat",
@@ -166,8 +168,55 @@ func TestScanner(t *testing.T) {
 			Result: scanner.Album{
 				Thumbnail:  "",
 				AccessFile: "",
-				Albums:     map[string]*scanner.Album{},
-				Tracks:     map[string]scanner.Track{},
+				Albums: map[string]*scanner.Album{
+					"a": {
+						Thumbnail:  "test_data/symlinks/a/thumbnail.jpg",
+						AccessFile: "",
+						Albums:     map[string]*scanner.Album{},
+						Tracks: map[string]scanner.Track{
+							"a": {
+								Path: "test_data/symlinks/a/a.mp3",
+							},
+							"b": {
+								Path: "test_data/symlinks/a/b.mp3",
+							},
+						},
+					},
+					"b": {
+						Thumbnail:  "",
+						AccessFile: "test_data/symlinks/b/eggplant.access",
+						Albums:     map[string]*scanner.Album{},
+						Tracks: map[string]scanner.Track{
+							"a": {
+								Path: "test_data/symlinks/b/a.mp3",
+							},
+							"b": {
+								Path: "test_data/symlinks/b/b.mp3",
+							},
+						},
+					},
+					"c": {
+						Thumbnail:  "",
+						AccessFile: "",
+						Albums:     map[string]*scanner.Album{},
+						Tracks: map[string]scanner.Track{
+							"a": {
+								Path: "test_data/symlinks/c/a.mp3",
+							},
+							"b": {
+								Path: "test_data/symlinks/c/b.mp3",
+							},
+						},
+					},
+				},
+				Tracks: map[string]scanner.Track{
+					"a": {
+						Path: "test_data/symlinks/a.mp3",
+					},
+					"b": {
+						Path: "test_data/symlinks/b.mp3",
+					},
+				},
 			},
 		},
 		{
@@ -296,6 +345,11 @@ func TestScanner(t *testing.T) {
 				Tracks: map[string]scanner.Track{},
 			},
 		},
+		{
+			Name:   "symlinks_loop",
+			Result: scanner.Album{},
+			Error:  errors.New("initial load failed: walk failed: loop detected: 'test_data/symlinks_loop/a' visited multiple times"),
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -306,11 +360,15 @@ func TestScanner(t *testing.T) {
 			require.NoError(t, err)
 
 			c, err := s.Start()
-			require.NoError(t, err)
 
-			album := <-c
-			require.Equal(t, testCase.Result, album)
+			if testCase.Error == nil {
+				require.NoError(t, err)
 
+				album := <-c
+				require.Equal(t, testCase.Result, album)
+			} else {
+				require.EqualError(t, err, testCase.Error.Error())
+			}
 		})
 	}
 }

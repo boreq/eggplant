@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boreq/eggplant/adapters/music/scanner/symwalk"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/radovskyb/watcher"
@@ -153,22 +154,31 @@ func (s *Scanner) Start() (<-chan Album, error) {
 }
 
 func (s *Scanner) load() (Album, error) {
+	visited := make(map[string]struct{})
+
 	root := *newAlbum()
-	if err := filepath.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
+	if err := symwalk.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "received an error")
 		}
+
+		realPath, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			return errors.Wrap(err, "could not eval a symlink")
+		}
+
+		_, ok := visited[realPath]
+		if ok {
+			return fmt.Errorf("loop detected: '%s' visited multiple times", realPath)
+		}
+
+		visited[realPath] = struct{}{}
 
 		if info.Mode()&os.ModeDir != 0 { // skip directories
 			return nil
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 { // skip symlinks
-			s.log.Warn(
-				"symlinks are not supported",
-				"issue",
-				"https://github.com/boreq/eggplant/issues/25",
-			)
 			return nil
 		}
 
