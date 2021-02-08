@@ -56,7 +56,11 @@ func BuildAuthForTest(db *bbolt.DB) (*auth.Auth, error) {
 	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
 	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
 	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
-	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
+	if err != nil {
+		return nil, err
+	}
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator, lastSeenUpdater)
 	listHandler := auth.NewListHandler(authTransactionProvider)
 	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
 	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
@@ -89,7 +93,11 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
 	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
 	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
-	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
+	if err != nil {
+		return nil, err
+	}
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator, lastSeenUpdater)
 	listHandler := auth.NewListHandler(authTransactionProvider)
 	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
 	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
@@ -122,7 +130,11 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
 	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
 	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
-	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
+	if err != nil {
+		return nil, err
+	}
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator, lastSeenUpdater)
 	listHandler := auth.NewListHandler(authTransactionProvider)
 	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
 	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
@@ -179,6 +191,6 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		return nil, err
 	}
 	server := http.NewServer(handler)
-	serviceService := service.NewService(server)
+	serviceService := service.NewService(server, lastSeenUpdater, conf)
 	return serviceService, nil
 }

@@ -13,15 +13,18 @@ type CheckAccessToken struct {
 type CheckAccessTokenHandler struct {
 	transactionProvider  TransactionProvider
 	accessTokenGenerator AccessTokenGenerator
+	lastSeenUpdater      LastSeenUpdater
 }
 
 func NewCheckAccessTokenHandler(
 	transactionProvider TransactionProvider,
 	accessTokenGenerator AccessTokenGenerator,
+	lastSeenUpdater LastSeenUpdater,
 ) *CheckAccessTokenHandler {
 	return &CheckAccessTokenHandler{
 		transactionProvider:  transactionProvider,
 		accessTokenGenerator: accessTokenGenerator,
+		lastSeenUpdater:      lastSeenUpdater,
 	}
 }
 
@@ -32,7 +35,9 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, erro
 	}
 
 	var foundUser *User
-	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
+	var foundSession *Session
+
+	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
 		u, err := r.Users.Get(username)
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
@@ -41,12 +46,12 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, erro
 			return errors.Wrap(err, "could not get the user")
 		}
 
-		for i := range u.Sessions {
-			if u.Sessions[i].Token == cmd.Token {
-				u.LastSeen = time.Now()
-				u.Sessions[i].LastSeen = time.Now()
-				foundUser = u
-				return r.Users.Put(*u)
+		foundUser = u
+
+		for _, s := range u.Sessions {
+			if s.Token == cmd.Token {
+				foundSession = &s
+				return nil
 			}
 		}
 
@@ -54,6 +59,8 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, erro
 	}); err != nil {
 		return nil, errors.Wrap(err, "transaction failed")
 	}
+
+	h.lastSeenUpdater.Update(foundUser.Username, foundSession.Token, time.Now())
 
 	rv := toReadUser(*foundUser)
 	return &rv, nil

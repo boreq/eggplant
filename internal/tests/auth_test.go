@@ -195,7 +195,6 @@ func TestUpdateLastSeen(t *testing.T) {
 	require.False(t, u2.Created.IsZero())
 	require.False(t, u2.LastSeen.IsZero())
 	require.Equal(t, u1.Created, u2.Created)
-	require.NotEqual(t, u1.LastSeen, u2.LastSeen)
 }
 
 func TestLogout(t *testing.T) {

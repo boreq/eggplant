@@ -57,6 +57,10 @@ type InvitationRepository interface {
 	Remove(token InvitationToken) error
 }
 
+type LastSeenUpdater interface {
+	Update(username string, token AccessToken, t time.Time)
+}
+
 type AccessToken string
 
 type InvitationToken string

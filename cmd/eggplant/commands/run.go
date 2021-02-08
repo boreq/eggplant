@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"context"
+
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/internal/wire"
 	"github.com/boreq/errors"
@@ -45,5 +47,5 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not create a service")
 	}
 
-	return service.HTTPServer.Serve(conf.ServeAddress)
+	return service.Run(context.Background())
 }

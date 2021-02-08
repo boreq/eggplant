@@ -63,6 +63,9 @@ var appSet = wire.NewSet(
 
 	authAdapters.NewCryptoStringGenerator,
 	wire.Bind(new(auth.CryptoStringGenerator), new(*authAdapters.CryptoStringGenerator)),
+
+	authAdapters.NewLastSeenUpdater,
+	wire.Bind(new(auth.LastSeenUpdater), new(*authAdapters.LastSeenUpdater)),
 )
 
 type authRepositoriesProvider struct {
