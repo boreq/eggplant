@@ -20,11 +20,18 @@ type Config struct {
 	// this list should begin with a dot. Extensions are case insenitive.
 	TrackExtensions []string
 
-	// Files with those stems in their names are recognized as thumbnails.
-	// For example if "thumbnail" is present in this list then files such
-	// as "thumbnail.jpg", "thumbnail.png" etc. would be considered a
-	// thumbnail. Stems are case insensitive.
+	// Files with those stems in their names and one of the thumbail
+	// extensions are recognized as thumbnails. For example if "thumbnail"
+	// is present in this list then files such as "thumbnail.jpg",
+	// "thumbnail.png" etc. would be considered to be a thumbnail given
+	// that ".jpg" and ".png" are present in the list of thumbnail
+	// extensions. Stems are case insensitive.
 	ThumbnailStems []string
+
+	// Files with those extensions and one of the thumbnail stems in their
+	// name are recognized as thumbnails. Extensions in this list should
+	// begin with a dot. Extensions are case insenitive.
+	ThumbnailExtensions []string
 }
 
 // Default returns the default config.
@@ -46,6 +53,12 @@ func Default() *Config {
 			"album",
 			"cover",
 			"folder",
+		},
+		ThumbnailExtensions: []string{
+			".jpg",
+			".jpeg",
+			".png",
+			".gif",
 		},
 	}
 	return conf

@@ -51,8 +51,9 @@ func newAlbum() *Album {
 }
 
 type Config struct {
-	TrackExtensions []string
-	ThumbnailStems  []string
+	TrackExtensions     []string
+	ThumbnailStems      []string
+	ThumbnailExtensions []string
 }
 
 func (c Config) Validate() error {
@@ -73,6 +74,16 @@ func (c Config) Validate() error {
 	for _, stem := range c.ThumbnailStems {
 		if stem == "" {
 			return errors.New("passed a blank thumbnail stem")
+		}
+	}
+
+	if len(c.ThumbnailExtensions) == 0 {
+		return errors.New("missing thumbnail extensions")
+	}
+
+	for _, ext := range c.ThumbnailExtensions {
+		if !strings.HasPrefix(ext, ".") {
+			return fmt.Errorf("thumbnail extension '%s' should start with a dot", ext)
 		}
 	}
 
@@ -250,9 +261,23 @@ func (s *Scanner) isAccessFile(path string) bool {
 }
 
 func (s *Scanner) isThumbnail(path string) bool {
+	return s.hasThumbnailStem(path) && s.hasThumbnailExtension(path)
+}
+
+func (s *Scanner) hasThumbnailStem(path string) bool {
 	stem := filenameWithoutExtension(path)
 	for _, thumbnailStem := range s.config.ThumbnailStems {
 		if strings.EqualFold(stem, thumbnailStem) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Scanner) hasThumbnailExtension(path string) bool {
+	ext := filepath.Ext(path)
+	for _, thumbnailExt := range s.config.ThumbnailExtensions {
+		if strings.EqualFold(ext, thumbnailExt) {
 			return true
 		}
 	}

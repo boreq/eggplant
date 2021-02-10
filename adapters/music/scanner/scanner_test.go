@@ -391,6 +391,9 @@ func testConfig() scanner.Config {
 		ThumbnailStems: []string{
 			"thumbnail",
 		},
+		ThumbnailExtensions: []string{
+			".jpg",
+		},
 	}
 }
 
