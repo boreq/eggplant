@@ -24,3 +24,9 @@ jobs:
 
       - name: Run tests
         run: make ci
+
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+            name: eggplant
+            path: _build/eggplant
