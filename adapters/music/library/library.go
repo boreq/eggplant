@@ -4,8 +4,11 @@ package library
 
 import (
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
@@ -127,7 +130,7 @@ func (l *Library) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, err
 		}
 		listed.Albums = append(listed.Albums, d)
 	}
-	sort.Slice(listed.Albums, func(i, j int) bool { return listed.Albums[i].Title < listed.Albums[j].Title })
+	sortAlbums(listed.Albums)
 
 	if canAccess(access, publicOnly) {
 		for id, track := range album.tracks {
@@ -139,7 +142,7 @@ func (l *Library) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, err
 			}
 			listed.Tracks = append(listed.Tracks, t)
 		}
-		sort.Slice(listed.Tracks, func(i, j int) bool { return listed.Tracks[i].Title < listed.Tracks[j].Title })
+		SortTracks(listed.Tracks)
 	}
 
 	return listed, nil
@@ -366,4 +369,38 @@ func newAlbum(title string) *album {
 		albums: make(map[music.AlbumId]*album),
 		tracks: make(map[music.TrackId]track),
 	}
+}
+
+func sortAlbums(albums []music.Album) {
+	sort.Slice(albums,
+		func(i, j int) bool {
+			return albums[i].Title < albums[j].Title
+		},
+	)
+}
+
+func SortTracks(tracks []music.Track) {
+	sort.Slice(tracks,
+		func(i, j int) bool {
+			fieldsI := strings.Fields(tracks[i].Title)
+			fieldsJ := strings.Fields(tracks[j].Title)
+
+			if len(fieldsI) > 0 && len(fieldsJ) > 0 {
+				f := func(r rune) bool {
+					return !unicode.IsNumber(r)
+				}
+
+				numI, errI := strconv.Atoi(strings.TrimFunc(fieldsI[0], f))
+				numJ, errJ := strconv.Atoi(strings.TrimFunc(fieldsJ[0], f))
+				if errI == nil && errJ == nil {
+					if numI == numJ {
+						return strings.Join(fieldsI[1:], "") < strings.Join(fieldsJ[1:], "")
+					}
+					return numI < numJ
+				}
+			}
+
+			return tracks[i].Title < tracks[j].Title
+		},
+	)
 }

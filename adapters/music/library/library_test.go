@@ -479,3 +479,175 @@ func TestLibrary(t *testing.T) {
 		})
 	}
 }
+
+func TestSortTracks(t *testing.T) {
+	testCases := []struct {
+		Name   string
+		Input  []string
+		Output []string
+	}{
+		{
+			Name: "one_word",
+			Input: []string{
+				"ccc",
+				"bbb",
+				"aaa",
+			},
+			Output: []string{
+				"aaa",
+				"bbb",
+				"ccc",
+			},
+		},
+		{
+			Name: "multiple_words",
+			Input: []string{
+				"ccc ccc",
+				"bbb bbb",
+				"aaa aaa",
+			},
+			Output: []string{
+				"aaa aaa",
+				"bbb bbb",
+				"ccc ccc",
+			},
+		},
+		{
+			Name: "numbers",
+			Input: []string{
+				"3",
+				"2",
+				"1",
+			},
+			Output: []string{
+				"1",
+				"2",
+				"3",
+			},
+		},
+		{
+			Name: "same_numbers",
+			Input: []string{
+				"1",
+				"1",
+				"1",
+			},
+			Output: []string{
+				"1",
+				"1",
+				"1",
+			},
+		},
+		{
+			Name: "same_and_words",
+			Input: []string{
+				"1 c",
+				"1 b",
+				"1 a",
+			},
+			Output: []string{
+				"1 a",
+				"1 b",
+				"1 c",
+			},
+		},
+		{
+			Name: "numbered",
+			Input: []string{
+				"10 some title",
+				"9 some title",
+				"8 some title",
+				"7 some title",
+				"6 some title",
+				"5 some title",
+				"4 some title",
+				"3 some title",
+				"2 some title",
+				"1 some title",
+			},
+			Output: []string{
+				"1 some title",
+				"2 some title",
+				"3 some title",
+				"4 some title",
+				"5 some title",
+				"6 some title",
+				"7 some title",
+				"8 some title",
+				"9 some title",
+				"10 some title",
+			},
+		},
+		{
+			Name: "numbered_dots",
+			Input: []string{
+				"10. some title",
+				"9. some title",
+				"8. some title",
+				"7. some title",
+				"6. some title",
+				"5. some title",
+				"4. some title",
+				"3. some title",
+				"2. some title",
+				"1. some title",
+			},
+			Output: []string{
+				"1. some title",
+				"2. some title",
+				"3. some title",
+				"4. some title",
+				"5. some title",
+				"6. some title",
+				"7. some title",
+				"8. some title",
+				"9. some title",
+				"10. some title",
+			},
+		},
+		{
+			Name: "prefixed_numbered",
+			Input: []string{
+				"10 some title",
+				"09 some title",
+				"08 some title",
+				"07 some title",
+				"06 some title",
+				"05 some title",
+				"04 some title",
+				"03 some title",
+				"02 some title",
+				"01 some title",
+			},
+			Output: []string{
+				"01 some title",
+				"02 some title",
+				"03 some title",
+				"04 some title",
+				"05 some title",
+				"06 some title",
+				"07 some title",
+				"08 some title",
+				"09 some title",
+				"10 some title",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			var input []music.Track
+			for _, s := range testCase.Input {
+				input = append(input, music.Track{Title: s})
+			}
+
+			var output []music.Track
+			for _, s := range testCase.Output {
+				output = append(output, music.Track{Title: s})
+			}
+
+			library.SortTracks(input)
+			require.Equal(t, output, input)
+		})
+	}
+}
