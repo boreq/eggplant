@@ -1,7 +1,9 @@
 BUILD_DIRECTORY=_build
 PROGRAM_NAME=eggplant
 
-all: test lint build
+all: build
+
+dev: test lint build
 
 ci: tools dependencies generate tidy fmt check-repository-unchanged test lint build
 
@@ -59,4 +61,4 @@ fmt:
 	goimports -w -l logging/
 	goimports -w -l ports/
 
-.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean fmt tidy
+.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean fmt tidy dev
