@@ -26,5 +26,5 @@ func TestGolden(t *testing.T) {
 	expected, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
 
-	require.Equal(t, string(expected), string(actual.Bytes()))
+	require.Equal(t, string(expected), actual.String())
 }
