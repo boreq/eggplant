@@ -12,18 +12,25 @@ configuration file.
 
 ## Installation
 
-Eggplant is written in Go which means that the Go tools can be used to install
-the program using the following command:
+### Arch Linux
 
-    $  go get github.com/boreq/eggplant/cmd/eggplant
+On Arch Linux you can use the [`eggplant-git`][aur-eggplant-git] package
+available in the AUR.
 
-If you prefer to do this by hand clone the repository and execute the `make`
-command:
+### Source code
+
+Compiling the source code requires the Go language toolchain. In order to
+build the program hand clone the repository and execute the `make` command:
 
     $ git clone https://github.com/boreq/eggplant
     $ make
     $ ls _build
     eggplant
+
+If you prefer you can instead use the Go tools directly to install the
+program into [`$GOBIN`][go-get] using the following command:
+
+    $  go get github.com/boreq/eggplant/cmd/eggplant
 
 Eggplant requires `ffmpeg` to be installed in order to convert audio files.
 
@@ -131,3 +138,5 @@ files inside of them.
 [anchor-supported-thumbnail-stems]: #supported-thumbnail-stems
 [anchor-thumbnails]: #thumbnails
 [anchor-access-file]: #access-file
+[aur-eggplant-git]: https://aur.archlinux.org/packages/eggplant-git/
+[go-get]: https://golang.org/cmd/go/#hdr-Add_dependencies_to_current_module_and_install_them
