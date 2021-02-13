@@ -8,8 +8,9 @@ import (
 var MainCmd = guinea.Command{
 	Run: runMain,
 	Subcommands: map[string]*guinea.Command{
-		"run":   &runCmd,
-		"users": &users.UsersCmd,
+		"run":            &runCmd,
+		"default_config": &defaultConfigCmd,
+		"users":          &users.UsersCmd,
 	},
 	ShortDescription: "a music streaming service",
 	Description: `
