@@ -37,7 +37,7 @@ Edit the newly created configuration file with your favourite editor to
 configure the program. At minimum you have to modify the following
 configuration keys: `music_directory` and `data_directory`. See section ["Music
 directory"][anchor-music-directory] to learn more about the structure of the
-directory containing your music.
+music directory.
 
 Eggplant accepts a single argument: a path to the configuration file.
 
