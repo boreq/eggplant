@@ -2,7 +2,7 @@
 
 Eggplant is a self-hosted music streaming service.
 
-![Eggplant](screenshot)
+![Eggplant][screenshot]
 
 ## Disclaimer
 
