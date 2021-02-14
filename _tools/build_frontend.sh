@@ -21,7 +21,7 @@ commitFile="/tmp/eggplant-frontend-commit.txt"
 touch ${commitFile}
 echo "Update frontend" > ${commitFile}
 echo "" >> ${commitFile}
-git log --pretty=format:%s ${previousCommit}..${commit} >> ${commitFile}
+git log --pretty=medium ${previousCommit}..${commit} >> ${commitFile}
 
 echo "Building the frontend"
 rm -rf dist
