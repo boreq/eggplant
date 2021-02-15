@@ -12,7 +12,9 @@ type ExposedConfig struct {
 
 	MusicDirectory string `toml:"music_directory" comment:"Path to a directory containing your music."`
 
-	DataDirectory string `toml:"data_directory" comment:"Path to a directory which will be used for data storage. Eggplant\n will store its database and converted files in this directory."`
+	DataDirectory string `toml:"data_directory" comment:"Path to a directory which will be used for data storage. Eggplant will store\n its database in this directory. This directory should never be purged."`
+
+	CacheDirectory string `toml:"cache_directory" comment:"Path to a directory which will be used for caching converted tracks and\n thumbnails. You should not remove files from this directory unless necessary\n as Eggplant ensures that old data is automatically removed and removing the\n cached files will force Eggplant to convert all tracks and thumbnails again."`
 }
 
 type Config struct {
@@ -43,6 +45,7 @@ func Default() *Config {
 			ServeAddress:   "127.0.0.1:8118",
 			MusicDirectory: "/path/to/music",
 			DataDirectory:  "/path/to/data",
+			CacheDirectory: "/path/to/cache",
 		},
 		TrackExtensions: []string{
 			".flac",

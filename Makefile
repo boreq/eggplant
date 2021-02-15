@@ -61,4 +61,7 @@ fmt:
 	goimports -w -l logging/
 	goimports -w -l ports/
 
-.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean fmt tidy dev
+update-golden: build
+	./_build/eggplant default_config > internal/config/data/config.golden.toml
+
+.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean fmt tidy dev update-golden

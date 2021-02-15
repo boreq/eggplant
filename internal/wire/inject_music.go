@@ -57,7 +57,7 @@ func newLibrary(
 }
 
 func newTrackStore(conf *config.Config) (*store.TrackStore, error) {
-	trackStore, err := store.NewTrackStore(conf.DataDirectory)
+	trackStore, err := store.NewTrackStore(conf.CacheDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a track store")
 	}
@@ -65,7 +65,7 @@ func newTrackStore(conf *config.Config) (*store.TrackStore, error) {
 }
 
 func newThumbnailStore(conf *config.Config) (*store.Store, error) {
-	thumbnailStore, err := store.NewThumbnailStore(conf.DataDirectory)
+	thumbnailStore, err := store.NewThumbnailStore(conf.CacheDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a thumbnail store")
 	}

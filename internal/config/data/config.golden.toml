@@ -1,6 +1,12 @@
 
-# Path to a directory which will be used for data storage. Eggplant
-# will store its database and converted files in this directory.
+# Path to a directory which will be used for caching converted tracks and
+# thumbnails. You should not remove files from this directory unless necessary
+# as Eggplant ensures that old data is automatically removed and removing the
+# cached files will force Eggplant to convert all tracks and thumbnails again.
+cache_directory = "/path/to/cache"
+
+# Path to a directory which will be used for data storage. Eggplant will store
+# its database in this directory. This directory should never be purged.
 data_directory = "/path/to/data"
 
 # Path to a directory containing your music.
