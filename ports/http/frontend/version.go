@@ -1,3 +1,3 @@
 package frontend
 
-const FrontendCommit = "80c6fe1b6b1b828044904927d089af7ef59a4a60"
+const FrontendCommit = "0dc2070570ec35cb50c951cf14500383b1b105c5"
