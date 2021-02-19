@@ -2,8 +2,7 @@
 set -e
 
 versionFile="ports/http/frontend/version.go"
-previousCommit=$(cat ${versionFile} | grep -Eo '[0-9a-f]{32}')
-
+previousCommit=$(cat ${versionFile} | grep FrontendCommit | awk ' {gsub(/"/, "", $4); print $4 }')
 
 cd ../eggplant-frontend
 
@@ -13,7 +12,13 @@ if ! git diff-index --quiet HEAD --; then
 fi
 
 commit=$(git rev-parse HEAD)
+echo "Previous frontend commit: ${previousCommit}"
 echo "Current frontend commit: ${commit}"
+
+if [ "$commit" = "$previousCommit" ]; then
+    echo "Frontend is already up to date (${commit} == ${previousCommit})"
+    exit 1
+fi
 
 echo "Generating a commit message ${previousCommit} -> ${commit}"
 
