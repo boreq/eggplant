@@ -103,6 +103,11 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		if errors.Is(err, music.ErrForbidden) {
 			return rest.ErrForbidden
 		}
+
+		if errors.Is(err, music.ErrNotFound) {
+			return rest.ErrNotFound
+		}
+
 		h.log.Error("browse error", "err", err)
 		return rest.ErrInternalServerError
 	}

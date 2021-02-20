@@ -4,18 +4,27 @@ import (
 	"testing"
 
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/errors"
 	"github.com/stretchr/testify/require"
 )
 
-type mockLibrary struct {
-}
-
-func (mockLibrary) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, error) {
-	return music.Album{}, nil
-}
-
 func TestIfNoTracksAndAlbumsThenReturnForbidden(t *testing.T) {
+	l := mockLibrary{}
+
+	h := music.NewBrowseHandler(l)
+
+	cmd := music.Browse{
+		Ids: []music.AlbumId{
+			"a",
+			"b",
+		},
+		PublicOnly: false,
+	}
+
+	_, err := h.Execute(cmd)
+	require.ErrorIs(t, err, music.ErrForbidden)
+}
+
+func TestIfNoTracksAndAlbumsButThisIsTheRootDoNotReturnForbidden(t *testing.T) {
 	l := mockLibrary{}
 
 	h := music.NewBrowseHandler(l)
@@ -26,5 +35,12 @@ func TestIfNoTracksAndAlbumsThenReturnForbidden(t *testing.T) {
 	}
 
 	_, err := h.Execute(cmd)
-	require.True(t, errors.Is(err, music.ErrForbidden))
+	require.NoError(t, err)
+}
+
+type mockLibrary struct {
+}
+
+func (mockLibrary) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, error) {
+	return music.Album{}, nil
 }
