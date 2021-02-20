@@ -14,10 +14,26 @@ configuration file.
 
 ### Arch Linux
 
-On Arch Linux you can use the [`eggplant-git`][aur-eggplant-git] package
-available in the AUR.
+#### Installation
+
+Eggplant can be [installed][arch-install] with the
+[`eggplant-git`][aur-eggplant-git] package.
+
+#### Usage
+
+[Start/enable][arch-start-enable] `eggplant.service`.
+
+The user interface is available at http://127.0.0.1:8118. When accessing the
+user interface for the first time you will be asked to create an initial user
+account. The configuration file resides at `/etc/eggplant/config.toml`. Edit
+the `music_directory` configuration key to point eggplant at your [music
+directory][anchor-music-directory].
 
 ### Source code
+
+#### Installation
+
+Eggplant requires `ffmpeg` to be installed in order to convert audio files.
 
 Compiling the source code requires the Go language toolchain. In order to
 build the program hand clone the repository and execute the `make` command:
@@ -32,17 +48,15 @@ program into [`$GOBIN`][go-get] using the following command:
 
     $  go get github.com/boreq/eggplant/cmd/eggplant
 
-Eggplant requires `ffmpeg` to be installed in order to convert audio files.
+#### Usage
 
-## Usage
-
-To start using Eggplant you first have to create a configuration file.
+To start using Eggplant you first have to create a configuration file:
 
     $ eggplant default_config > /path/to/config.toml
 
-Edit the newly created configuration file with your favourite editor to
-configure the program. At minimum you have to modify the following
-configuration keys: `music_directory` and `data_directory`. See section ["Music
+Edit the newly created configuration file to configure the program. At
+minimum you have to modify the following configuration keys:
+`music_directory` and `data_directory`. See section ["Music
 directory"][anchor-music-directory] to learn more about the structure of the
 music directory.
 
@@ -140,3 +154,5 @@ files inside of them.
 [anchor-access-file]: #access-file
 [aur-eggplant-git]: https://aur.archlinux.org/packages/eggplant-git/
 [go-get]: https://golang.org/cmd/go/#hdr-Add_dependencies_to_current_module_and_install_them
+[arch-install]: https://wiki.archlinux.org/index.php/Install
+[arch-start-enable]: https://wiki.archlinux.org/index.php/Start/enable
