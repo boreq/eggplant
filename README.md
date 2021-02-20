@@ -142,6 +142,12 @@ files inside of them.
 - `.aiff`
 - `.opus`
 
+## Related repositories
+
+The frontend written in Vue resides [in this repository][repo-frontend].
+
+The `eggplant-git` AUR package resides [in this repository][repo-arch-eggplant-git].
+
 
 [ci-badge]:https://github.com/boreq/eggplant/workflows/CI/badge.svg
 [ci]:https://github.com/boreq/eggplant/actions
@@ -156,3 +162,5 @@ files inside of them.
 [go-get]: https://golang.org/cmd/go/#hdr-Add_dependencies_to_current_module_and_install_them
 [arch-install]: https://wiki.archlinux.org/index.php/Install
 [arch-start-enable]: https://wiki.archlinux.org/index.php/Start/enable
+[repo-frontend]: https://github.com/boreq/eggplant-frontend
+[repo-arch-eggplant-git]: https://github.com/boreq/eggplant-package-arch-linux-eggplant-git
