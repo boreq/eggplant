@@ -131,7 +131,7 @@ files inside of them.
 
 [ci-badge]:https://github.com/boreq/eggplant/workflows/CI/badge.svg
 [ci]:https://github.com/boreq/eggplant/actions
-[screenshot]: https://user-images.githubusercontent.com/1935975/97783231-444af080-1b8e-11eb-8652-8eea2766d6d4.png
+[screenshot]: https://user-images.githubusercontent.com/1935975/108577272-5bb61100-7318-11eb-8aba-5fcc0183b58c.png
 [anchor-music-directory]: #music-directory
 [anchor-supported-track-extensions]: #supported-track-extensions
 [anchor-supported-thumbnail-extensions]: #supported-thumbnail-extensions
