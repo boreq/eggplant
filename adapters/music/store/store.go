@@ -47,6 +47,13 @@ func NewStore(log logging.Logger, converter Converter) (*Store, error) {
 		log:       log,
 	}
 
+	// fail early so that the user knows right away that the program is
+	// misconfigured
+	if err := s.ensureOutputDirectoryExists(); err != nil {
+		s.log.Error("problem with the cache directory, is cache directory set properly?", "err", err)
+		return nil, errors.Wrap(err, "could not ensure that the output directory exists")
+	}
+
 	ch := make(chan Item)
 	s.startWorkers(runtime.NumCPU(), ch)
 	go s.run(ch)
@@ -122,6 +129,12 @@ outer:
 
 		if err := s.performCleanup(); err != nil {
 			s.log.Error("could not perform the cleanup", "err", err)
+			<-time.After(errorDelay)
+			continue
+		}
+
+		if err := s.ensureOutputDirectoryExists(); err != nil {
+			s.log.Error("could not ensure that the output directory exists", "err", err)
 			<-time.After(errorDelay)
 			continue
 		}
@@ -267,6 +280,16 @@ func (s *Store) getConvertedSize() (int64, error) {
 	return sum, nil
 }
 
+func (s *Store) ensureOutputDirectoryExists() error {
+	dir := s.converter.OutputDirectory()
+	if _, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			return os.Mkdir(dir, os.ModePerm)
+		}
+	}
+	return nil
+}
+
 func exists(file string) (bool, error) {
 	if _, err := os.Stat(file); err != nil {
 		if os.IsNotExist(err) {
@@ -275,11 +298,6 @@ func exists(file string) (bool, error) {
 		return false, errors.Wrap(err, "could not stat")
 	}
 	return true, nil
-}
-
-func makeDirectory(file string) error {
-	dir, _ := path.Split(file)
-	return os.MkdirAll(dir, os.ModePerm)
 }
 
 func onlyLast(inCh <-chan []Item) <-chan []Item {

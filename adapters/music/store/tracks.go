@@ -96,10 +96,6 @@ func (c *TrackConverter) Convert(item Item) error {
 	outputPath := c.OutputFile(item.Id)
 	tmpOutputPath := c.tmpOutputFile(item.Id)
 
-	if err := makeDirectory(outputPath); err != nil {
-		return errors.Wrap(err, "could not create output directory")
-	}
-
 	args := []string{
 		"-y",
 		"-i",
