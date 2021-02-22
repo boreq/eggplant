@@ -47,13 +47,6 @@ func NewStore(log logging.Logger, converter Converter) (*Store, error) {
 		log:       log,
 	}
 
-	// fail early so that the user knows right away that the program is
-	// misconfigured
-	if err := s.ensureOutputDirectoryExists(); err != nil {
-		s.log.Error("problem with the cache directory, is cache directory set properly?", "err", err)
-		return nil, errors.Wrap(err, "could not ensure that the output directory exists")
-	}
-
 	ch := make(chan Item)
 	s.startWorkers(runtime.NumCPU(), ch)
 	go s.run(ch)

@@ -29,6 +29,10 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not load the configuration")
 	}
 
+	if err := validateConfig(conf); err != nil {
+		return errors.Wrap(err, "problem with the configuration")
+	}
+
 	service, err := wire.BuildService(conf)
 	if err != nil {
 		return errors.Wrap(err, "could not create a service")
@@ -50,4 +54,30 @@ func loadConfig(path string) (*config.Config, error) {
 	}
 
 	return conf, nil
+}
+
+// validateConfig makes sure that the specific directories exist early on to
+// avoid confusing the user with a ton of error messages being printed by the
+// program at the later stages of execution
+func validateConfig(conf *config.Config) error {
+	if err := validateDirectory(conf.CacheDirectory); err != nil {
+		return errors.Wrap(err, "problem with the cache directory")
+	}
+
+	if err := validateDirectory(conf.DataDirectory); err != nil {
+		return errors.Wrap(err, "problem with the data directory")
+	}
+
+	if err := validateDirectory(conf.MusicDirectory); err != nil {
+		return errors.Wrap(err, "problem with the music directory")
+	}
+
+	return nil
+}
+
+func validateDirectory(dir string) error {
+	if _, err := os.Stat(dir); err != nil {
+		return errors.Wrap(err, "stat returned an error")
+	}
+	return nil
 }
