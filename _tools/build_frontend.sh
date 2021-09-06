@@ -39,9 +39,9 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
-echo "Running https://github.com/rakyll/statik"
+echo "Copying build files"
 cd ./ports/http/frontend
-statik -f -src=../../../../eggplant-frontend/dist
+cp -r ../../../../eggplant-frontend/dist/. ./
 cd ../../../
 
 echo "Persisting frontend version"
@@ -50,5 +50,5 @@ echo "package frontend" > "${versionFile}"
 echo "" >> "${versionFile}"
 echo "const FrontendCommit = \"${commit}\"" >> "${versionFile}"
 
-git add -u
+git add ports/http/frontend/
 git commit -F ${commitFile}

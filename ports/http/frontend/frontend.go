@@ -1,25 +1,20 @@
 package frontend
 
 import (
+	"embed"
 	"net/http"
-
-	_ "github.com/boreq/eggplant/ports/http/frontend/statik"
-	"github.com/boreq/errors"
-	"github.com/rakyll/statik/fs"
 )
+
+//go:embed css/* js/* img/* index.html favicon.ico
+var content embed.FS
 
 type FrontendFileSystem struct {
 	fs http.FileSystem
 }
 
 func NewFrontendFileSystem() (*FrontendFileSystem, error) {
-	statikFS, err := fs.New()
-	if err != nil {
-		return nil, errors.Wrap(err, "opening statik failed")
-	}
-
 	return &FrontendFileSystem{
-		fs: statikFS,
+		fs: http.FS(content),
 	}, nil
 }
 
