@@ -7,4 +7,4 @@ COPY . /eggplant
 
 RUN go install -v ./cmd/eggplant
 
-CMD ["/bin/sh", "-c", "eggplant run --verbosity debug /etc/eggplant.toml"]
+CMD ["/bin/sh", "-c", "eggplant run --verbosity debug /etc/eggplant/config.toml"]
