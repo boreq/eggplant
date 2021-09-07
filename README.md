@@ -83,23 +83,24 @@ into it:
 
 To generate a default config file and store it on your host system you need to
 build the docker image and then run `eggplant default_config` in the resulting
-container:
+container. To do that point `docker build` at the cloned repository and then
+run `docker run` using the resulting image hash:
 
     $ docker build eggplant
     ...
     Successfully built <hash>
     $ docker run -ti <hash> eggplant default_config > config.toml
 
-You need to modify the config file so that it points to the locations under
-which you plan to mount the cache directory, data directory and music
+You need to modify the resulting config file so that it points to the locations
+under which you plan to mount the cache directory, data directory and music
 directory. I usually simply use `/cache`, `/data` and `/music`.
 
-One possible way of easily mounting everything is by using Docker Compose. I
+One possible way of easily mounting everything is using Docker Compose. I
 usually place the `docker-compose.yaml` file in the same directory in which I
 cloned the eggplant repository:
 
     $ ls
-    docker-compose.yaml eggplant
+    docker-compose.yaml eggplant config.toml
 
 The example `docker-compose.yaml` file for Eggplant could look like this:
 
@@ -109,7 +110,7 @@ The example `docker-compose.yaml` file for Eggplant could look like this:
       eggplant:
         build: ./eggplant
         volumes:
-          - /media/data/music:/music:ro
+          - /host/path/to/music/directory:/music:ro
           - /host/path/to/data/directory:/data
           - /host/path/to/cache/directory:/cache
           - /host/path/to/config.toml:/etc/eggplant/config.toml
