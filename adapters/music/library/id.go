@@ -19,16 +19,16 @@ func NewIdGenerator() IdGenerator {
 	return idGenerator{}
 }
 
-func (idGenerator) AlbumId(title string) (music.AlbumId, error) {
-	h, err := shortHash(title)
+func (idGenerator) AlbumId(parents []music.AlbumId, title string) (music.AlbumId, error) {
+	h, err := shortHash(parentsAsString(parents) + title)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
 	return music.AlbumId(h), nil
 }
 
-func (idGenerator) TrackId(title string) (music.TrackId, error) {
-	h, err := shortHash(title)
+func (idGenerator) TrackId(parents []music.AlbumId, title string) (music.TrackId, error) {
+	h, err := shortHash(parentsAsString(parents) + title)
 	if err != nil {
 		return "", errors.Wrap(err, "hashing failed")
 	}
@@ -46,6 +46,14 @@ func (idGenerator) FileId(path string) (music.FileId, error) {
 		return "", errors.Wrap(err, "hashing failed")
 	}
 	return music.FileId(h), nil
+}
+
+func parentsAsString(parents []music.AlbumId) (string) {
+	var s string
+	for _, parent := range parents {
+		s += string(parent)
+	}
+	return s
 }
 
 func shortHash(s string) (string, error) {

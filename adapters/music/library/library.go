@@ -33,8 +33,8 @@ type AccessLoader interface {
 }
 
 type IdGenerator interface {
-	AlbumId(title string) (music.AlbumId, error)
-	TrackId(title string) (music.TrackId, error)
+	AlbumId(parents []music.AlbumId, title string) (music.AlbumId, error)
+	TrackId(parents []music.AlbumId, title string) (music.TrackId, error)
 	FileId(path string) (music.FileId, error)
 }
 
@@ -198,7 +198,7 @@ func (l *Library) handleUpdate(album scanner.Album) error {
 
 	// update the track list
 	l.root = newAlbum(rootAlbumTitle)
-	if err := l.mergeAlbum(l.root, album); err != nil {
+	if err := l.mergeAlbum(nil, l.root, album); err != nil {
 		return errors.Wrap(err, "merge album failed")
 	}
 
@@ -219,7 +219,7 @@ func (l *Library) handleUpdate(album scanner.Album) error {
 	return nil
 }
 
-func (l *Library) mergeAlbum(target *album, album scanner.Album) error {
+func (l *Library) mergeAlbum(parents []music.AlbumId, target *album, album scanner.Album) error {
 	if album.Thumbnail != "" {
 		thumbnailId, err := l.idGenerator.FileId(album.Thumbnail)
 		if err != nil {
@@ -238,7 +238,7 @@ func (l *Library) mergeAlbum(target *album, album scanner.Album) error {
 	}
 
 	for title, scannerTrack := range album.Tracks {
-		id, track, err := l.toTrack(title, scannerTrack)
+		id, track, err := l.toTrack(parents, title, scannerTrack)
 		if err != nil {
 			return errors.Wrap(err, "could not convert to a track")
 		}
@@ -246,12 +246,14 @@ func (l *Library) mergeAlbum(target *album, album scanner.Album) error {
 	}
 
 	for title, scannerAlbum := range album.Albums {
-		id, album, err := l.toAlbum(title, *scannerAlbum)
+		id, album, err := l.toAlbum(parents, title, *scannerAlbum)
 		if err != nil {
 			return errors.Wrap(err, "could not convert to an album")
 		}
 		target.albums[id] = album
-		if err := l.mergeAlbum(album, *scannerAlbum); err != nil {
+
+		childParents := append(parents, id)
+		if err := l.mergeAlbum(childParents, album, *scannerAlbum); err != nil {
 			return err
 		}
 	}
@@ -320,8 +322,8 @@ func (l *Library) newTrack(title string, path string) (track, error) {
 	return t, nil
 }
 
-func (l *Library) toTrack(title string, scannerTrack scanner.Track) (music.TrackId, track, error) {
-	id, err := l.idGenerator.TrackId(title)
+func (l *Library) toTrack(parents []music.AlbumId, title string, scannerTrack scanner.Track) (music.TrackId, track, error) {
+	id, err := l.idGenerator.TrackId(parents, title)
 	if err != nil {
 		return "", track{}, errors.Wrap(err, "could not create a track id")
 	}
@@ -332,8 +334,8 @@ func (l *Library) toTrack(title string, scannerTrack scanner.Track) (music.Track
 	return id, t, nil
 }
 
-func (l *Library) toAlbum(title string, scannerAlbum scanner.Album) (music.AlbumId, *album, error) {
-	id, err := l.idGenerator.AlbumId(title)
+func (l *Library) toAlbum(parents []music.AlbumId, title string, scannerAlbum scanner.Album) (music.AlbumId, *album, error) {
+	id, err := l.idGenerator.AlbumId(parents, title)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "could not create an album id")
 	}

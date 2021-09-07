@@ -40,11 +40,11 @@ func (l mockAccessLoader) Load(file string) (music.Access, error) {
 
 type mockIdGenerator struct{}
 
-func (mockIdGenerator) AlbumId(title string) (music.AlbumId, error) {
+func (mockIdGenerator) AlbumId(parents []music.AlbumId, title string) (music.AlbumId, error) {
 	return music.AlbumId(title), nil
 }
 
-func (mockIdGenerator) TrackId(title string) (music.TrackId, error) {
+func (mockIdGenerator) TrackId(parents []music.AlbumId, title string) (music.TrackId, error) {
 	return music.TrackId(title), nil
 }
 
