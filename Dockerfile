@@ -3,7 +3,7 @@ FROM golang:1.17-alpine
 RUN apk add git ffmpeg
 
 WORKDIR /eggplant
-COPY ./eggplant ./
+COPY . /eggplant
 
 RUN go install -v ./cmd/eggplant
 
