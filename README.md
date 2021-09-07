@@ -67,6 +67,71 @@ Eggplant accepts a single argument: a path to the configuration file.
 
 Navigate to http://127.0.0.0:8118 to see the results.
 
+### Docker
+
+This repository comes with a Dockerfile which requires the config file to be
+mounted as `/etc/eggplant/config.toml`. You will also need to mount all
+directories which you normally define in the config file (data directory, cache
+directory, music directory) and expose the port defined in the config file. The
+remainder of this section goes through those steps in a specific way but the
+same can be achieved in many other ways.
+
+I recommend starting in an empty directory and cloning the eggplant directory
+into it:
+
+    $ git clone https://github.com/boreq/eggplant
+
+To generate a default config file and store it on your host system you need to
+build the docker image and then run `eggplant default_config` in the resulting
+container:
+
+    $ docker build eggplant
+    ...
+    Successfully built <hash>
+    $ docker run -ti <hash> eggplant default_config > config.toml
+
+You need to modify the config file so that it points to the locations under
+which you plan to mount the cache directory, data directory and music
+directory. I usually simply use `/cache`, `/data` and `/music`.
+
+One possible way of easily mounting everything is by using Docker Compose. I
+usually place the `docker-compose.yaml` file in the same directory in which I
+cloned the eggplant repository:
+
+    $ ls
+    docker-compose.yaml eggplant
+
+The example `docker-compose.yaml` file for Eggplant could look like this:
+
+    $ cat docker-compose.yaml
+    version: '3'
+    services:
+      eggplant:
+        build: ./eggplant
+        volumes:
+          - /media/data/music:/music:ro
+          - /host/path/to/data/directory:/data
+          - /host/path/to/cache/directory:/cache
+          - /host/path/to/config.toml:/etc/eggplant/config.toml
+        ports:
+          - "127.0.0.1:9010:8118"
+        restart: always
+
+In this example Eggplant is exposed on the host system only locally under port
+`9010`. Normally you would then point your reverse proxy eg. `nginx` at this
+port:
+
+    server {
+        listen       443 ssl http2;
+        server_name  music.example.com;
+
+        location / {
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_pass http://127.0.0.1:9010/;
+        }
+    }
+
 ## Music directory
 
 Eggplant uses the hierarchy of files and directories in your music directory to
