@@ -14,7 +14,6 @@ require (
 	github.com/pelletier/go-toml v1.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/radovskyb/watcher v1.0.7
-	github.com/rakyll/statik v0.1.5
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/testify v1.7.0
 	go.etcd.io/bbolt v1.3.3

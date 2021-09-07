@@ -23,9 +23,9 @@ check-repository-unchanged:
 	./_tools/check_repository_unchanged.sh
 
 tools:
-	 go get -u honnef.co/go/tools/cmd/staticcheck
-	 go get -u github.com/google/wire/cmd/wire
-	 go get -u golang.org/x/tools/cmd/goimports
+	 go install honnef.co/go/tools/cmd/staticcheck@latest
+	 go install github.com/google/wire/cmd/wire@latest
+	 go install golang.org/x/tools/cmd/goimports@latest
 
 dependencies:
 	go get ./...

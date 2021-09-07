@@ -48,7 +48,7 @@ func (idGenerator) FileId(path string) (music.FileId, error) {
 	return music.FileId(h), nil
 }
 
-func parentsAsString(parents []music.AlbumId) (string) {
+func parentsAsString(parents []music.AlbumId) string {
 	var s string
 	for _, parent := range parents {
 		s += string(parent)
