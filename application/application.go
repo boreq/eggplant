@@ -16,6 +16,7 @@ type Music struct {
 	Thumbnail *music.ThumbnailHandler
 	Track     *music.TrackHandler
 	Browse    *music.BrowseHandler
+	Search    *music.SearchHandler
 }
 
 type Queries struct {

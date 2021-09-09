@@ -46,6 +46,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	// API
 	h.router.HandlerFunc(http.MethodGet, "/api/browse/*path", rest.Wrap(h.browse))
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
+	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
 	h.router.GET("/api/track/:id", h.track)
 	h.router.GET("/api/thumbnail/:id", h.thumbnail)
@@ -113,6 +114,34 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 	}
 
 	return rest.NewResponse(album)
+}
+
+func (h *Handler) search(r *http.Request) rest.RestResponse {
+	u, err := h.authProvider.Get(r)
+	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	query, err := music.NewQuery(r.URL.Query().Get("query"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid query.")
+	}
+
+	cmd := music.Search{
+		Query:      query,
+		PublicOnly: u == nil,
+	}
+
+	result, err := h.app.Music.Search.Execute(cmd)
+	if err != nil {
+		h.log.Error("search error", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(
+		toSearchResult(result),
+	)
 }
 
 func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

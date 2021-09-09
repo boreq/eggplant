@@ -148,6 +148,71 @@ func (l *Library) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, err
 	return listed, nil
 }
 
+const maxSearchItems = 10
+
+func (l *Library) Search(query string, publicOnly bool) (music.SearchResult, error) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	var result music.SearchResult
+
+	if err := l.walk(
+		func(parent *music.BasicAlbum, id music.AlbumId, v album) error {
+			if len(result.Albums) > maxSearchItems {
+				return nil
+			}
+
+			if !containsStringCaseInsensitive(v.title, query) {
+				return nil
+			}
+
+			var path []music.AlbumId
+			if parent != nil {
+				path = append(path, parent.Path...)
+			}
+			path = append(path, id)
+
+			result.Albums = append(
+				result.Albums,
+				newBasicAlbum(path, v),
+			)
+
+			return nil
+		},
+		func(parents music.BasicAlbum, id music.TrackId, v track) error {
+			if len(result.Tracks) > maxSearchItems {
+				return nil
+			}
+
+			if !containsStringCaseInsensitive(v.title, query) {
+				return nil
+			}
+
+			result.Tracks = append(
+				result.Tracks,
+				l.toSearchResultTrack(parents, id, v),
+			)
+			return nil
+		},
+		publicOnly,
+	); err != nil {
+	}
+
+	return result, nil
+}
+
+func (l *Library) toSearchResultTrack(album music.BasicAlbum, id music.TrackId, v track) music.SearchResultTrack {
+	return music.SearchResultTrack{
+		Track: music.Track{
+			Id:       id,
+			FileId:   v.fileId,
+			Title:    v.title,
+			Duration: l.trackStore.GetDuration(v.fileId.String()).Seconds(),
+		},
+		Album: album,
+	}
+}
+
 func (l *Library) getParents(ids []music.AlbumId) ([]music.Album, error) {
 	parents := make([]music.Album, 0)
 	for i := 0; i < len(ids); i++ {
@@ -405,4 +470,8 @@ func SortTracks(tracks []music.Track) {
 			return tracks[i].Title < tracks[j].Title
 		},
 	)
+}
+
+func containsStringCaseInsensitive(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }

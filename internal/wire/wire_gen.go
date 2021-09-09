@@ -170,10 +170,12 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		return nil, err
 	}
 	browseHandler := music.NewBrowseHandler(libraryLibrary)
+	searchHandler := music.NewSearchHandler(libraryLibrary)
 	applicationMusic := application.Music{
 		Thumbnail: thumbnailHandler,
 		Track:     trackHandler,
 		Browse:    browseHandler,
+		Search:    searchHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)

@@ -13,8 +13,25 @@ type TrackStore interface {
 	GetFilePath(id string) (string, error)
 }
 
+type SearchResult struct {
+	Albums []BasicAlbum
+	Tracks []SearchResultTrack
+}
+
+type BasicAlbum struct {
+	Path      []AlbumId
+	Title     string
+	Thumbnail *Thumbnail
+}
+
+type SearchResultTrack struct {
+	Track Track
+	Album BasicAlbum
+}
+
 type Library interface {
 	Browse(ids []AlbumId, publicOnly bool) (Album, error)
+	Search(query string, publicOnly bool) (SearchResult, error)
 }
 
 type Thumbnail struct {
@@ -36,7 +53,7 @@ type Album struct {
 
 	// Parents list the parents of this album starting from the one
 	// furthest away from this album. The list of parent albums includes
-	// this particular album. Only fields Id and TItle are filled in.
+	// this particular album. Only fields Id and Title are filled in.
 	Parents []Album `json:"parents,omitempty"`
 	Albums  []Album `json:"albums,omitempty"`
 	Tracks  []Track `json:"tracks,omitempty"`
