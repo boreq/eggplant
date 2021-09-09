@@ -480,6 +480,118 @@ func TestLibrary(t *testing.T) {
 	}
 }
 
+func TestSearch(t *testing.T) {
+	testCases := []struct {
+		Name string
+
+		Album      *scanner.Album
+		Query      string
+		PublicOnly bool
+		Access     map[string]music.Access
+
+		ExpectedSearchResult music.SearchResult
+		ExpectedError        error
+	}{
+		{
+			Name: "find_public_only",
+			Access: map[string]music.Access{
+				"public": {
+					Public: true,
+				},
+				"no-public": {
+					Public: false,
+				},
+			},
+			Album: &scanner.Album{
+				Thumbnail:  "",
+				AccessFile: "",
+				Albums: map[string]*scanner.Album{
+					"album1": &scanner.Album{
+						AccessFile: "public",
+						Tracks: map[string]scanner.Track{
+							"album1track1": scanner.Track{
+								Path: "track1_path",
+							},
+						},
+					},
+					"album2": &scanner.Album{
+						AccessFile: "no-public",
+						Tracks: map[string]scanner.Track{
+							"album2track1": scanner.Track{
+								Path: "track1_path",
+							},
+						},
+					},
+				},
+				Tracks: map[string]scanner.Track{
+					"track1": scanner.Track{
+						Path: "track1_path",
+					},
+				},
+			},
+			Query:      "a",
+			PublicOnly: true,
+			ExpectedSearchResult: music.SearchResult{
+				Tracks: []music.SearchResultTrack{
+					{
+						Track: music.Track{
+							Id:     "album1track1",
+							FileId: "track1_path",
+							Title:  "album1track1",
+						},
+						Album: music.BasicAlbum{
+							Title: "album1",
+							Path: []music.AlbumId{
+								"album1",
+							},
+						},
+					},
+				},
+				Albums: []music.BasicAlbum{
+					{
+						Title: "album1",
+						Path: []music.AlbumId{
+							"album1",
+						},
+					},
+				},
+			},
+			ExpectedError: nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			ch := make(chan scanner.Album)
+			trs := mockTrackStore{}
+			ths := mockThumbnailStore{}
+			al := mockAccessLoader{
+				m: testCase.Access,
+			}
+			ig := mockIdGenerator{}
+
+			library, err := library.New(ch, trs, ths, al, ig)
+			require.NoError(t, err)
+
+			if testCase.Album != nil {
+				ch <- *testCase.Album
+				<-time.After(time.Second) // rc
+			}
+
+			result, err := library.Search(
+				testCase.Query,
+				testCase.PublicOnly,
+			)
+			if testCase.ExpectedError == nil {
+				require.NoError(t, err)
+				require.Equal(t, testCase.ExpectedSearchResult, result)
+			} else {
+				require.EqualError(t, err, testCase.ExpectedError.Error())
+			}
+		})
+	}
+}
+
 func TestSortTracks(t *testing.T) {
 	testCases := []struct {
 		Name   string

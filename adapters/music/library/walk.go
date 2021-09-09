@@ -1,6 +1,8 @@
 package library
 
 import (
+	"fmt"
+
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/errors"
 )
@@ -15,14 +17,12 @@ func (l *Library) walk(a walkAlbumFn, t walkTrackFn, publicOnly bool) error {
 		return errors.Wrap(err, "failed to get access")
 	}
 
-	if !canAccess(access, publicOnly) {
-		return nil
-	}
-
-	for id, track := range l.root.tracks {
-		parent := newBasicAlbum(nil, *l.root)
-		if err := t(parent, id, track); err != nil {
-			return err
+	if canAccess(access, publicOnly) {
+		for id, track := range l.root.tracks {
+			parent := newBasicAlbum(nil, *l.root)
+			if err := t(parent, id, track); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -36,36 +36,38 @@ func (l *Library) walk(a walkAlbumFn, t walkTrackFn, publicOnly bool) error {
 }
 
 func (l *Library) subWalk(
-	path []music.AlbumId,
+	parentPath []music.AlbumId,
 	id music.AlbumId,
 	node *album,
 	a walkAlbumFn,
 	t walkTrackFn,
 	publicOnly bool,
 ) error {
+	path := append(
+		parentPath,
+		id,
+	)
+
 	access, err := l.getAccess(path)
 	if err != nil {
 		return errors.Wrap(err, "failed to get access")
 	}
 
-	if !canAccess(access, publicOnly) {
-		return nil
-	}
+	fmt.Println(access)
 
-	parent := newBasicAlbum(path, *node)
-	if err := a(&parent, id, *node); err != nil {
-		return err
-	}
-
-	path = append(
-		path,
-		id,
-	)
-
-	for id, track := range node.tracks {
-		parent := newBasicAlbum(path, *node)
-		if err := t(parent, id, track); err != nil {
+	if canAccess(access, publicOnly) {
+		parent := newBasicAlbum(parentPath, *node)
+		if err := a(&parent, id, *node); err != nil {
 			return err
+		}
+	}
+
+	if canAccess(access, publicOnly) {
+		for id, track := range node.tracks {
+			parent := newBasicAlbum(path, *node)
+			if err := t(parent, id, track); err != nil {
+				return err
+			}
 		}
 	}
 

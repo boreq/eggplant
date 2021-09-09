@@ -24,6 +24,15 @@ func NewQuery(s string) (Query, error) {
 		s: s,
 	}, nil
 }
+
+func MustNewQuery(s string) Query {
+	v, err := NewQuery(s)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (q Query) IsZero() bool {
 	return q == Query{}
 }
