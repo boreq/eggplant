@@ -44,3 +44,7 @@ type mockLibrary struct {
 func (mockLibrary) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, error) {
 	return music.Album{}, nil
 }
+
+func (mockLibrary) Search(query string, publicOnly bool) (music.SearchResult, error) {
+	return music.SearchResult{}, nil
+}

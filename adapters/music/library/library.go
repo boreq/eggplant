@@ -196,6 +196,7 @@ func (l *Library) Search(query string, publicOnly bool) (music.SearchResult, err
 		},
 		publicOnly,
 	); err != nil {
+		return music.SearchResult{}, errors.Wrap(err, "walk failed")
 	}
 
 	return result, nil
