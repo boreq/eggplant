@@ -41,6 +41,7 @@ fi
 
 echo "Copying build files"
 cd ./ports/http/frontend
+rm -r ./img ./css ./js
 cp -r ../../../../eggplant-frontend/dist/. ./
 cd ../../../
 
