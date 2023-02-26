@@ -30,7 +30,7 @@ git log --pretty=medium ${previousCommit}..${commit} >> ${commitFile}
 
 echo "Building the frontend"
 rm -rf dist
-yarn build
+NODE_OPTIONS=--openssl-legacy-provider yarn build
 
 cd ../eggplant
 
