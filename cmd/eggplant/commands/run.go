@@ -33,12 +33,15 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "problem with the configuration")
 	}
 
-	service, err := wire.BuildService(conf)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	service, err := wire.BuildService(ctx, conf)
 	if err != nil {
 		return errors.Wrap(err, "could not create a service")
 	}
 
-	return service.Run(context.Background())
+	return service.Run(ctx)
 }
 
 func loadConfig(path string) (*config.Config, error) {

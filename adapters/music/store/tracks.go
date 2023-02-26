@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,13 +15,23 @@ import (
 	"github.com/boreq/errors"
 )
 
-const trackExtension = "ogg"
-const trackDirectory = "tracks"
+const (
+	trackExtension = "ogg"
+	trackDirectory = "tracks"
+)
 
-func NewTrackStore(dataDir string) (*TrackStore, error) {
+type TrackStore struct {
+	*Store
+	durationCache      map[string]time.Duration
+	durationCacheMutex sync.Mutex
+	converter          *TrackConverter
+	log                logging.Logger
+}
+
+func NewTrackStore(ctx context.Context, dataDir string) (*TrackStore, error) {
 	log := logging.New("trackStore")
 	converter := NewTrackConverter(dataDir)
-	store, err := NewStore(log, converter)
+	store, err := NewStore(ctx, log, converter)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a store")
 	}
@@ -33,29 +44,34 @@ func NewTrackStore(dataDir string) (*TrackStore, error) {
 	return s, nil
 }
 
-type TrackStore struct {
-	*Store
-	durationCache      map[string]time.Duration
-	durationCacheMutex sync.Mutex
-	converter          *TrackConverter
-	log                logging.Logger
-}
-
 func (s *TrackStore) GetDuration(id string) time.Duration {
 	s.durationCacheMutex.Lock()
 	defer s.durationCacheMutex.Unlock()
+
+	item, ok := s.getItem(id)
+	if !ok {
+		return 0
+	}
 
 	if duration, ok := s.durationCache[id]; ok {
 		return duration
 	}
 
-	duration, err := s.converter.checkDuration(id)
+	duration, err := s.converter.checkDuration(item)
 	if err != nil {
 		s.log.Debug("duration could not be measured", "err", err)
 		return 0
 	}
 	s.durationCache[id] = duration
 	return duration
+}
+
+func (s *TrackStore) getItem(id string) (Item, bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	i, ok := s.items[id]
+	return i, ok
 }
 
 func (s *TrackStore) SetItems(items []Item) {
@@ -79,6 +95,11 @@ func (s *TrackStore) cleanupDurationCache(items []Item) {
 	}
 }
 
+type TrackConverter struct {
+	dataDir string
+	log     logging.Logger
+}
+
 func NewTrackConverter(dataDir string) *TrackConverter {
 	converter := &TrackConverter{
 		dataDir: dataDir,
@@ -87,14 +108,9 @@ func NewTrackConverter(dataDir string) *TrackConverter {
 	return converter
 }
 
-type TrackConverter struct {
-	dataDir string
-	log     logging.Logger
-}
-
 func (c *TrackConverter) Convert(item Item) error {
 	outputPath := c.OutputFile(item.Id)
-	tmpOutputPath := c.tmpOutputFile(item.Id)
+	tmpOutputPath := c.TemporaryOutputFile(item.Id)
 
 	args := []string{
 		"-y",
@@ -123,8 +139,8 @@ func (c *TrackConverter) Convert(item Item) error {
 	return nil
 }
 
-func (c *TrackConverter) checkDuration(id string) (time.Duration, error) {
-	filePath := c.OutputFile(id)
+func (c *TrackConverter) checkDuration(item Item) (time.Duration, error) {
+	filePath := item.Path
 
 	// check if a file exists at all
 	if _, err := os.Stat(filePath); err != nil {
@@ -158,16 +174,16 @@ func (c *TrackConverter) checkDuration(id string) (time.Duration, error) {
 	return duration, nil
 }
 
+func (c *TrackConverter) OutputDirectory() string {
+	return path.Join(c.dataDir, trackDirectory)
+}
+
 func (c *TrackConverter) OutputFile(id string) string {
 	file := fmt.Sprintf("%s.%s", id, trackExtension)
 	return path.Join(c.OutputDirectory(), file)
 }
 
-func (c *TrackConverter) OutputDirectory() string {
-	return path.Join(c.dataDir, trackDirectory)
-}
-
-func (c *TrackConverter) tmpOutputFile(id string) string {
+func (c *TrackConverter) TemporaryOutputFile(id string) string {
 	file := fmt.Sprintf("_%s.%s", id, trackExtension)
 	return path.Join(c.OutputDirectory(), file)
 }

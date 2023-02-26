@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -18,10 +19,10 @@ const thumbnailSize = 200
 const thumbnailExtension = "jpg"
 const thumbnailDirectory = "thumbnails"
 
-func NewThumbnailStore(dataDir string) (*Store, error) {
+func NewThumbnailStore(ctx context.Context, dataDir string) (*Store, error) {
 	log := logging.New("thumbnailStore")
 	converter := NewThumbnailConverter(dataDir)
-	return NewStore(log, converter)
+	return NewStore(ctx, log, converter)
 }
 
 func NewThumbnailConverter(dataDir string) *ThumbnailConverter {
@@ -39,7 +40,7 @@ type ThumbnailConverter struct {
 
 func (c *ThumbnailConverter) Convert(item Item) error {
 	outputPath := c.OutputFile(item.Id)
-	tmpOutputPath := c.tmpOutputFile(item.Id)
+	tmpOutputPath := c.TemporaryOutputFile(item.Id)
 
 	f, err := os.Open(item.Path)
 	if err != nil {
@@ -74,16 +75,16 @@ func (c *ThumbnailConverter) Convert(item Item) error {
 	return nil
 }
 
+func (c *ThumbnailConverter) OutputDirectory() string {
+	return path.Join(c.dataDir, thumbnailDirectory)
+}
+
 func (c *ThumbnailConverter) OutputFile(id string) string {
 	file := fmt.Sprintf("%s.%s", id, thumbnailExtension)
 	return path.Join(c.OutputDirectory(), file)
 }
 
-func (c *ThumbnailConverter) OutputDirectory() string {
-	return path.Join(c.dataDir, thumbnailDirectory)
-}
-
-func (c *ThumbnailConverter) tmpOutputFile(id string) string {
+func (c *ThumbnailConverter) TemporaryOutputFile(id string) string {
 	file := fmt.Sprintf("_%s.%s", id, thumbnailExtension)
 	return path.Join(c.OutputDirectory(), file)
 }

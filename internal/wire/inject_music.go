@@ -1,6 +1,8 @@
 package wire
 
 import (
+	"context"
+
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
@@ -56,16 +58,16 @@ func newLibrary(
 	return lib, nil
 }
 
-func newTrackStore(conf *config.Config) (*store.TrackStore, error) {
-	trackStore, err := store.NewTrackStore(conf.CacheDirectory)
+func newTrackStore(ctx context.Context, conf *config.Config) (*store.TrackStore, error) {
+	trackStore, err := store.NewTrackStore(ctx, conf.CacheDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a track store")
 	}
 	return trackStore, nil
 }
 
-func newThumbnailStore(conf *config.Config) (*store.Store, error) {
-	thumbnailStore, err := store.NewThumbnailStore(conf.CacheDirectory)
+func newThumbnailStore(ctx context.Context, conf *config.Config) (*store.Store, error) {
+	thumbnailStore, err := store.NewThumbnailStore(ctx, conf.CacheDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a thumbnail store")
 	}

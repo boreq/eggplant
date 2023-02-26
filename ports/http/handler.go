@@ -152,15 +152,16 @@ func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
-	p, err := h.app.Music.Track.Execute(id)
+	p, err := h.app.Music.Track.Execute(r.Context(), id)
 	if err != nil {
 		h.log.Error("track error", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer p.Content.Close()
 
 	w.Header().Add("Accept-Ranges", "bytes")
-	http.ServeFile(w, r, p)
+	http.ServeContent(w, r, p.Name, p.Modtime, p.Content)
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -171,15 +172,16 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	p, err := h.app.Music.Thumbnail.Execute(id)
+	p, err := h.app.Music.Thumbnail.Execute(r.Context(), id)
 	if err != nil {
 		h.log.Error("track error", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer p.Content.Close()
 
 	w.Header().Add("Accept-Ranges", "bytes")
-	http.ServeFile(w, r, p)
+	http.ServeContent(w, r, p.Name, p.Modtime, p.Content)
 }
 
 func (h *Handler) stats(r *http.Request) rest.RestResponse {

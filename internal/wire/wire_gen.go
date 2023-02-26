@@ -7,6 +7,8 @@
 package wire
 
 import (
+	"context"
+
 	auth2 "github.com/boreq/eggplant/adapters/auth"
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/application"
@@ -118,7 +120,7 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	return authAuth, nil
 }
 
-func BuildService(conf *config.Config) (*service.Service, error) {
+func BuildService(ctx context.Context, conf *config.Config) (*service.Service, error) {
 	bcryptPasswordHasher := auth2.NewBcryptPasswordHasher()
 	db, err := newBolt(conf)
 	if err != nil {
@@ -152,12 +154,12 @@ func BuildService(conf *config.Config) (*service.Service, error) {
 		Remove:           removeHandler,
 		SetPassword:      setPasswordHandler,
 	}
-	store, err := newThumbnailStore(conf)
+	store, err := newThumbnailStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 	thumbnailHandler := music.NewThumbnailHandler(store)
-	trackStore, err := newTrackStore(conf)
+	trackStore, err := newTrackStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}

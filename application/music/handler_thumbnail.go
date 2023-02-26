@@ -1,6 +1,10 @@
 package music
 
-import "github.com/boreq/errors"
+import (
+	"context"
+
+	"github.com/boreq/errors"
+)
 
 type ThumbnailHandler struct {
 	thumbnailStore ThumbnailStore
@@ -12,10 +16,10 @@ func NewThumbnailHandler(thumbnailStore ThumbnailStore) *ThumbnailHandler {
 	}
 }
 
-func (h *ThumbnailHandler) Execute(id string) (string, error) {
-	p, err := h.thumbnailStore.GetFilePath(id)
+func (h *ThumbnailHandler) Execute(ctx context.Context, id string) (ConvertedFile, error) {
+	p, err := h.thumbnailStore.GetConvertedFile(ctx, id)
 	if err != nil {
-		return "", errors.Wrap(err, "could not get the thumbnail path")
+		return ConvertedFile{}, errors.Wrap(err, "could not get the thumbnail")
 	}
 	return p, nil
 }

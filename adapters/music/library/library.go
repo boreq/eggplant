@@ -268,14 +268,14 @@ func (l *Library) handleUpdate(album scanner.Album) error {
 		return errors.Wrap(err, "merge album failed")
 	}
 
-	// schedule track conversion
+	// inform track store which files are available for conversion
 	var tracks []store.Item
 	if err := l.getTracks(&tracks, l.root); err != nil {
 		return errors.Wrap(err, "preparing tracks failed")
 	}
 	l.trackStore.SetItems(tracks)
 
-	// schedule thumbnail conversion
+	// inform thumbnail store which files are available for conversion
 	var thumbnails []store.Item
 	if err := l.getThumbnails(&thumbnails, l.root); err != nil {
 		return errors.Wrap(err, "preparing thumbnails failed")

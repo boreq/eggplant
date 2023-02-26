@@ -1,16 +1,19 @@
 package music
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 var ErrForbidden = errors.New("forbidden")
 var ErrNotFound = errors.New("not found")
 
 type ThumbnailStore interface {
-	GetFilePath(id string) (string, error)
+	GetConvertedFile(ctx context.Context, id string) (ConvertedFile, error)
 }
 
 type TrackStore interface {
-	GetFilePath(id string) (string, error)
+	GetConvertedFile(ctx context.Context, id string) (ConvertedFile, error)
 }
 
 type SearchResult struct {

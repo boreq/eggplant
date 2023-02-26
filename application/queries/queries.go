@@ -19,8 +19,8 @@ type Stats struct {
 }
 
 type StoreStats struct {
-	AllItems       int   `json:"allItems"`
-	ConvertedItems int   `json:"convertedItems"`
+	AllItems       int64 `json:"allItems"`
+	ConvertedItems int64 `json:"convertedItems"`
 	OriginalSize   int64 `json:"originalSize"`
 	ConvertedSize  int64 `json:"convertedSize"`
 }

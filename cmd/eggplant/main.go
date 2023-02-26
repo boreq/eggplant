@@ -19,7 +19,7 @@ func main() {
 }
 
 var globalOptions = []guinea.Option{
-	guinea.Option{
+	{
 		Name:        "verbosity",
 		Type:        guinea.String,
 		Default:     "info",

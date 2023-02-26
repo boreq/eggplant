@@ -4,6 +4,8 @@
 package wire
 
 import (
+	"context"
+
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/internal/config"
@@ -45,7 +47,7 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	return nil, nil
 }
 
-func BuildService(conf *config.Config) (*service.Service, error) {
+func BuildService(ctx context.Context, conf *config.Config) (*service.Service, error) {
 	wire.Build(
 		service.NewService,
 		httpSet,
