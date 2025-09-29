@@ -56,6 +56,7 @@ func Default() *Config {
 			".wma",
 			".aiff",
 			".opus",
+			".m4a",
 		},
 		ThumbnailStems: []string{
 			"thumbnail",
