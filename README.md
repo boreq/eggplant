@@ -36,9 +36,8 @@ The repository comes with a `Dockerfile`. The easiest way to use the `Dockerfile
 
     $ docker compose up
 
-In this example Eggplant is exposed on the host system only locally under port `8123`. It's that first number under
-ports, you can change that to something else. Normally you would then point your reverse proxy e.g. `nginx` at this
-port.
+In this example Eggplant is exposed on the host system under port `8123`. It's that first number under ports, you can
+change that to something else. Normally you would then point your reverse proxy e.g. `nginx` at this port.
 
 Music directory is documented below. 
 
