@@ -1,0 +1,20 @@
+$padding: 2em;
+
+.search {
+    padding: $padding;
+
+    .message {
+        text-align: center;
+        padding: 2em 0;
+    }
+
+    .spinner {
+        font-size: 20px;
+        text-align: center;
+    }
+
+    .tracks {
+        margin: 0 (-($padding));
+    }
+
+}

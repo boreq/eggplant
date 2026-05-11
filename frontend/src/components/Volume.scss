@@ -1,0 +1,36 @@
+$hover-area-offset: 2em;
+
+.volume {
+    position: relative;
+
+    .button {
+        width: 17px;
+        display: block;
+
+        &:hover {
+            +.bar {
+                display: block;
+            }
+        }
+    }
+
+    .bar {
+        position: absolute;
+        display: none;
+        top: -142px; // after changing this value make sure that this element overlaps slightly with .button
+        height: 100px;
+        z-index: 999;
+        padding: $hover-area-offset $hover-area-offset 1em;
+        transform: translate(-50%, 0);
+        left: 50%;
+
+        &:hover {
+            display: block;
+        }
+    }
+
+    a:hover {
+        color: $primary-color;
+        cursor: pointer;
+    }
+}

@@ -1,0 +1,51 @@
+$extra-padding: 3em;
+
+.users {
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+
+        .user {
+            &:nth-child(even) {
+                background-color: $box-normal-background-color-alt;
+            }
+        }
+
+        th, td {
+            padding: 1em;
+        }
+
+        th {
+            border: 1px solid $box-normal-border-color;
+        }
+
+        thead, tr {
+            > :first-child {
+                padding-left: $extra-padding;
+            }
+
+            > :last-child {
+                padding-right: $extra-padding;
+            }
+        }
+
+        .role, .created, .last-seen {
+            width: 150px;
+        }
+
+        .actions {
+            width: 50px;
+        }
+
+        a:hover {
+            color: $primary-color;
+        }
+    }
+
+    .spinner {
+        padding: 1em;
+        font-size: 20px;
+        text-align: center;
+    }
+}

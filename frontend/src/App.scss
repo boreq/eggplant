@@ -1,0 +1,191 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Raleway', sans-serif;
+    font-size: 12px;
+    color: $box-normal-text-color;
+}
+
+body {
+    background-image: url('./assets/images/background.jpg');
+    background-repeat: no-repeat;
+    background-position: bottom;
+    background-attachment: scroll;
+    background-size: cover;
+}
+
+a {
+    cursor: pointer;
+    transition: color $transition-duration, background-color 200ms;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-flow: column;
+
+    &.csd {
+        background: linear-gradient(to bottom, #e2453c 0, #e2453c 16.66%, #e07e39 16.66%, #e07e39 33.33%, #e5d667 33.33%, #e5d667 50%, #51b95b 50%, #51b95b 66.66%, #1e72b7 66.66%, #1e72b7 83.33%, #6f5ba7 83.33%) no-repeat;
+    }
+
+    > .content {
+        flex: 1;
+        display: flex;
+        padding: 50px;
+        overflow: hidden;
+        transition: padding 1s, width 1s, height 1s, max-width 1s, max-height 1s;
+        align-items: center;
+
+        > .wrapper {
+            background-color: $box-normal-background-color;
+            box-shadow: $box-normal-box-shadow;
+            border-radius: $box-border-radius;
+            overflow: hidden;
+            height: 100%;
+            flex: 1 1 0;
+            max-width: 1000px;
+            max-height: 700px;
+            margin: 0 auto;
+
+            > .container {
+                overflow: hidden;
+                height: 100%;
+            }
+        }
+    }
+
+    > .conversion-status {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+    }
+
+    > .notifications {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+
+    @media (max-width: $responsive-threshold-mobile), (max-height: 700px) {
+        > .content {
+            padding: 20px;
+
+            .wrapper {
+                max-width: none;
+                max-height: none;
+            }
+        }
+    }
+}
+
+.tooltip {
+    display: block !important;
+    z-index: 10000;
+
+    .tooltip-inner {
+        background: black;
+        color: white;
+        padding: 5px 10px 4px;
+        border-radius: $box-border-radius;
+    }
+
+    .tooltip-arrow {
+        width: 0;
+        height: 0;
+        border-style: solid;
+        position: absolute;
+        margin: 5px;
+        border-color: black;
+        z-index: 1;
+    }
+
+    &[x-placement^="top"] {
+        margin-bottom: 5px;
+
+        .tooltip-arrow {
+            border-width: 5px 5px 0 5px;
+            border-left-color: transparent !important;
+            border-right-color: transparent !important;
+            border-bottom-color: transparent !important;
+            bottom: -5px;
+            left: calc(50% - 5px);
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+    }
+
+    &[x-placement^="bottom"] {
+        margin-top: 5px;
+
+        .tooltip-arrow {
+            border-width: 0 5px 5px 5px;
+            border-left-color: transparent !important;
+            border-right-color: transparent !important;
+            border-top-color: transparent !important;
+            top: -5px;
+            left: calc(50% - 5px);
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+    }
+
+    &[x-placement^="right"] {
+        margin-left: 5px;
+
+        .tooltip-arrow {
+            border-width: 5px 5px 5px 0;
+            border-left-color: transparent !important;
+            border-top-color: transparent !important;
+            border-bottom-color: transparent !important;
+            left: -5px;
+            top: calc(50% - 5px);
+            margin-left: 0;
+            margin-right: 0;
+        }
+    }
+
+    &[x-placement^="left"] {
+        margin-right: 5px;
+
+        .tooltip-arrow {
+            border-width: 5px 0 5px 5px;
+            border-top-color: transparent !important;
+            border-right-color: transparent !important;
+            border-bottom-color: transparent !important;
+            right: -5px;
+            top: calc(50% - 5px);
+            margin-left: 0;
+            margin-right: 0;
+        }
+    }
+
+    &.popover {
+        .popover-inner {
+            background: $box-normal-background-color;
+            color: $box-normal-text-color;
+            padding: 24px;
+            border-radius: 5px;
+            box-shadow: $box-normal-box-shadow;
+            border: $box-normal-border;
+            border-color: $primary-color;
+        }
+
+        .popover-arrow {
+            border-color: $box-normal-border-color;
+            border-color: $primary-color;
+        }
+    }
+
+    &[aria-hidden='true'] {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity .15s, visibility .15s;
+    }
+
+    &[aria-hidden='false'] {
+        visibility: visible;
+        opacity: 1;
+        transition: opacity .15s;
+    }
+}

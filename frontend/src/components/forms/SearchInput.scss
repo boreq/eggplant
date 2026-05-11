@@ -1,0 +1,51 @@
+.search-input {
+    $width: 3em;
+    color: $box-normal-text-dimmed-color;
+    position: relative;
+    margin: 0;
+
+    .icon, .close {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .icon {
+        left: 0;
+        padding-left: 1.2em;
+    }
+
+    .close {
+        right: 0;
+        padding-right: 1.2em;
+        width: $width;
+        box-sizing: border-box;
+        justify-content: flex-end;
+
+        i {
+            display: inline;
+        }
+    }
+
+    a:hover {
+        color: $primary-color;
+    }
+
+    input {
+        margin: 0;
+        padding: 1em $width;
+
+        border: 0;
+        font-size: inherit;
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        border-bottom: $box-normal-border;
+
+        &:focus {
+            outline: none;
+        }
+    }
+}

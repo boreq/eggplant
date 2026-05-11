@@ -1,0 +1,99 @@
+.tracks {
+    padding: 0;
+    margin: 0;
+
+    .track {
+        display: flex;
+        padding: 1em 2em;
+
+        &:nth-child(even) {
+            background-color: $box-normal-background-color-alt;
+        }
+
+        .play {
+            margin: 0 1em 0 0;
+            width: 11px;
+
+            .button {
+                display: none;
+            }
+
+            .number {
+                text-align: left;
+            }
+
+            &.playing, &:hover {
+                color: $primary-color;
+            }
+
+            &:active {
+                color: $primary-color-dark;
+            }
+        }
+
+        &:hover .play, .play.playing {
+            .button {
+                display: block;
+            }
+
+            .number {
+                display: none;
+            }
+        }
+
+        &:hover {
+            .actions .target {
+                display: block;
+            }
+        }
+
+        .actions {
+            .target {
+                display: none;
+                padding: 0 5px;
+            }
+
+            a {
+                display: block;
+                padding: 1em;
+
+                &:hover {
+                    color: $primary-color;
+                }
+            }
+        }
+
+        .title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .duration {
+            margin-left: 1em;
+            width: 30px;
+            text-align: left;
+        }
+    }
+
+    @media (any-hover: none) {
+        .track {
+            .play {
+                .button {
+                    display: block;
+                }
+
+                .number {
+                    display: none;
+                }
+            }
+
+            .actions {
+                .target {
+                    display: block;
+                }
+            }
+        }
+    }
+}

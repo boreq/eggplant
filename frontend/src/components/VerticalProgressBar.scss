@@ -1,0 +1,31 @@
+$width: 5px;
+$clickable-area-offset: 10px;
+
+.vertical-progress-bar {
+    padding: 0 $clickable-area-offset;
+    height: 100%;
+
+    &:hover {
+        cursor: pointer;
+    }
+
+    .bar {
+        background-color: $box-dark-text-dimmed-color;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+
+        &, & .filled-in {
+            border-radius: $width;
+            width: $width;
+        }
+
+        .filled-in {
+            background-color: $primary-color;
+        }
+    }
+
+    * {
+        transition: none;
+    }
+}

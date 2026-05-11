@@ -1,0 +1,17 @@
+$height: 45px;
+
+.action-bar {
+    height: $height;
+    line-height: $height;
+    display: flex;
+
+    > * {
+        flex: 1;
+        border-right: $box-normal-border;
+        border-bottom: $box-normal-border;
+
+        &:last-child {
+            border-right: none;
+        }
+    }
+}

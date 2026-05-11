@@ -1,0 +1,28 @@
+$font-weight-normal: 400;
+$font-weight-bold: 700;
+$font-weight-black: 900;
+
+$primary-color: #e74c3c; // also update public/index.html when changing this
+$primary-color-dark: #c0392b;
+
+$box-border-radius: 5px;
+
+$box-dark-background-color: #222;
+$box-dark-text-color: #ddd;
+$box-dark-text-dimmed-color: #888;
+
+$box-normal-background-color: #fff;
+$box-normal-background-color-alt: #fcfcfc;
+$box-normal-background-color-dark: #bababa;
+$box-normal-text-color: #222;
+$box-normal-text-dimmed-color: #aaa;
+$box-normal-box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+$box-normal-border-color: #eee;
+$box-normal-border-width-wide: 2px;
+$box-normal-border-width: 1px;
+$box-normal-border-style: solid;
+$box-normal-border: $box-normal-border-width $box-normal-border-style $box-normal-border-color;
+
+$responsive-threshold-mobile: 800px;
+
+$transition-duration: 200ms;

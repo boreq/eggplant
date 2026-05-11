@@ -1,0 +1,20 @@
+.indicator {
+    $baseWidth: 4px;
+    //position: relative;
+    height: 32px;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-between;
+
+    .bar {
+        height: $baseWidth;
+        border-radius: $baseWidth;
+        margin: 0 auto;
+        background-color: $box-dark-text-dimmed-color;
+        transition: background-color $transition-duration;
+
+        &.enabled {
+            background-color: $primary-color;
+        }
+    }
+}

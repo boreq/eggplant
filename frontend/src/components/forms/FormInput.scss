@@ -1,0 +1,37 @@
+.form-input {
+    color: $box-normal-text-dimmed-color;
+    position: relative;
+    margin: 2em 0;
+
+    .icon {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        padding-left: .8em;
+    }
+
+    .icon+input{
+        padding-left: 3em;
+    }
+
+    input {
+        margin: 0;
+        padding: .8em;
+        border: 0;
+        font-size: inherit;
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        border-bottom: $box-normal-border-width-wide $box-normal-border-style $box-normal-border-color;
+        transition: $transition-duration border-color;
+        background-color: transparent;
+
+        &:focus {
+            border-color: $primary-color;
+            outline: none;
+        }
+    }
+}

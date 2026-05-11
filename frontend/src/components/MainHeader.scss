@@ -1,0 +1,16 @@
+$padding: 5px;
+
+.main-header {
+    margin: 0 1em;
+    font-size: 10px;
+
+    .text {
+        background-color: $box-normal-background-color-dark;
+        display: inline-block;
+        padding: $padding;
+        border-radius: 0 0 $box-border-radius $box-border-radius;
+        text-transform: uppercase;
+        font-weight: $font-weight-bold;
+        color: #fff;
+    }
+}

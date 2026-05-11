@@ -1,0 +1,51 @@
+$red: #ef6155;
+$green: #2ecc71;
+
+.notifications {
+    margin: 0;
+    padding: 0;
+
+    .notification {
+        list-style-type: none;
+        padding: 1em;
+        margin: 1em;
+        border-radius: $box-border-radius;
+        width: 250px;
+        color: #fff;
+        box-shadow: $box-normal-box-shadow;
+        transition: none;
+        overflow: hidden;
+
+        .extra {
+            background-color: rgba(1, 1, 1, 0.2);
+            padding: 1em;
+            margin-top: 1em;
+        }
+
+        &.error {
+            background-color: $red;
+        }
+
+        &.success {
+            background-color: $green;
+        }
+
+        &.hide {
+            animation: hide 500ms linear 0s 1 normal forwards;
+        }
+    }
+}
+
+@keyframes hide {
+    0% {
+        transform-origin: center bottom;
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform-origin: center bottom;
+        transform: translateX(300px);
+        opacity: 0;
+    }
+}

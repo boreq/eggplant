@@ -1,0 +1,41 @@
+$spacing: 5px;
+
+.now-playing {
+    color: #fff;
+    overflow: hidden;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    text-align: center;
+    padding: 0 20px 20px;
+    height: 50px;
+    box-sizing: border-box;
+    transition: $transition-duration opacity;
+    opacity: 1;
+
+    &.hidden {
+        opacity: 0;
+    }
+
+    .trackTitle, .albumTitle {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .trackTitle {
+        margin-bottom: $spacing;
+    }
+
+    .albumTitle {
+        color: $box-dark-text-dimmed-color;
+    }
+
+    a {
+        cursor: pointer;
+
+        &:hover {
+            color: $primary-color;
+        }
+    }
+}

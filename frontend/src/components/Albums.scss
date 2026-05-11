@@ -1,0 +1,68 @@
+$image-size: 200px;
+$image-size-small: 100px;
+
+.albums {
+    display: flex;
+    flex-flow: row wrap;
+
+    .album {
+        color: $box-normal-text-color;
+        padding: 1em;
+        font-size: 16px;
+
+        .image {
+            width: $image-size;
+            height: $image-size;
+            margin: 0 auto;
+            transition: transform $transition-duration;
+
+            img {
+                height: 100%;
+                width: 100%;
+            }
+        }
+
+        .title {
+            margin: 0 auto;
+            margin-top: .5em;
+            max-width: $image-size;
+            min-height: 4em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &:hover {
+            cursor: pointer;
+            color: $primary-color;
+
+            .image {
+                transform: scale(1.05);
+            }
+        }
+    }
+}
+
+@media (max-width: $responsive-threshold-mobile) {
+    .albums {
+        justify-content: center;
+        align-items: stretch;
+        flex-flow: column;
+
+        .album {
+            text-align: center;
+
+            .image {
+                width: $image-size-small;
+                height: $image-size-small;
+            }
+
+            .title {
+                min-height: 0;
+                text-wrap: none;
+                white-space: nowrap;
+                max-width: 100%;
+            }
+        }
+    }
+}
+

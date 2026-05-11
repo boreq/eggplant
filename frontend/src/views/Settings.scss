@@ -1,0 +1,20 @@
+.settings {
+    padding: 2em;
+
+    .action-bar {
+        margin: -2em -2em 0;
+    }
+
+    .main-header {
+        margin-top: -($box-normal-border-width);
+    }
+
+    .subheader {
+        margin-top: 3em;
+    }
+
+    .users {
+        margin: 0 -2em;
+    }
+
+}

@@ -1,0 +1,19 @@
+.subheader {
+    color: $box-normal-text-dimmed-color;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin: 1em 0;
+
+    .text {
+    }
+
+    .line {
+        height: $box-normal-border-width;
+        background-color: $box-normal-border-color;
+        flex: 1;
+        margin: 0 0 0 2em;
+    }
+}

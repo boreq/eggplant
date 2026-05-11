@@ -1,0 +1,73 @@
+$black-overlay-z-index: 9;
+$close-overlay-z-index: 10;
+$content-z-index: 11;
+
+.dropdown {
+    .close-overlay, .black-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    .close-overlay {
+        z-index: $close-overlay-z-index;
+    }
+
+    .black-overlay {
+        pointer-events: none;
+        transition: opacity $transition-duration;
+        background-color: #000;
+        z-index: $black-overlay-z-index;
+        opacity: 0;
+
+        &.dark {
+            opacity: .5;
+        }
+    }
+
+    .wrapper {
+        .arrow, .content {
+            z-index: $content-z-index;
+        }
+
+        .arrow {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid $box-normal-background-color;
+
+            position: absolute;
+            margin-top: -5px;
+            margin-left: -5px;
+        }
+
+        .content {
+            position: absolute;
+            width: 200px;
+            transform: translate(-80%, 0);
+            border: 1px solid $box-normal-background-color;
+            border-radius: $box-border-radius;
+            box-shadow: $box-normal-box-shadow;
+            background-color: $box-normal-background-color;
+            padding: 0;
+            margin: 0;
+            list-style-type: none;
+            font-size: 14px;
+
+            li {
+                padding: 0;
+                margin: 0;
+            }
+        }
+
+        .target {
+            &:hover {
+                color: $primary-color;
+                transition: color $transition-duration;
+            }
+        }
+    }
+}

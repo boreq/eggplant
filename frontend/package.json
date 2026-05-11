@@ -1,0 +1,32 @@
+{
+  "name": "eggplant-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "axios": "^0.21.0",
+    "filesize": "^6.0.1",
+    "js-cookie": "^2.2.1",
+    "v-tooltip": "^2.0.2",
+    "vue": "^2.6.10",
+    "vue-class-component": "^7.1.0",
+    "vue-property-decorator": "^8.3.0",
+    "vue-router": "^3.1.3",
+    "vue-timeago": "^5.1.2",
+    "vuex": "^3.1.1",
+    "vuex-persist": "^3.1.3"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^4.0.5",
+    "@vue/cli-plugin-typescript": "^4.0.5",
+    "@vue/cli-service": "^4.0.5",
+    "sass": "^1.23.3",
+    "sass-loader": "^8.0.0",
+    "typescript": "^4.4.2",
+    "vue-template-compiler": "^2.6.10"
+  }
+}

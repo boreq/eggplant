@@ -1,0 +1,86 @@
+$spacing: 10px;
+$font-size: 15px;
+
+.controls {
+    display: flex;
+    flex-flow: column;
+    color: $box-dark-text-color;
+    font-size: $font-size;
+    margin: 0 $spacing $spacing;
+
+    a:hover {
+        color: $primary-color;
+        cursor: pointer;
+    }
+
+    .core {
+        display: flex;
+        flex: 1;
+        justify-content: center;
+        align-items: flex-end;
+        margin-bottom: $spacing;
+
+        > * {
+            margin: 0 50px;
+            font-size: 15px;
+        }
+
+        .play {
+            text-transform: uppercase;
+            font-weight: $font-weight-black;
+            letter-spacing: 4px;
+            font-size: 12px;
+            width: 70px;
+            text-align: center;
+        }
+    }
+
+    .progress {
+        display: flex;
+        align-items: center;
+        height: $font-size;
+        font-size: $font-size;
+
+        .bar {
+            flex: 1;
+            margin: 0 $spacing;
+        }
+
+        .current, .duration {
+            line-height: 1;
+            min-width: 50px;
+        }
+
+        .current {
+            text-align: right;
+        }
+
+        .duration {
+            text-align: left;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .core {
+            > * {
+                margin: 0 40px;
+            }
+        }
+    }
+
+    @media (max-width: 500px) {
+        .core {
+            > * {
+                margin: 0 30px;
+            }
+        }
+    }
+
+    @media (max-width: 420px) {
+        .core {
+            > * {
+                margin: 0 20px;
+            }
+        }
+    }
+}

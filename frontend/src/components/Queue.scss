@@ -1,0 +1,15 @@
+$padding: 2em;
+
+.queue {
+    padding: $padding;
+
+    .message {
+        text-align: center;
+        padding: 2em 0;
+    }
+
+    .tracks {
+        margin: 0 (-($padding));
+    }
+
+}
