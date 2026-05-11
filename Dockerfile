@@ -5,7 +5,7 @@ RUN yarn install --frozen-lockfile
 COPY frontend/ .
 RUN yarn build
 
-FROM golang:1.17-alpine AS backend
+FROM golang:1.26-alpine AS backend
 RUN apk add git
 WORKDIR /eggplant
 COPY backend/ .

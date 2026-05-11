@@ -2,7 +2,7 @@ package config_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -23,7 +23,7 @@ func TestGolden(t *testing.T) {
 
 	defer f.Close()
 
-	expected, err := ioutil.ReadAll(f)
+	expected, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	require.Equal(t, string(expected), actual.String())

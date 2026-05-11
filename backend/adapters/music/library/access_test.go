@@ -1,7 +1,6 @@
 package library_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -99,6 +98,6 @@ func TestAccessLoaderYes(t *testing.T) {
 
 func writeToFile(t *testing.T, path string, data []byte) {
 	permissions := 0600 | os.ModePerm
-	err := ioutil.WriteFile(path, data, permissions)
+	err := os.WriteFile(path, data, permissions)
 	require.NoError(t, err)
 }

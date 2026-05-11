@@ -16,11 +16,8 @@ build: build-directory
 build-race: build-directory
 	go build -race -o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
 
-frontend:
-	./_tools/build_frontend.sh
-
 check-repository-unchanged:
-	./_tools/check_repository_unchanged.sh
+	../_tools/check_repository_unchanged.sh
 
 tools:
 	 go install honnef.co/go/tools/cmd/staticcheck@latest
@@ -39,10 +36,6 @@ generate:
 lint: 
 	go vet ./...
 	staticcheck ./...
-
-doc:
-	@echo "http://localhost:6060/pkg/github.com/boreq/${PROGRAM_NAME}/"
-	godoc -http=:6060
 
 test:
 	go test ./...
@@ -64,4 +57,4 @@ fmt:
 update-golden: build
 	./_build/eggplant default_config > internal/config/data/config.golden.toml
 
-.PHONY: all build build-directory frontend check-repository-unchanged build-race tools dependencies lint doc test test-verbose clean fmt tidy dev update-golden
+.PHONY: all build build-directory -repository-unchanged build-race tools dependencies lint test test-verbose clean fmt tidy dev update-golden

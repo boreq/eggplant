@@ -121,7 +121,7 @@ func (s *Store) SetItems(items []Item) {
 }
 
 func (s *Store) GetConvertedFile(ctx context.Context, id string) (music.ConvertedFile, error) {
-	ch := make(chan ConvertedFileOrError, 0)
+	ch := make(chan ConvertedFileOrError)
 	go func() {
 		convertedFile, err := s.getConvertedFile(ctx, id)
 		select {
@@ -360,16 +360,6 @@ func (s *Store) cleanup() error {
 func (s *Store) outputFileExists(item Item) (bool, error) {
 	file := s.converter.OutputFile(item.Id)
 	return exists(file)
-}
-
-func (s *Store) ensureOutputDirectoryExists() error {
-	dir := s.converter.OutputDirectory()
-	if _, err := os.Stat(dir); err != nil {
-		if os.IsNotExist(err) {
-			return os.Mkdir(dir, os.ModePerm)
-		}
-	}
-	return nil
 }
 
 func (s *Store) getOriginalSize() (int64, error) {

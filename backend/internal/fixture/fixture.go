@@ -1,7 +1,6 @@
 package fixture
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -12,7 +11,7 @@ import (
 type CleanupFunc func()
 
 func File(t *testing.T) (string, CleanupFunc) {
-	file, err := ioutil.TempFile("", "eggplant_test")
+	file, err := os.CreateTemp("", "eggplant_test")
 	if err != nil {
 		t.Fatal(err)
 	}
