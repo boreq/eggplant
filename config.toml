@@ -1,0 +1,4 @@
+serve_address = "0.0.0.0:8118"
+music_directory = "/music"
+data_directory = "/data"
+cache_directory = "/cache"

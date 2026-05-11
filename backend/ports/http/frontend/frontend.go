@@ -1,31 +1,19 @@
+//go:build !withfrontend
+
 package frontend
 
 import (
-	"embed"
 	"net/http"
+
+	"github.com/boreq/errors"
 )
 
-//go:embed css/* js/* img/* index.html favicon.ico
-var content embed.FS
-
-type FrontendFileSystem struct {
-	fs http.FileSystem
-}
+type FrontendFileSystem struct{}
 
 func NewFrontendFileSystem() (*FrontendFileSystem, error) {
-	return &FrontendFileSystem{
-		fs: http.FS(content),
-	}, nil
+	return &FrontendFileSystem{}, nil
 }
 
 func (f *FrontendFileSystem) Open(name string) (http.File, error) {
-	file, err := f.fs.Open(name)
-	if err != nil {
-		file, err := f.fs.Open("/index.html")
-		if err != nil {
-			return nil, err
-		}
-		return file, nil
-	}
-	return file, nil
+	return nil, errors.New("this version of the program wasn't compiled with the frontend in it")
 }

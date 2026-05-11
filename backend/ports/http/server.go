@@ -7,7 +7,6 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
-	"github.com/rs/cors"
 )
 
 type Server struct {
@@ -23,8 +22,7 @@ func NewServer(handler http.Handler) *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, address string) error {
-	// Add CORS middleware
-	handler := cors.AllowAll().Handler(s.handler)
+	handler := applyCORSMiddleware(s.handler)
 
 	// Add GZIP middleware
 	handler = gziphandler.GzipHandler(handler)

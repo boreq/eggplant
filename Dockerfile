@@ -10,9 +10,10 @@ RUN apk add git
 WORKDIR /eggplant
 COPY backend/ .
 COPY --from=frontend /frontend/dist/ ./ports/http/frontend/
-RUN go install -v ./cmd/eggplant
+RUN go install -v -tags withfrontend ./cmd/eggplant
 
 FROM alpine
 RUN apk add ffmpeg
 COPY --from=backend /go/bin/eggplant /usr/local/bin/eggplant
-CMD ["/bin/sh", "-c", "eggplant run --verbosity debug /etc/eggplant/config.toml"]
+COPY config.toml /config.toml
+CMD ["/bin/sh", "-c", "eggplant run /config.toml"]

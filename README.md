@@ -4,134 +4,51 @@ Eggplant is a self-hosted music streaming service.
 
 ![Eggplant][screenshot]
 
-## Disclaimer
-
-This program is still under development. It is possible that from time to time
-you will have to change the way in which you invoke the program or update your
-configuration file.
-
 ## Installation
 
-### Arch Linux
+This project is likely to be annoying to build thanks to the fact that you need to use a specific Node version to build
+the frontend. It also needs `ffmpeg` installed to run. Honestly, save yourself the trouble and use the provided
+`Dockerfile`. 
 
-#### Installation
-
-Eggplant can be [installed][arch-install] with the
-[`eggplant-git`][aur-eggplant-git] package.
-
-#### Usage
-
-[Start/enable][arch-start-enable] `eggplant.service`.
-
-The user interface is available at http://127.0.0.1:8118. When accessing the
-user interface for the first time you will be asked to create an initial user
-account. The configuration file resides at `/etc/eggplant/config.toml`. Edit
-the `music_directory` configuration key to point eggplant at your [music
-directory][anchor-music-directory].
-
-### Source code
-
-#### Installation
-
-Eggplant requires `ffmpeg` to be installed in order to convert audio files.
-
-Compiling the source code requires the Go language toolchain. In order to
-build the program hand clone the repository and execute the `make` command:
-
-    $ git clone https://github.com/boreq/eggplant
-    $ make
-    $ ls _build
-    eggplant
-
-If you prefer you can instead use the Go tools directly to install the
-program into [`$GOBIN`][go-get] using the following command:
-
-    $  go get github.com/boreq/eggplant/cmd/eggplant
-
-#### Usage
-
-To start using Eggplant you first have to create a configuration file:
-
-    $ eggplant default_config > /path/to/config.toml
-
-Edit the newly created configuration file to configure the program. At
-minimum you have to modify the following configuration keys:
-`music_directory` and `data_directory`. See section ["Music
-directory"][anchor-music-directory] to learn more about the structure of the
-music directory.
-
-Eggplant accepts a single argument: a path to the configuration file.
-
-    $ eggplant run /path/to/config.toml
-    INFO starting listening                       source=server address=127.0.0.1:8118
-
-Navigate to http://127.0.0.0:8118 to see the results.
-
-### Docker
-
-This repository comes with a Dockerfile which requires the config file to be
-mounted as `/etc/eggplant/config.toml`. You will also need to mount all
-directories which you normally define in the config file (data directory, cache
-directory, music directory) and expose the port defined in the config file. The
-remainder of this section goes through those steps in a specific way but the
-same can be achieved in many other ways.
+### I want to use Docker
 
 I recommend starting in an empty directory and cloning the eggplant directory
 into it:
 
     $ git clone https://github.com/boreq/eggplant
 
-To generate a default config file and store it on your host system you need to
-build the docker image and then run `eggplant default_config` in the resulting
-container. To do that point `docker build` at the cloned repository and then
-run `docker run` using the resulting image hash:
-
-    $ docker build eggplant
-    ...
-    Successfully built <hash>
-    $ docker run -ti <hash> eggplant default_config > config.toml
-
-You need to modify the resulting config file so that it points to the locations
-under which you plan to mount the cache directory, data directory and music
-directory. I usually simply use `/cache`, `/data` and `/music`.
-
-One possible way of easily mounting everything is using Docker Compose. I
-usually place the `docker-compose.yaml` file in the same directory in which I
-cloned the eggplant repository:
+The repository comes with a `Dockerfile`. The easiest way to use the `Dockerfile` is via Docker Compose. 
 
     $ ls
-    docker-compose.yaml eggplant config.toml
-
-The example `docker-compose.yaml` file for Eggplant could look like this:
+    docker-compose.yaml eggplant
 
     $ cat docker-compose.yaml
-    version: '3'
     services:
       eggplant:
         build: ./eggplant
         volumes:
-          - /host/path/to/music/directory:/music:ro
-          - /host/path/to/data/directory:/data
-          - /host/path/to/cache/directory:/cache
-          - /host/path/to/config.toml:/etc/eggplant/config.toml
+          - /host/path/to/music:/music:ro
+          - /host/path/to/data:/data
+          - /host/path/to/cache:/cache
         ports:
-          - "127.0.0.1:9010:8118"
+          - "8123:8118"
         restart: always
 
-In this example Eggplant is exposed on the host system only locally under port
-`9010`. Normally you would then point your reverse proxy eg. `nginx` at this
-port:
+    $ docker compose up
 
-    server {
-        listen       443 ssl http2;
-        server_name  music.example.com;
+In this example Eggplant is exposed on the host system only locally under port `8123`. It's that first number under
+ports, you can change that to something else. Normally you would then point your reverse proxy e.g. `nginx` at this
+port.
 
-        location / {
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_pass http://127.0.0.1:9010/;
-        }
-    }
+Music directory is documented below. 
+
+If you don't want to use Docker Compose then I presume you know how to figure this out by yourself via Kubernetes
+or by using Docker directly based on the example above.
+
+### I want to suffer instead
+
+If you want to build and install everything yourself then you need to look at the `Dockerfile`. 
+I had a full instruction here but I think it's just confusing and was constantly out of date, you can figure it out.
 
 ## Music directory
 
@@ -208,12 +125,30 @@ files inside of them.
 - `.aiff`
 - `.opus`
 
-## Related repositories
+## Development
 
-The frontend written in Vue resides [in this repository][repo-frontend].
+For local development I recommend opening two terminals and running the following commands in them to start the
+backend and the frontend separately. This gives you a familiar experience whether you are a frontend or a backend
+developer.
 
-The `eggplant-git` AUR package resides [in this repository][repo-arch-eggplant-git].
+### Starting the frontend
 
+You need Node v16. Why? A better question is "why do Node authors hate us both for some reason?". I don't have the
+answer to that question but I can recommend using `nvm`.
+
+    $ cd frontend
+    $ nvm use v16
+    $ yarn install
+    $ yarn serve
+
+### Starting the backend
+
+When developing locally use the `insecurecors` build tag to allow the frontend dev server (running on a different port)
+to talk to the backend.
+
+    $ cd backend
+    $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
+    $ go run -tags insecurecors cmd/eggplant/main.go run /path/to/config.toml
 
 [ci-badge]:https://github.com/boreq/eggplant/workflows/CI/badge.svg
 [ci]:https://github.com/boreq/eggplant/actions
@@ -228,5 +163,3 @@ The `eggplant-git` AUR package resides [in this repository][repo-arch-eggplant-g
 [go-get]: https://golang.org/cmd/go/#hdr-Add_dependencies_to_current_module_and_install_them
 [arch-install]: https://wiki.archlinux.org/index.php/Install
 [arch-start-enable]: https://wiki.archlinux.org/index.php/Start/enable
-[repo-frontend]: https://github.com/boreq/eggplant-frontend
-[repo-arch-eggplant-git]: https://github.com/boreq/eggplant-package-arch-linux-eggplant-git
