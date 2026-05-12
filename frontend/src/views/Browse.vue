@@ -31,7 +31,7 @@
                                     Eggplant
                                 </router-link>
                             </li>
-                            <li v-for="parent in album.parents">
+                            <li v-for="parent in album.parents" :key="parent.id">
                                 <router-link :to="parentUrl(parent)">
                                     {{ parent.title }}
                                 </router-link>

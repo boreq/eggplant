@@ -1,12 +1,12 @@
 <template>
     <ul class="tracks">
-        <li v-for="(entry, index) in entries" class="track">
+        <li v-for="(entry, index) in entries" :key="entry.track.id" class="track">
             <div class="play" :class="{ playing: isNowPlaying(index, entry.track) }">
                 <a @click="onPlayTrackButtonClicked(index)" class="button" v-if="!showPlayAlbumButtonAsPause(index, entry.track)">
                     <i class="icon fas fa-play"></i>
                 </a>
 
-                <a @click="onPlayTrackButtonClicked(index)" class="button"v-else>
+                <a @click="onPlayTrackButtonClicked(index)" class="button" v-else>
                     <i class="icon fas fa-pause"></i>
                 </a>
 

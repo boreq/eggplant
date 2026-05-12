@@ -1,4 +1,5 @@
-FROM node:16-alpine AS frontend
+FROM node:26-alpine AS frontend
+RUN apk add --no-cache yarn
 WORKDIR /frontend
 COPY frontend/package.json frontend/yarn.lock ./
 RUN yarn install --frozen-lockfile

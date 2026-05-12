@@ -57,13 +57,13 @@ export class ApiService {
     browse(ids: string[]): Promise<AxiosResponse<Album>> {
         const path = ids.join('/');
         const url = `browse/${path}`;
-        return this.axios.get<Album>(process.env.VUE_APP_API_PREFIX + url);
+        return this.axios.get<Album>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     search(query: string): Promise<AxiosResponse<any>> {
         const url = `search`;
         return this.axios.get<any>(
-            process.env.VUE_APP_API_PREFIX + url,
+            import.meta.env.VUE_APP_API_PREFIX + url,
             {
                 params: {
                     query: query,
@@ -74,28 +74,28 @@ export class ApiService {
 
     stats(): Promise<AxiosResponse<Stats>> {
         const url = `stats`;
-        return this.axios.get<Stats>(process.env.VUE_APP_API_PREFIX + url);
+        return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     trackUrl(track: Track): string {
         const url = `track/${track.fileId}`;
-        return process.env.VUE_APP_API_PREFIX + url;
+        return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
     thumbnailUrl(thumbnail: Thumbnail): string {
         const url = `thumbnail/${thumbnail.fileId}`;
-        return process.env.VUE_APP_API_PREFIX + url;
+        return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
     initialize(cmd: CommandInitialize): Promise<AxiosResponse<void>> {
         const url = `auth/register-initial`;
-        return this.axios.post<void>(process.env.VUE_APP_API_PREFIX + url, cmd);
+        return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url, cmd);
     }
 
     login(cmd: LoginCommand): Promise<void> {
         const url = `auth/login`;
         return new Promise((resolve, reject) => {
-            this.axios.post<LoginResponse>(process.env.VUE_APP_API_PREFIX + url, cmd)
+            this.axios.post<LoginResponse>(import.meta.env.VUE_APP_API_PREFIX + url, cmd)
                 .then(
                     response => {
                         this.authService.storeToken(response.data.token);
@@ -119,7 +119,7 @@ export class ApiService {
     logout(): Promise<void> {
         const url = `auth/logout`;
         return new Promise((resolve, reject) => {
-            this.axios.post<void>(process.env.VUE_APP_API_PREFIX + url)
+            this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url)
                 .then(
                     () => {
                         this.authService.clearToken();
@@ -136,7 +136,7 @@ export class ApiService {
     refreshCurrentUser(): Promise<User> {
         const url = `auth`;
         return new Promise((resolve, reject) => {
-            this.axios.get<User>(process.env.VUE_APP_API_PREFIX + url)
+            this.axios.get<User>(import.meta.env.VUE_APP_API_PREFIX + url)
                 .then(
                     response => {
                         this.vue.$store.commit(Mutation.SetUser, response.data);
@@ -155,23 +155,23 @@ export class ApiService {
 
     register(cmd: RegisterCommand): Promise<AxiosResponse<void>> {
         const url = `auth/register`;
-        return this.axios.post<void>(process.env.VUE_APP_API_PREFIX + url, cmd);
+        return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url, cmd);
     }
 
     list(): Promise<AxiosResponse<User[]>> {
         const url = `auth/users`;
-        return this.axios.get<User[]>(process.env.VUE_APP_API_PREFIX + url);
+        return this.axios.get<User[]>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     createInvitation(): Promise<AxiosResponse<Invitation>> {
         const url = `auth/create-invitation`;
-        return this.axios.post<Invitation>(process.env.VUE_APP_API_PREFIX + url);
+        return this.axios.post<Invitation>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     remove(username: string): Promise<AxiosResponse<void>> {
         username = encodeURIComponent(username);
         const url = `auth/users/${username}/remove`;
-        return this.axios.post<void>(process.env.VUE_APP_API_PREFIX + url);
+        return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
 }

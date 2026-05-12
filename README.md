@@ -6,9 +6,7 @@ Eggplant is a self-hosted music streaming service.
 
 ## Installation
 
-This project is likely to be annoying to build thanks to the fact that you need to use a specific Node version to build
-the frontend. It also needs `ffmpeg` installed to run. Honestly, save yourself the trouble and use the provided
-`Dockerfile`. 
+This project may be annoying to build. I recommend using Docker. 
 
 ### I want to use Docker
 
@@ -44,10 +42,12 @@ Music directory is documented below.
 If you don't want to use Docker Compose then I presume you know how to figure this out by yourself via Kubernetes
 or by using Docker directly based on the example above.
 
-### I want to suffer instead
+### I don't want to use Docker
 
-If you want to build and install everything yourself then you need to look at the `Dockerfile`. 
-I had a full instruction here but I think it's just confusing and was constantly out of date, you can figure it out.
+If you prefer to suffer instead and want to build and install everything
+yourself then you need to look at the `Dockerfile` and basically go through the
+same steps. Honestly, save yourself the trouble and use the provided
+`Dockerfile`.
 
 ## Music directory
 
@@ -126,24 +126,26 @@ files inside of them.
 
 ## Development
 
-For local development I recommend opening two terminals and running the following commands in them to start the
-backend and the frontend separately. This gives you a familiar experience whether you are a frontend or a backend
+For local development I recommend opening two terminals and running the
+following commands in them to start the backend and the frontend separately.
+This gives you a familiar experience whether you are a frontend or a backend
 developer.
 
 ### Starting the frontend
 
-You need Node v16. Why? A better question is "why do Node authors hate us both for some reason?". I don't have the
-answer to that question but I can recommend using `nvm`.
+You need Node v26. Why? A better question is "why do Node authors hate us both
+for some reason?". I don't have the answer to that question but I can recommend
+using `nvm`.
 
     $ cd frontend
-    $ nvm use v16
+    $ nvm use v26
     $ yarn install
     $ yarn serve
 
 ### Starting the backend
 
-When developing locally use the `insecurecors` build tag to allow the frontend dev server (running on a different port)
-to talk to the backend.
+When developing locally use the `insecurecors` build tag to allow the frontend
+dev server (running on a different port) to talk to the backend.
 
     $ cd backend
     $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
@@ -158,7 +160,3 @@ to talk to the backend.
 [anchor-supported-thumbnail-stems]: #supported-thumbnail-stems
 [anchor-thumbnails]: #thumbnails
 [anchor-access-file]: #access-file
-[aur-eggplant-git]: https://aur.archlinux.org/packages/eggplant-git/
-[go-get]: https://golang.org/cmd/go/#hdr-Add_dependencies_to_current_module_and_install_them
-[arch-install]: https://wiki.archlinux.org/index.php/Install
-[arch-start-enable]: https://wiki.archlinux.org/index.php/Start/enable

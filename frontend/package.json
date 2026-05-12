@@ -2,31 +2,37 @@
   "name": "eggplant-frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "serve": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "axios": "^0.21.0",
-    "filesize": "^6.0.1",
-    "js-cookie": "^2.2.1",
-    "v-tooltip": "^2.0.2",
-    "vue": "^2.6.10",
-    "vue-class-component": "^7.1.0",
-    "vue-property-decorator": "^8.3.0",
-    "vue-router": "^3.1.3",
-    "vue-timeago": "^5.1.2",
-    "vuex": "^3.1.1",
-    "vuex-persist": "^3.1.3"
+    "axios": "0.21.4",
+    "filesize": "6.4.0",
+    "js-cookie": "2.2.1",
+    "v-tooltip": "2.1.3",
+    "vue": "2.7.16",
+    "vue-class-component": "7.2.6",
+    "vue-property-decorator": "9.1.2",
+    "vue-router": "3.6.5",
+    "vue-timeago": "5.1.3",
+    "vuex": "3.6.2",
+    "vuex-persist": "3.1.3"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.0.5",
-    "@vue/cli-plugin-typescript": "^4.0.5",
-    "@vue/cli-service": "^4.0.5",
-    "sass": "^1.23.3",
-    "sass-loader": "^8.0.0",
-    "typescript": "^4.4.2",
-    "vue-template-compiler": "^2.6.10"
+    "@vitejs/plugin-vue2": "2.3.4",
+    "eslint": "9.36.0",
+    "eslint-plugin-vue": "9.33.0",
+    "globals": "15.15.0",
+    "sass": "1.99.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4",
+    "vite": "5.4.21",
+    "vue-eslint-parser": "9.4.3",
+    "vue-tsc": "2.2.12"
   }
 }

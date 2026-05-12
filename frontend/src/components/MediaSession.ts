@@ -48,7 +48,7 @@ export default class MediaSession extends Vue {
                 ];
             }
 
-            // @ts-ignore
+            // @ts-expect-error MediaMetadata constructor types differ
             mediaSession.metadata = new MediaMetadata(metadata);
         }
     }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-//go:embed css/* js/* img/* index.html favicon.ico
+//go:embed assets/* index.html favicon.ico
 var content embed.FS
 
 type FrontendFileSystem struct {
