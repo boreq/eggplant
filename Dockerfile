@@ -1,8 +1,8 @@
 FROM node:26-alpine AS frontend
-RUN apk add --no-cache yarn
+RUN npm install -g corepack@latest && corepack enable
 WORKDIR /frontend
-COPY frontend/package.json frontend/yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY frontend/package.json frontend/yarn.lock frontend/.yarnrc.yml ./
+RUN yarn install --immutable
 COPY frontend/ .
 RUN yarn build
 

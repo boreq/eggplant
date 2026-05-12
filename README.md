@@ -135,10 +135,9 @@ developer.
 
 You need Node v26. Why? A better question is "why do Node authors hate us both
 for some reason?". I don't have the answer to that question but I can recommend
-using `nvm`.
+using `nvm`. You should also be using `corepack`.
 
     $ cd frontend
-    $ nvm use v26
     $ yarn install
     $ yarn serve
 
