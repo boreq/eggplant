@@ -10,7 +10,7 @@ FROM golang:1.26-alpine AS backend
 RUN apk add git
 WORKDIR /eggplant
 COPY backend/ .
-COPY --from=frontend /frontend/dist/ ./ports/http/frontend/
+COPY --from=frontend /frontend/dist/ ./entrypoints/http/frontend/
 RUN go install -v -tags withfrontend ./cmd/eggplant
 
 FROM alpine
