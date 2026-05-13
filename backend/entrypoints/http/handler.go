@@ -3,21 +3,19 @@ package http
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/logging"
-	"github.com/boreq/eggplant/ports/http/frontend"
+	"github.com/boreq/eggplant/entrypoints/http/frontend"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
 )
-
-var isIdValid = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
 
 type AuthenticatedUser struct {
 	User  auth.ReadUser
@@ -89,9 +87,13 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		dirs = strings.Split(path, "/")
 	}
 
-	var ids []music.AlbumId
+	var ids []domain.AlbumId
 	for _, name := range dirs {
-		ids = append(ids, music.AlbumId(name))
+		id, err := domain.NewAlbumId(name)
+		if err != nil {
+			return rest.ErrBadRequest.WithMessage("Invalid album id.")
+		}
+		ids = append(ids, id)
 	}
 
 	cmd := music.Browse{
@@ -99,7 +101,7 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		PublicOnly: u == nil,
 	}
 
-	album, err := h.app.Music.Browse.Execute(cmd)
+	a, err := h.app.Music.Browse.Execute(cmd)
 	if err != nil {
 		if errors.Is(err, music.ErrForbidden) {
 			return rest.ErrForbidden
@@ -113,7 +115,7 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	return rest.NewResponse(album)
+	return rest.NewResponse(toAlbum(a))
 }
 
 func (h *Handler) search(r *http.Request) rest.RestResponse {
@@ -145,9 +147,9 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	if !isIdValid(id) {
-		h.log.Warn("invalid track id", "id", id)
+	id, err := domain.NewFileId(ps.ByName("id"))
+	if err != nil {
+		h.log.Warn("invalid track id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -165,9 +167,9 @@ func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	if !isIdValid(id) {
-		h.log.Warn("invalid thumbnail id", "id", id)
+	id, err := domain.NewFileId(ps.ByName("id"))
+	if err != nil {
+		h.log.Warn("invalid thumbnail id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

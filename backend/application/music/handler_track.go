@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/errors"
 )
 
@@ -30,7 +31,7 @@ func NewTrackHandler(trackStore TrackStore) *TrackHandler {
 	}
 }
 
-func (h *TrackHandler) Execute(ctx context.Context, id string) (ConvertedFile, error) {
+func (h *TrackHandler) Execute(ctx context.Context, id domain.FileId) (ConvertedFile, error) {
 	p, err := h.trackStore.GetConvertedFile(ctx, id)
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the track")

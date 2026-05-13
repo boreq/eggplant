@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	httpPort "github.com/boreq/eggplant/ports/http"
+	httpPort "github.com/boreq/eggplant/entrypoints/http"
 	"github.com/boreq/rest"
 	"github.com/stretchr/testify/require"
 )

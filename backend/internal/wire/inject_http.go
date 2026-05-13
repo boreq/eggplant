@@ -3,7 +3,7 @@ package wire
 import (
 	"net/http"
 
-	httpPort "github.com/boreq/eggplant/ports/http"
+	httpPort "github.com/boreq/eggplant/entrypoints/http"
 	"github.com/google/wire"
 )
 

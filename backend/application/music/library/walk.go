@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	"github.com/boreq/eggplant/application/music"
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/errors"
 )
 
-type walkAlbumFn func(parent *music.BasicAlbum, id music.AlbumId, v album) error
+type walkAlbumFn func(parent *music.BasicAlbum, id domain.AlbumId, v album) error
 
-type walkTrackFn func(parent music.BasicAlbum, id music.TrackId, v track) error
+type walkTrackFn func(parent music.BasicAlbum, id domain.TrackId, v track) error
 
 func (l *Library) walk(a walkAlbumFn, t walkTrackFn, publicOnly bool) error {
 	access, err := l.getAccess(nil)
@@ -19,7 +20,10 @@ func (l *Library) walk(a walkAlbumFn, t walkTrackFn, publicOnly bool) error {
 
 	if canAccess(access, publicOnly) {
 		for id, track := range l.root.tracks {
-			parent := newBasicAlbum(nil, *l.root)
+			parent, err := newBasicAlbum(nil, *l.root)
+			if err != nil {
+				return errors.Wrap(err, "could not build basic album")
+			}
 			if err := t(parent, id, track); err != nil {
 				return err
 			}
@@ -36,8 +40,8 @@ func (l *Library) walk(a walkAlbumFn, t walkTrackFn, publicOnly bool) error {
 }
 
 func (l *Library) subWalk(
-	parentPath []music.AlbumId,
-	id music.AlbumId,
+	parentPath []domain.AlbumId,
+	id domain.AlbumId,
 	node *album,
 	a walkAlbumFn,
 	t walkTrackFn,
@@ -56,7 +60,10 @@ func (l *Library) subWalk(
 	fmt.Println(access)
 
 	if canAccess(access, publicOnly) {
-		parent := newBasicAlbum(parentPath, *node)
+		parent, err := newBasicAlbum(parentPath, *node)
+		if err != nil {
+			return errors.Wrap(err, "could not build basic album")
+		}
 		if err := a(&parent, id, *node); err != nil {
 			return err
 		}
@@ -64,7 +71,10 @@ func (l *Library) subWalk(
 
 	if canAccess(access, publicOnly) {
 		for id, track := range node.tracks {
-			parent := newBasicAlbum(path, *node)
+			parent, err := newBasicAlbum(path, *node)
+			if err != nil {
+				return errors.Wrap(err, "could not build basic album")
+			}
 			if err := t(parent, id, track); err != nil {
 				return err
 			}
@@ -80,19 +90,22 @@ func (l *Library) subWalk(
 	return nil
 }
 
-func newBasicAlbum(path []music.AlbumId, album album) music.BasicAlbum {
+func newBasicAlbum(path []domain.AlbumId, album album) (music.BasicAlbum, error) {
+	title, err := domain.NewAlbumTitle(album.title)
+	if err != nil {
+		return music.BasicAlbum{}, errors.Wrap(err, "invalid album title")
+	}
 	return music.BasicAlbum{
 		Path:      path,
-		Title:     album.title,
+		Title:     title,
 		Thumbnail: newThumbnail(album),
-	}
+	}, nil
 }
 
-func newThumbnail(album album) *music.Thumbnail {
-	if album.thumbnailId != "" {
-		return &music.Thumbnail{
-			FileId: album.thumbnailId,
-		}
+func newThumbnail(album album) *domain.Thumbnail {
+	if album.thumbnailId == nil {
+		return nil
 	}
-	return nil
+	t := domain.NewThumbnail(*album.thumbnailId)
+	return &t
 }

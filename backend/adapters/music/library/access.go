@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boreq/eggplant/application/music"
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/errors"
 )
 
@@ -16,50 +16,47 @@ func NewDelimiterAccessLoader() *DelimiterAccessLoader {
 	return &DelimiterAccessLoader{}
 }
 
-func (l *DelimiterAccessLoader) Load(file string) (music.Access, error) {
+func (l *DelimiterAccessLoader) Load(file string) (domain.Access, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return music.Access{}, errors.Wrap(err, "could not open the file")
+		return domain.Access{}, errors.Wrap(err, "could not open the file")
 	}
 	defer f.Close()
 
-	acc := music.Access{
-		Public: false,
-	}
-
-	emptyFile := true
+	var public *bool
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-		emptyFile = false
 		key, value, err := l.loadLine(line)
 		if err != nil {
-			return music.Access{}, errors.Wrap(err, "could not parse a line")
+			return domain.Access{}, errors.Wrap(err, "could not parse a line")
 		}
 		switch key {
 		case "public":
-			acc.Public = value
+			if public != nil {
+				return domain.Access{}, fmt.Errorf("duplicate key '%s'", key)
+			}
+			public = &value
 		default:
-			return music.Access{}, fmt.Errorf("unrecognized key '%s'", key)
+			return domain.Access{}, fmt.Errorf("unrecognized key '%s'", key)
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return music.Access{}, errors.Wrap(err, "scanner error")
+		return domain.Access{}, errors.Wrap(err, "scanner error")
 	}
 
-	if emptyFile {
-		return music.Access{}, fmt.Errorf("access file is empty: '%s'", file)
+	if public == nil {
+		return domain.Access{}, errors.New("access file is empty")
 	}
 
-	return acc, nil
+	return domain.NewAccess(*public), nil
 }
 
 func (l *DelimiterAccessLoader) loadLine(line string) (string, bool, error) {
-	line = strings.TrimSpace(line)
 	parts := strings.SplitN(line, ":", 2)
 	if len(parts) != 2 {
 		return "", false, fmt.Errorf("malformed line '%s'", line)

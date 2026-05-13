@@ -10,14 +10,15 @@ import (
 	"context"
 
 	auth2 "github.com/boreq/eggplant/adapters/auth"
-	"github.com/boreq/eggplant/adapters/music/library"
+	library2 "github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/internal/config"
+	"github.com/boreq/eggplant/entrypoints/filesystem"
+	"github.com/boreq/eggplant/entrypoints/http"
 	"github.com/boreq/eggplant/internal/service"
-	"github.com/boreq/eggplant/ports/http"
 	"go.etcd.io/bbolt"
 )
 
@@ -164,20 +165,26 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	trackHandler := music.NewTrackHandler(trackStore)
-	delimiterAccessLoader := library.NewDelimiterAccessLoader()
-	idGenerator := library.NewIdGenerator()
+	delimiterAccessLoader := library2.NewDelimiterAccessLoader()
+	idGenerator := library2.NewIdGenerator()
+	libraryLibrary, err := newLibrary(delimiterAccessLoader, trackStore, store, idGenerator)
+	if err != nil {
+		return nil, err
+	}
 	scannerConfig := newScannerConfig(conf)
-	libraryLibrary, err := newLibrary(delimiterAccessLoader, trackStore, store, idGenerator, conf, scannerConfig)
+	scannerUpdates, err := newScannerUpdates(conf, scannerConfig)
 	if err != nil {
 		return nil, err
 	}
 	browseHandler := music.NewBrowseHandler(libraryLibrary)
 	searchHandler := music.NewSearchHandler(libraryLibrary)
+	processUpdateHandler := music.NewProcessUpdateHandler(libraryLibrary)
 	applicationMusic := application.Music{
-		Thumbnail: thumbnailHandler,
-		Track:     trackHandler,
-		Browse:    browseHandler,
-		Search:    searchHandler,
+		Thumbnail:     thumbnailHandler,
+		Track:         trackHandler,
+		Browse:        browseHandler,
+		Search:        searchHandler,
+		ProcessUpdate: processUpdateHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
@@ -196,6 +203,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	server := http.NewServer(handler)
-	serviceService := service.NewService(server, lastSeenUpdater, conf)
+	fsListener := filesystem.NewListener(processUpdateHandler, scannerUpdates)
+	serviceService := service.NewService(server, fsListener, lastSeenUpdater, conf)
 	return serviceService, nil
 }

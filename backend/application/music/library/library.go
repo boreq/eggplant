@@ -13,6 +13,7 @@ import (
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/application/music"
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 )
@@ -29,13 +30,13 @@ type ThumbnailStore interface {
 }
 
 type AccessLoader interface {
-	Load(file string) (music.Access, error)
+	Load(file string) (domain.Access, error)
 }
 
 type IdGenerator interface {
-	AlbumId(parents []music.AlbumId, title string) (music.AlbumId, error)
-	TrackId(parents []music.AlbumId, title string) (music.TrackId, error)
-	FileId(path string) (music.FileId, error)
+	AlbumId(parents []domain.AlbumId, title string) (domain.AlbumId, error)
+	TrackId(parents []domain.AlbumId, title string) (domain.TrackId, error)
+	FileId(path string) (domain.FileId, error)
 }
 
 // Library receives scanner updates, dispatches them to appropriate stores and
@@ -50,9 +51,8 @@ type Library struct {
 	log            logging.Logger
 }
 
-// New creates a library which receives updates from the specified channel.
+// New creates an empty library. Apply scanner updates via Apply.
 func New(
-	ch <-chan scanner.Album,
 	trackStore TrackStore,
 	thumbnailStore ThumbnailStore,
 	accessLoader AccessLoader,
@@ -66,86 +66,86 @@ func New(
 		root:           newAlbum(rootAlbumTitle),
 		log:            logging.New("library"),
 	}
-	go l.receiveUpdates(ch)
 	return l, nil
-
 }
 
 // Browse lists the specified album. Provide a zero-length slice to list the
 // root album.
-func (l *Library) Browse(ids []music.AlbumId, publicOnly bool) (music.Album, error) {
+func (l *Library) Browse(ids []domain.AlbumId, publicOnly bool) (domain.Album, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	album, err := l.getAlbum(ids)
+	a, err := l.getAlbum(ids)
 	if err != nil {
-		return music.Album{}, errors.Wrap(err, "failed to get an album")
+		return domain.Album{}, errors.Wrap(err, "failed to get an album")
 	}
 
 	access, err := l.getAccess(ids)
 	if err != nil {
-		return music.Album{}, errors.Wrap(err, "failed to get access")
+		return domain.Album{}, errors.Wrap(err, "failed to get access")
 	}
 
 	parents, err := l.getParents(ids)
 	if err != nil {
-		return music.Album{}, errors.Wrap(err, "failed to get parents")
+		return domain.Album{}, errors.Wrap(err, "failed to get parents")
 	}
 
-	listed := music.Album{
-		Title:   album.title,
-		Parents: parents,
-		Access:  access,
+	title, err := domain.NewAlbumTitle(a.title)
+	if err != nil {
+		return domain.Album{}, errors.Wrap(err, "invalid album title")
 	}
 
+	var id domain.AlbumId
 	if len(ids) > 0 {
-		listed.Id = ids[len(ids)-1]
+		id = ids[len(ids)-1]
 	}
 
-	if album.thumbnailId != "" {
-		listed.Thumbnail = &music.Thumbnail{
-			FileId: album.thumbnailId,
-		}
-	}
-
-	for id, album := range album.albums {
-		access, err := l.getAccess(append(ids, id))
+	var childAlbums []domain.Album
+	for childId, child := range a.albums {
+		childAccess, err := l.getAccess(append(ids, childId))
 		if err != nil {
-			return music.Album{}, errors.Wrap(err, "failed to get access")
+			return domain.Album{}, errors.Wrap(err, "failed to get access")
 		}
 
-		if !canAccess(access, publicOnly) {
+		if !canAccess(childAccess, publicOnly) {
 			continue
 		}
 
-		d := music.Album{
-			Id:     id,
-			Title:  album.title,
-			Access: access,
+		childTitle, err := domain.NewAlbumTitle(child.title)
+		if err != nil {
+			return domain.Album{}, errors.Wrap(err, "invalid album title")
 		}
-		if album.thumbnailId != "" {
-			d.Thumbnail = &music.Thumbnail{
-				FileId: album.thumbnailId,
-			}
-		}
-		listed.Albums = append(listed.Albums, d)
-	}
-	sortAlbums(listed.Albums)
 
+		childAlbum, err := domain.NewAlbum(childId, childTitle, thumbnailFor(child), childAccess, nil, nil, nil)
+		if err != nil {
+			return domain.Album{}, errors.Wrap(err, "could not build child album")
+		}
+		childAlbums = append(childAlbums, childAlbum)
+	}
+	sortAlbums(childAlbums)
+
+	var tracks []domain.Track
 	if canAccess(access, publicOnly) {
-		for id, track := range album.tracks {
-			t := music.Track{
-				Id:       id,
-				FileId:   track.fileId,
-				Title:    track.title,
-				Duration: l.trackStore.GetDuration(track.fileId.String()).Seconds(),
+		for trackId, t := range a.tracks {
+			trackTitle, err := domain.NewTrackTitle(t.title)
+			if err != nil {
+				return domain.Album{}, errors.Wrap(err, "invalid track title")
 			}
-			listed.Tracks = append(listed.Tracks, t)
+			tracks = append(tracks, domain.NewTrack(
+				trackId,
+				t.fileId,
+				trackTitle,
+				l.trackDuration(t.fileId),
+			))
 		}
-		SortTracks(listed.Tracks)
+		SortTracks(tracks)
 	}
 
-	return listed, nil
+	album, err := domain.NewAlbum(id, title, thumbnailFor(a), access, parents, childAlbums, tracks)
+	if err != nil {
+		return domain.Album{}, errors.Wrap(err, "could not build album")
+	}
+	return album, nil
 }
 
 const maxSearchItems = 10
@@ -157,7 +157,7 @@ func (l *Library) Search(query string, publicOnly bool) (music.SearchResult, err
 	var result music.SearchResult
 
 	if err := l.walk(
-		func(parent *music.BasicAlbum, id music.AlbumId, v album) error {
+		func(parent *music.BasicAlbum, id domain.AlbumId, v album) error {
 			if len(result.Albums) > maxSearchItems {
 				return nil
 			}
@@ -166,20 +166,21 @@ func (l *Library) Search(query string, publicOnly bool) (music.SearchResult, err
 				return nil
 			}
 
-			var path []music.AlbumId
+			var path []domain.AlbumId
 			if parent != nil {
 				path = append(path, parent.Path...)
 			}
 			path = append(path, id)
 
-			result.Albums = append(
-				result.Albums,
-				newBasicAlbum(path, v),
-			)
+			ba, err := newBasicAlbum(path, v)
+			if err != nil {
+				return errors.Wrap(err, "could not build basic album")
+			}
+			result.Albums = append(result.Albums, ba)
 
 			return nil
 		},
-		func(parents music.BasicAlbum, id music.TrackId, v track) error {
+		func(parents music.BasicAlbum, id domain.TrackId, v track) error {
 			if len(result.Tracks) > maxSearchItems {
 				return nil
 			}
@@ -188,10 +189,11 @@ func (l *Library) Search(query string, publicOnly bool) (music.SearchResult, err
 				return nil
 			}
 
-			result.Tracks = append(
-				result.Tracks,
-				l.toSearchResultTrack(parents, id, v),
-			)
+			srt, err := l.toSearchResultTrack(parents, id, v)
+			if err != nil {
+				return errors.Wrap(err, "could not build search result track")
+			}
+			result.Tracks = append(result.Tracks, srt)
 			return nil
 		},
 		publicOnly,
@@ -202,46 +204,52 @@ func (l *Library) Search(query string, publicOnly bool) (music.SearchResult, err
 	return result, nil
 }
 
-func (l *Library) toSearchResultTrack(album music.BasicAlbum, id music.TrackId, v track) music.SearchResultTrack {
-	return music.SearchResultTrack{
-		Track: music.Track{
-			Id:       id,
-			FileId:   v.fileId,
-			Title:    v.title,
-			Duration: l.trackStore.GetDuration(v.fileId.String()).Seconds(),
-		},
-		Album: album,
+func (l *Library) toSearchResultTrack(album music.BasicAlbum, id domain.TrackId, v track) (music.SearchResultTrack, error) {
+	title, err := domain.NewTrackTitle(v.title)
+	if err != nil {
+		return music.SearchResultTrack{}, errors.Wrap(err, "invalid track title")
 	}
+	return music.SearchResultTrack{
+		Track: domain.NewTrack(id, v.fileId, title, l.trackDuration(v.fileId)),
+		Album: album,
+	}, nil
 }
 
-func (l *Library) getParents(ids []music.AlbumId) ([]music.Album, error) {
-	parents := make([]music.Album, 0)
+// trackDuration returns a non-nil pointer if the track's duration is known
+// and positive; otherwise nil (the duration could not be determined).
+func (l *Library) trackDuration(fileId domain.FileId) *domain.TrackDuration {
+	d, err := domain.NewTrackDuration(l.trackStore.GetDuration(fileId.String()))
+	if err != nil {
+		return nil
+	}
+	return &d
+}
+
+func (l *Library) getParents(ids []domain.AlbumId) ([]domain.AlbumParent, error) {
+	parents := make([]domain.AlbumParent, 0)
 	for i := 0; i < len(ids); i++ {
 		parentIds := ids[:i+1]
 		dir, err := l.getAlbum(parentIds)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get a parent album")
 		}
-		parent := music.Album{
-			Id:    parentIds[len(parentIds)-1],
-			Title: dir.title,
+		title, err := domain.NewAlbumTitle(dir.title)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid album title")
 		}
-		parents = append(parents, parent)
-
+		parents = append(parents, domain.NewAlbumParent(parentIds[len(parentIds)-1], title))
 	}
 	return parents, nil
 }
 
-var defaultAccess = music.Access{
-	Public: false,
-}
+var defaultAccess = domain.NewAccess(false)
 
-func (l *Library) getAccess(ids []music.AlbumId) (music.Access, error) {
+func (l *Library) getAccess(ids []domain.AlbumId) (domain.Access, error) {
 	for i := len(ids); i >= 0; i-- {
 		parentIds := ids[:i]
 		album, err := l.getAlbum(parentIds)
 		if err != nil {
-			return music.Access{}, errors.Wrap(err, "failed to get a parent album")
+			return domain.Access{}, errors.Wrap(err, "failed to get a parent album")
 		}
 		if album.access != nil {
 			return *album.access, nil
@@ -250,15 +258,8 @@ func (l *Library) getAccess(ids []music.AlbumId) (music.Access, error) {
 	return defaultAccess, nil
 }
 
-func (l *Library) receiveUpdates(ch <-chan scanner.Album) {
-	for album := range ch {
-		if err := l.handleUpdate(album); err != nil {
-			l.log.Error("could not handle a scanner update", "err", err)
-		}
-	}
-}
-
-func (l *Library) handleUpdate(album scanner.Album) error {
+// Apply replaces the library state with the contents of the given scan.
+func (l *Library) Apply(album scanner.Album) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
@@ -285,14 +286,14 @@ func (l *Library) handleUpdate(album scanner.Album) error {
 	return nil
 }
 
-func (l *Library) mergeAlbum(parents []music.AlbumId, target *album, album scanner.Album) error {
+func (l *Library) mergeAlbum(parents []domain.AlbumId, target *album, album scanner.Album) error {
 	if album.Thumbnail != "" {
 		thumbnailId, err := l.idGenerator.FileId(album.Thumbnail)
 		if err != nil {
 			return errors.Wrap(err, "could not create a thumbnail id")
 		}
 		target.thumbnailPath = album.Thumbnail
-		target.thumbnailId = thumbnailId
+		target.thumbnailId = &thumbnailId
 	}
 
 	if album.AccessFile != "" {
@@ -363,7 +364,7 @@ func (l *Library) getTracks(tracks *[]store.Item, current *album) error {
 	return nil
 }
 
-func (l *Library) getAlbum(ids []music.AlbumId) (*album, error) {
+func (l *Library) getAlbum(ids []domain.AlbumId) (*album, error) {
 	var current *album = l.root
 	for _, id := range ids {
 		child, ok := current.albums[id]
@@ -388,70 +389,83 @@ func (l *Library) newTrack(title string, path string) (track, error) {
 	return t, nil
 }
 
-func (l *Library) toTrack(parents []music.AlbumId, title string, scannerTrack scanner.Track) (music.TrackId, track, error) {
+func (l *Library) toTrack(parents []domain.AlbumId, title string, scannerTrack scanner.Track) (domain.TrackId, track, error) {
 	id, err := l.idGenerator.TrackId(parents, title)
 	if err != nil {
-		return "", track{}, errors.Wrap(err, "could not create a track id")
+		return domain.TrackId{}, track{}, errors.Wrap(err, "could not create a track id")
 	}
 	t, err := l.newTrack(title, scannerTrack.Path)
 	if err != nil {
-		return "", track{}, errors.Wrap(err, "could not create a track")
+		return domain.TrackId{}, track{}, errors.Wrap(err, "could not create a track")
 	}
 	return id, t, nil
 }
 
-func (l *Library) toAlbum(parents []music.AlbumId, title string, scannerAlbum scanner.Album) (music.AlbumId, *album, error) {
+func (l *Library) toAlbum(parents []domain.AlbumId, title string, scannerAlbum scanner.Album) (domain.AlbumId, *album, error) {
 	id, err := l.idGenerator.AlbumId(parents, title)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "could not create an album id")
+		return domain.AlbumId{}, nil, errors.Wrap(err, "could not create an album id")
 	}
 	album := newAlbum(title)
 	return id, album, nil
 }
 
-func canAccess(access music.Access, publicOnly bool) bool {
-	if publicOnly && !access.Public {
+func canAccess(access domain.Access, publicOnly bool) bool {
+	if publicOnly && !access.Public() {
 		return false
 	}
 	return true
 }
 
+// thumbnailFor returns a domain.Thumbnail pointer for the internal album if it
+// has a thumbnail set; otherwise nil.
+func thumbnailFor(a *album) *domain.Thumbnail {
+	if a.thumbnailId == nil {
+		return nil
+	}
+	t := domain.NewThumbnail(*a.thumbnailId)
+	return &t
+}
+
 type track struct {
 	title  string
 	path   string
-	fileId music.FileId
+	fileId domain.FileId
 }
 
 type album struct {
 	title         string
 	thumbnailPath string
-	thumbnailId   music.FileId
-	access        *music.Access
-	albums        map[music.AlbumId]*album
-	tracks        map[music.TrackId]track
+	thumbnailId   *domain.FileId
+	access        *domain.Access
+	albums        map[domain.AlbumId]*album
+	tracks        map[domain.TrackId]track
 }
 
 func newAlbum(title string) *album {
 	return &album{
 		title:  title,
-		albums: make(map[music.AlbumId]*album),
-		tracks: make(map[music.TrackId]track),
+		albums: make(map[domain.AlbumId]*album),
+		tracks: make(map[domain.TrackId]track),
 	}
 }
 
-func sortAlbums(albums []music.Album) {
+func sortAlbums(albums []domain.Album) {
 	sort.Slice(albums,
 		func(i, j int) bool {
-			return albums[i].Title < albums[j].Title
+			return albums[i].Title().String() < albums[j].Title().String()
 		},
 	)
 }
 
-func SortTracks(tracks []music.Track) {
+func SortTracks(tracks []domain.Track) {
 	sort.Slice(tracks,
 		func(i, j int) bool {
-			fieldsI := strings.Fields(tracks[i].Title)
-			fieldsJ := strings.Fields(tracks[j].Title)
+			titleI := tracks[i].Title().String()
+			titleJ := tracks[j].Title().String()
+
+			fieldsI := strings.Fields(titleI)
+			fieldsJ := strings.Fields(titleJ)
 
 			if len(fieldsI) > 0 && len(fieldsJ) > 0 {
 				f := func(r rune) bool {
@@ -468,7 +482,7 @@ func SortTracks(tracks []music.Track) {
 				}
 			}
 
-			return tracks[i].Title < tracks[j].Title
+			return titleI < titleJ
 		},
 	)
 }

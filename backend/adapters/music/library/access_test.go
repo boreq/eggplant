@@ -13,64 +13,58 @@ func TestAccessLoaderYes(t *testing.T) {
 	testCases := []struct {
 		Name          string
 		Input         string
-		ExpectedError bool
+		ExpectedError string
 		ResultPublic  bool
 	}{
 		{
-			Name:          "yes",
-			Input:         "public: yes",
-			ExpectedError: false,
-			ResultPublic:  true,
+			Name:         "yes",
+			Input:        "public: yes",
+			ResultPublic: true,
 		},
 		{
-			Name:          "no",
-			Input:         "public: no",
-			ExpectedError: false,
-			ResultPublic:  false,
+			Name:         "no",
+			Input:        "public: no",
+			ResultPublic: false,
 		},
 		{
-			Name:          "overwrite",
+			Name:          "duplicate key",
 			Input:         "public: no\npublic: yes",
-			ExpectedError: false,
-			ResultPublic:  true,
+			ExpectedError: "duplicate key 'public'",
 		},
 		{
 			Name:          "malformed key",
 			Input:         "invalid: no",
-			ExpectedError: true,
+			ExpectedError: "unrecognized key 'invalid'",
 		},
 		{
 			Name:          "malformed value",
 			Input:         "public: invalid",
-			ExpectedError: true,
+			ExpectedError: "could not parse a line: value 'invalid' is not 'yes' or 'no'",
 		},
 		{
-			Name:          "empty lines",
-			Input:         "public: no\n\n\npublic:yes",
-			ExpectedError: false,
-			ResultPublic:  true,
+			Name:         "empty lines",
+			Input:        "\n\n\npublic: yes\n\n",
+			ResultPublic: true,
 		},
 		{
-			Name:          "space around",
-			Input:         "  public: no\n\n\n public:yes  ",
-			ExpectedError: false,
-			ResultPublic:  true,
+			Name:         "space around",
+			Input:        "  public: yes  ",
+			ResultPublic: true,
 		},
 		{
-			Name:          "trailing newline",
-			Input:         "public: yes\n",
-			ExpectedError: false,
-			ResultPublic:  true,
+			Name:         "trailing newline",
+			Input:        "public: yes\n",
+			ResultPublic: true,
 		},
 		{
 			Name:          "empty file",
 			Input:         "",
-			ExpectedError: true,
+			ExpectedError: "access file is empty",
 		},
 		{
 			Name:          "newlines only",
 			Input:         "\n\n\n\n\n",
-			ExpectedError: true,
+			ExpectedError: "access file is empty",
 		},
 	}
 
@@ -85,11 +79,11 @@ func TestAccessLoaderYes(t *testing.T) {
 			l := library.NewDelimiterAccessLoader()
 
 			access, err := l.Load(path)
-			if testCase.ExpectedError {
-				require.Error(t, err)
+			if testCase.ExpectedError != "" {
+				require.EqualError(t, err, testCase.ExpectedError)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, testCase.ResultPublic, access.Public)
+				require.Equal(t, testCase.ResultPublic, access.Public())
 			}
 		})
 	}

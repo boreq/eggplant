@@ -1,9 +1,12 @@
 package music
 
-import "github.com/boreq/errors"
+import (
+	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/errors"
+)
 
 type Browse struct {
-	Ids        []AlbumId
+	Ids        []domain.AlbumId
 	PublicOnly bool
 }
 
@@ -17,14 +20,14 @@ func NewBrowseHandler(library Library) *BrowseHandler {
 	}
 }
 
-func (h *BrowseHandler) Execute(cmd Browse) (Album, error) {
+func (h *BrowseHandler) Execute(cmd Browse) (domain.Album, error) {
 	album, err := h.library.Browse(cmd.Ids, cmd.PublicOnly)
 	if err != nil {
-		return Album{}, errors.Wrap(err, "could not browse the album")
+		return domain.Album{}, errors.Wrap(err, "could not browse the album")
 	}
 
-	if len(cmd.Ids) > 0 && len(album.Albums) == 0 && len(album.Tracks) == 0 {
-		return Album{}, ErrForbidden
+	if len(cmd.Ids) > 0 && len(album.Albums()) == 0 && len(album.Tracks()) == 0 {
+		return domain.Album{}, ErrForbidden
 	}
 
 	return album, nil

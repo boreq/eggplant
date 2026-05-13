@@ -12,6 +12,7 @@ import (
 
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
+	"github.com/boreq/eggplant/domain"
 
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
@@ -120,10 +121,10 @@ func (s *Store) SetItems(items []Item) {
 	}
 }
 
-func (s *Store) GetConvertedFile(ctx context.Context, id string) (music.ConvertedFile, error) {
+func (s *Store) GetConvertedFile(ctx context.Context, id domain.FileId) (music.ConvertedFile, error) {
 	ch := make(chan ConvertedFileOrError)
 	go func() {
-		convertedFile, err := s.getConvertedFile(ctx, id)
+		convertedFile, err := s.getConvertedFile(ctx, id.String())
 		select {
 		case ch <- ConvertedFileOrError{
 			ConvertedFile: convertedFile,

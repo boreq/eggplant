@@ -8,50 +8,51 @@ import (
 	"io"
 	"os"
 
-	"github.com/boreq/eggplant/application/music"
+	musiclib "github.com/boreq/eggplant/application/music/library"
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/errors"
 )
 
 type idGenerator struct {
 }
 
-func NewIdGenerator() IdGenerator {
+func NewIdGenerator() musiclib.IdGenerator {
 	return idGenerator{}
 }
 
-func (idGenerator) AlbumId(parents []music.AlbumId, title string) (music.AlbumId, error) {
+func (idGenerator) AlbumId(parents []domain.AlbumId, title string) (domain.AlbumId, error) {
 	h, err := shortHash(parentsAsString(parents) + title)
 	if err != nil {
-		return "", errors.Wrap(err, "hashing failed")
+		return domain.AlbumId{}, errors.Wrap(err, "hashing failed")
 	}
-	return music.AlbumId(h), nil
+	return domain.NewAlbumId(h)
 }
 
-func (idGenerator) TrackId(parents []music.AlbumId, title string) (music.TrackId, error) {
+func (idGenerator) TrackId(parents []domain.AlbumId, title string) (domain.TrackId, error) {
 	h, err := shortHash(parentsAsString(parents) + title)
 	if err != nil {
-		return "", errors.Wrap(err, "hashing failed")
+		return domain.TrackId{}, errors.Wrap(err, "hashing failed")
 	}
-	return music.TrackId(h), nil
+	return domain.NewTrackId(h)
 }
 
-func (idGenerator) FileId(path string) (music.FileId, error) {
+func (idGenerator) FileId(path string) (domain.FileId, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return "", errors.Wrap(err, "os stat failed")
+		return domain.FileId{}, errors.Wrap(err, "os stat failed")
 	}
 	s := fmt.Sprintf("%s-%d-%d", path, fileInfo.Size(), fileInfo.ModTime().Unix())
 	h, err := longHash(s)
 	if err != nil {
-		return "", errors.Wrap(err, "hashing failed")
+		return domain.FileId{}, errors.Wrap(err, "hashing failed")
 	}
-	return music.FileId(h), nil
+	return domain.NewFileId(h)
 }
 
-func parentsAsString(parents []music.AlbumId) string {
+func parentsAsString(parents []domain.AlbumId) string {
 	var s string
 	for _, parent := range parents {
-		s += string(parent)
+		s += parent.String()
 	}
 	return s
 }
