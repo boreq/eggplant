@@ -3,22 +3,22 @@ package filesystem
 import (
 	"context"
 
-	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/application/music"
+	"github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/eggplant/logging"
 )
 
 type Listener struct {
-	processUpdate *music.ProcessUpdateHandler
-	updates       <-chan scanner.Album
-	log           logging.Logger
+	buildLibrary *music.BuildLibraryHandler
+	updates      <-chan scanner.FoundRootAlbum
+	log          logging.Logger
 }
 
-func NewListener(processUpdate *music.ProcessUpdateHandler, updates <-chan scanner.Album) *Listener {
+func NewListener(buildLibrary *music.BuildLibraryHandler, updates <-chan scanner.FoundRootAlbum) *Listener {
 	return &Listener{
-		processUpdate: processUpdate,
-		updates:       updates,
-		log:           logging.New("entrypoints/filesystem"),
+		buildLibrary: buildLibrary,
+		updates:      updates,
+		log:          logging.New("entrypoints/filesystem"),
 	}
 }
 
@@ -31,7 +31,7 @@ func (l *Listener) Run(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			if err := l.processUpdate.Execute(scan); err != nil {
+			if err := l.buildLibrary.Execute(scan); err != nil {
 				l.log.Error("could not process a scanner update", "err", err)
 			}
 		}

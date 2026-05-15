@@ -3,12 +3,14 @@ package wire
 import (
 	"context"
 
-	library2 "github.com/boreq/eggplant/adapters/music/library"
+	musicAdapters "github.com/boreq/eggplant/adapters/music"
+	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/eggplant/application/music/library"
 	"github.com/boreq/eggplant/application/queries"
+	"github.com/boreq/eggplant/domain"
+	scannerdomain "github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/errors"
 	"github.com/google/wire"
@@ -16,38 +18,24 @@ import (
 
 //lint:ignore U1000 because
 var musicSet = wire.NewSet(
-	newLibrary,
 	newScannerUpdates,
 	newTrackStore,
 	newThumbnailStore,
 	newScannerConfig,
-	library2.NewDelimiterAccessLoader,
-	library2.NewIdGenerator,
+	library.NewDelimiterAccessLoader,
+	library.NewInMemoryRepository,
+	musicAdapters.NewFFProbe,
 
-	wire.Bind(new(library.AccessLoader), new(*library2.DelimiterAccessLoader)),
-	wire.Bind(new(library.TrackStore), new(*store.TrackStore)),
-	wire.Bind(new(library.ThumbnailStore), new(*store.Store)),
+	wire.Bind(new(music.AccessLoader), new(*library.DelimiterAccessLoader)),
 	wire.Bind(new(music.TrackStore), new(*store.TrackStore)),
-	wire.Bind(new(music.ThumbnailStore), new(*store.Store)),
-	wire.Bind(new(music.Library), new(*library.Library)),
+	wire.Bind(new(music.ThumbnailStore), new(*store.ThumbnailStore)),
+	wire.Bind(new(music.TrackDurations), new(*musicAdapters.FFProbe)),
+	wire.Bind(new(music.LibraryRepository), new(*library.InMemoryRepository)),
 	wire.Bind(new(queries.TrackStore), new(*store.TrackStore)),
-	wire.Bind(new(queries.ThumbnailStore), new(*store.Store)),
+	wire.Bind(new(queries.ThumbnailStore), new(*store.ThumbnailStore)),
 )
 
-func newLibrary(
-	accessLoader library.AccessLoader,
-	trackStore library.TrackStore,
-	thumbnailStore library.ThumbnailStore,
-	idGenerator library.IdGenerator,
-) (*library.Library, error) {
-	lib, err := library.New(trackStore, thumbnailStore, accessLoader, idGenerator)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create a library")
-	}
-	return lib, nil
-}
-
-func newScannerUpdates(conf *config.Config, scannerConf scanner.Config) (<-chan scanner.Album, error) {
+func newScannerUpdates(conf *config.Config, scannerConf scanner.Config) (<-chan scannerdomain.FoundRootAlbum, error) {
 	scan, err := scanner.New(conf.MusicDirectory, scannerConf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a scanner")
@@ -67,7 +55,7 @@ func newTrackStore(ctx context.Context, conf *config.Config) (*store.TrackStore,
 	return trackStore, nil
 }
 
-func newThumbnailStore(ctx context.Context, conf *config.Config) (*store.Store, error) {
+func newThumbnailStore(ctx context.Context, conf *config.Config) (*store.ThumbnailStore, error) {
 	thumbnailStore, err := store.NewThumbnailStore(ctx, conf.CacheDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a thumbnail store")
@@ -75,10 +63,45 @@ func newThumbnailStore(ctx context.Context, conf *config.Config) (*store.Store, 
 	return thumbnailStore, nil
 }
 
-func newScannerConfig(conf *config.Config) scanner.Config {
-	return scanner.Config{
-		TrackExtensions:     conf.TrackExtensions,
-		ThumbnailStems:      conf.ThumbnailStems,
-		ThumbnailExtensions: conf.ThumbnailExtensions,
+func newScannerConfig(conf *config.Config) (scanner.Config, error) {
+	trackExts, err := toFileExtensions(conf.TrackExtensions)
+	if err != nil {
+		return scanner.Config{}, errors.Wrap(err, "could not parse track extensions")
 	}
+
+	thumbnailExts, err := toFileExtensions(conf.ThumbnailExtensions)
+	if err != nil {
+		return scanner.Config{}, errors.Wrap(err, "could not parse thumbnail extensions")
+	}
+
+	thumbnailStems, err := toThumbnailStems(conf.ThumbnailStems)
+	if err != nil {
+		return scanner.Config{}, errors.Wrap(err, "could not parse thumbnail stems")
+	}
+
+	return scanner.NewConfig(trackExts, thumbnailStems, thumbnailExts)
+}
+
+func toFileExtensions(values []string) ([]domain.FileExtension, error) {
+	out := make([]domain.FileExtension, 0, len(values))
+	for _, v := range values {
+		ext, err := domain.NewFileExtension(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid extension '%s'", v)
+		}
+		out = append(out, ext)
+	}
+	return out, nil
+}
+
+func toThumbnailStems(values []string) ([]scanner.ThumbnailStem, error) {
+	out := make([]scanner.ThumbnailStem, 0, len(values))
+	for _, v := range values {
+		stem, err := scanner.NewThumbnailStem(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid stem '%s'", v)
+		}
+		out = append(out, stem)
+	}
+	return out, nil
 }

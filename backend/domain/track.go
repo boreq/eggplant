@@ -8,15 +8,13 @@ import (
 
 type Track struct {
 	id       TrackId
-	fileId   FileId
 	title    TrackTitle
-	duration *TrackDuration
+	duration TrackDuration
 }
 
-func NewTrack(id TrackId, fileId FileId, title TrackTitle, duration *TrackDuration) Track {
+func NewTrack(id TrackId, title TrackTitle, duration TrackDuration) Track {
 	return Track{
 		id:       id,
-		fileId:   fileId,
 		title:    title,
 		duration: duration,
 	}
@@ -26,15 +24,11 @@ func (t Track) Id() TrackId {
 	return t.id
 }
 
-func (t Track) FileId() FileId {
-	return t.fileId
-}
-
 func (t Track) Title() TrackTitle {
 	return t.title
 }
 
-func (t Track) Duration() *TrackDuration {
+func (t Track) Duration() TrackDuration {
 	return t.duration
 }
 
@@ -42,7 +36,7 @@ type TrackId struct {
 	value string
 }
 
-func NewTrackId(s string) (TrackId, error) {
+func NewTrackIdFromString(s string) (TrackId, error) {
 	if s == "" {
 		return TrackId{}, errors.New("track id must not be empty")
 	}
@@ -50,6 +44,10 @@ func NewTrackId(s string) (TrackId, error) {
 		return TrackId{}, errors.New("track id must be a hex string")
 	}
 	return TrackId{value: s}, nil
+}
+
+func NewTrackId(parents []AlbumId, title TrackTitle) (TrackId, error) {
+	return NewTrackIdFromString(shortHash(parentsAsString(parents) + title.value))
 }
 
 func (id TrackId) String() string {

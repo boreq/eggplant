@@ -13,11 +13,12 @@ type Application struct {
 }
 
 type Music struct {
-	Thumbnail     *music.ThumbnailHandler
-	Track         *music.TrackHandler
-	Browse        *music.BrowseHandler
-	Search        *music.SearchHandler
-	ProcessUpdate *music.ProcessUpdateHandler
+	Thumbnail    *music.ThumbnailHandler
+	Track        *music.TrackHandler
+	GetRootAlbum *music.GetRootAlbumHandler
+	GetAlbum     *music.GetAlbumHandler
+	Search       *music.SearchHandler
+	BuildLibrary *music.BuildLibraryHandler
 }
 
 type Queries struct {

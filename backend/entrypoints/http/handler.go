@@ -3,15 +3,15 @@ package http
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/domain/library"
 	"github.com/boreq/eggplant/entrypoints/http/frontend"
+	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
@@ -42,7 +42,8 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	}
 
 	// API
-	h.router.HandlerFunc(http.MethodGet, "/api/browse/*path", rest.Wrap(h.browse))
+	h.router.HandlerFunc(http.MethodGet, "/api/browse", rest.Wrap(h.browse))
+	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.browse))
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
@@ -74,7 +75,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) browse(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
-	path := strings.Trim(ps.ByName("path"), "/")
+	rawId := ps.ByName("id")
 
 	u, err := h.authProvider.Get(r)
 	if err != nil {
@@ -82,35 +83,36 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	var dirs []string
-	if path != "" {
-		dirs = strings.Split(path, "/")
-	}
+	publicOnly := u == nil
 
-	var ids []domain.AlbumId
-	for _, name := range dirs {
-		id, err := domain.NewAlbumId(name)
+	if rawId == "" {
+		cmd := music.GetRootAlbum{PublicOnly: publicOnly}
+		a, err := h.app.Music.GetRootAlbum.Execute(cmd)
 		if err != nil {
-			return rest.ErrBadRequest.WithMessage("Invalid album id.")
+			if errors.Is(err, library.ErrAlbumNotFound) {
+				return rest.ErrNotFound
+			}
+			h.log.Error("browse error", "err", err)
+			return rest.ErrInternalServerError
 		}
-		ids = append(ids, id)
+		return rest.NewResponse(toRootAlbum(a))
 	}
 
-	cmd := music.Browse{
-		Ids:        ids,
-		PublicOnly: u == nil,
-	}
-
-	a, err := h.app.Music.Browse.Execute(cmd)
+	albumId, err := domain.NewAlbumIdFromString(rawId)
 	if err != nil {
-		if errors.Is(err, music.ErrForbidden) {
-			return rest.ErrForbidden
-		}
+		return rest.ErrBadRequest.WithMessage("Invalid album id.")
+	}
 
-		if errors.Is(err, music.ErrNotFound) {
+	cmd := music.GetAlbum{
+		Id:         albumId,
+		PublicOnly: publicOnly,
+	}
+
+	a, err := h.app.Music.GetAlbum.Execute(cmd)
+	if err != nil {
+		if errors.Is(err, library.ErrAlbumNotFound) {
 			return rest.ErrNotFound
 		}
-
 		h.log.Error("browse error", "err", err)
 		return rest.ErrInternalServerError
 	}
@@ -147,7 +149,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := domain.NewFileId(ps.ByName("id"))
+	id, err := domain.NewTrackIdFromString(ps.ByName("id"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -167,7 +169,7 @@ func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := domain.NewFileId(ps.ByName("id"))
+	id, err := domain.NewThumbnailIdFromString(ps.ByName("id"))
 	if err != nil {
 		h.log.Warn("invalid thumbnail id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)

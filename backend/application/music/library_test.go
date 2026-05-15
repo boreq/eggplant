@@ -1,16 +1,18 @@
-package library_test
+package music_test
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"testing"
 	"time"
 
+	libraryrepo "github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/eggplant/application/music/library"
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/library"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,40 +64,50 @@ func mustFileId(name string) domain.FileId {
 	return id
 }
 
-func mustAlbum(id domain.AlbumId, title domain.AlbumTitle, thumbnail *domain.Thumbnail, access domain.Access, parents []domain.AlbumParent, albums []domain.Album, tracks []domain.Track) domain.Album {
-	a, err := domain.NewAlbum(id, title, thumbnail, access, parents, albums, tracks)
+func mustAlbum(id *domain.AlbumId, title domain.AlbumTitle, thumbnail *domain.Thumbnail, parents []domain.ParentAlbum, albums []domain.ChildAlbum, tracks []domain.Track) domain.Album {
+	a, err := domain.NewAlbum(id, title, thumbnail, parents, albums, tracks)
 	if err != nil {
 		panic(err)
 	}
 	return a
 }
 
-func rootAlbum(access bool, albums []domain.Album, tracks []domain.Track) domain.Album {
+func ptrAlbumId(name string) *domain.AlbumId {
+	id := mustAlbumId(name)
+	return &id
+}
+
+func rootAlbum(albums []domain.ChildAlbum, tracks []domain.Track) domain.Album {
 	return mustAlbum(
-		domain.AlbumId{},
+		nil,
 		mustAlbumTitle("Eggplant"),
 		nil,
-		domain.NewAccess(access),
-		[]domain.AlbumParent{},
+		[]domain.ParentAlbum{},
 		albums,
 		tracks,
 	)
 }
 
-func childAlbum(name string, access bool) domain.Album {
-	return mustAlbum(
+func childAlbum(name string) domain.ChildAlbum {
+	return domain.NewChildAlbum(
 		mustAlbumId(name),
 		mustAlbumTitle(name),
-		nil,
-		domain.NewAccess(access),
-		nil,
-		nil,
 		nil,
 	)
 }
 
-func parent(name string) domain.AlbumParent {
-	return domain.NewAlbumParent(mustAlbumId(name), mustAlbumTitle(name))
+func parent(name string) domain.ParentAlbum {
+	return domain.NewParentAlbum(mustAlbumId(name), mustAlbumTitle(name))
+}
+
+var testTrackDuration = time.Second
+
+func mustDuration(d time.Duration) domain.TrackDuration {
+	td, err := domain.NewTrackDuration(d)
+	if err != nil {
+		panic(err)
+	}
+	return td
 }
 
 func track(name string, fileName string) domain.Track {
@@ -103,7 +115,7 @@ func track(name string, fileName string) domain.Track {
 		mustTrackId(name),
 		mustFileId(fileName),
 		mustTrackTitle(name),
-		nil,
+		mustDuration(testTrackDuration),
 	)
 }
 
@@ -112,8 +124,14 @@ type mockTrackStore struct{}
 func (mockTrackStore) SetItems(items []store.Item) {
 }
 
-func (mockTrackStore) GetDuration(id string) time.Duration {
-	return 0
+func (mockTrackStore) GetConvertedFile(ctx context.Context, id domain.FileId) (domain.ConvertedFile, error) {
+	return domain.ConvertedFile{}, nil
+}
+
+type mockTrackDurations struct{}
+
+func (mockTrackDurations) GetDuration(path string) time.Duration {
+	return testTrackDuration
 }
 
 type mockThumbnailStore struct{}
@@ -121,14 +139,18 @@ type mockThumbnailStore struct{}
 func (mockThumbnailStore) SetItems(items []store.Item) {
 }
 
-type mockAccessLoader struct {
-	m map[string]domain.Access
+func (mockThumbnailStore) GetConvertedFile(ctx context.Context, id domain.FileId) (domain.ConvertedFile, error) {
+	return domain.ConvertedFile{}, nil
 }
 
-func (l mockAccessLoader) Load(file string) (domain.Access, error) {
+type mockAccessLoader struct {
+	m map[string]domain.Visibility
+}
+
+func (l mockAccessLoader) Load(file string) (domain.Visibility, error) {
 	access, ok := l.m[file]
 	if !ok {
-		return domain.Access{}, fmt.Errorf("access mapping for '%s' missing", file)
+		return domain.Visibility{}, fmt.Errorf("access mapping for '%s' missing", file)
 	}
 	return access, nil
 }
@@ -148,48 +170,46 @@ func (mockIdGenerator) FileId(path string) (domain.FileId, error) {
 }
 
 func TestLibrary(t *testing.T) {
-	expectedNoUpdates := rootAlbum(false, nil, nil)
+	expectedNoUpdates := rootAlbum(nil, nil)
 
-	expectedListRoot := rootAlbum(false,
-		[]domain.Album{childAlbum("a1", true), childAlbum("a2", false)},
+	expectedListRoot := rootAlbum(
+		[]domain.ChildAlbum{childAlbum("a1"), childAlbum("a2")},
 		[]domain.Track{track("t1", "t1_path")},
 	)
 
 	expectedListChild := mustAlbum(
-		mustAlbumId("a1"),
+		ptrAlbumId("a1"),
 		mustAlbumTitle("a1"),
 		nil,
-		domain.NewAccess(true),
-		[]domain.AlbumParent{parent("a1")},
-		[]domain.Album{
-			mustAlbum(mustAlbumId("a1a1"), mustAlbumTitle("a1a1"), nil, domain.Access{}, nil, nil, nil),
-			childAlbum("a1a2", true),
+		[]domain.ParentAlbum{parent("a1")},
+		[]domain.ChildAlbum{
+			domain.NewChildAlbum(mustAlbumId("a1a1"), mustAlbumTitle("a1a1"), nil),
+			childAlbum("a1a2"),
 		},
 		[]domain.Track{track("a1t1", "a1t1_path")},
 	)
 
-	expectedListRootPublicOnlyDefault := rootAlbum(false,
-		[]domain.Album{childAlbum("a1", true)},
+	expectedListRootPublicOnlyDefault := rootAlbum(
+		[]domain.ChildAlbum{childAlbum("a1")},
 		nil,
 	)
 
-	expectedListRootPublicOnlyPublic := rootAlbum(true,
-		[]domain.Album{childAlbum("a1", true)},
+	expectedListRootPublicOnlyPublic := rootAlbum(
+		[]domain.ChildAlbum{childAlbum("a1")},
 		[]domain.Track{track("t1", "t1_path")},
 	)
 
-	expectedListRootOnlyPublic := rootAlbum(false,
-		[]domain.Album{childAlbum("a1", true)},
+	expectedListRootOnlyPublic := rootAlbum(
+		[]domain.ChildAlbum{childAlbum("a1")},
 		nil,
 	)
 
 	expectedListChildPublicOnly := mustAlbum(
-		mustAlbumId("a1"),
+		ptrAlbumId("a1"),
 		mustAlbumTitle("a1"),
 		nil,
-		domain.NewAccess(true),
-		[]domain.AlbumParent{parent("a1")},
-		[]domain.Album{childAlbum("a1a2", true)},
+		[]domain.ParentAlbum{parent("a1")},
+		[]domain.ChildAlbum{childAlbum("a1a2")},
 		[]domain.Track{track("a1t1", "a1t1_path")},
 	)
 
@@ -199,7 +219,7 @@ func TestLibrary(t *testing.T) {
 		Album      *scanner.Album
 		Ids        []domain.AlbumId
 		PublicOnly bool
-		Access     map[string]domain.Access
+		Access     map[string]domain.Visibility
 
 		ExpectedAlbum *domain.Album
 		ExpectedError error
@@ -213,7 +233,7 @@ func TestLibrary(t *testing.T) {
 		},
 		{
 			Name: "list_root",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -232,7 +252,7 @@ func TestLibrary(t *testing.T) {
 		},
 		{
 			Name: "list_child",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -260,7 +280,7 @@ func TestLibrary(t *testing.T) {
 		},
 		{
 			Name: "list_root_public_only_default_access",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -279,7 +299,7 @@ func TestLibrary(t *testing.T) {
 		},
 		{
 			Name: "list_root_public_only_public",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -299,7 +319,7 @@ func TestLibrary(t *testing.T) {
 		},
 		{
 			Name: "list_root_only_public",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -318,7 +338,7 @@ func TestLibrary(t *testing.T) {
 		},
 		{
 			Name: "list_child_public_only",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -355,14 +375,20 @@ func TestLibrary(t *testing.T) {
 			}
 			ig := mockIdGenerator{}
 
-			library, err := library.New(trs, ths, al, ig)
-			require.NoError(t, err)
+			repo := libraryrepo.NewInMemoryRepository()
+
+			handler := music.NewBuildLibraryHandler(repo, trs, ths, al, ig, mockTrackDurations{})
 
 			if testCase.Album != nil {
-				require.NoError(t, library.Apply(*testCase.Album))
+				require.NoError(t, handler.Execute(*testCase.Album))
 			}
 
-			album, err := library.Browse(testCase.Ids, testCase.PublicOnly)
+			var id *domain.AlbumId
+			if n := len(testCase.Ids); n > 0 {
+				last := testCase.Ids[n-1]
+				id = &last
+			}
+			album, err := repo.Get().Browse(id, testCase.PublicOnly)
 			if testCase.ExpectedError == nil {
 				require.NoError(t, err)
 				require.Equal(t, testCase.ExpectedAlbum, &album)
@@ -374,22 +400,22 @@ func TestLibrary(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	expectedSearchResult := music.SearchResult{
-		Tracks: []music.SearchResultTrack{
+	expectedSearchResult := library.SearchResult{
+		Tracks: []library.SearchResultTrack{
 			{
 				Track: domain.NewTrack(
 					mustTrackId("album1track1"),
 					mustFileId("track1_path"),
 					mustTrackTitle("album1track1"),
-					nil,
+					mustDuration(testTrackDuration),
 				),
-				Album: music.BasicAlbum{
+				Album: library.BasicAlbum{
 					Title: mustAlbumTitle("album1"),
 					Path:  []domain.AlbumId{mustAlbumId("album1")},
 				},
 			},
 		},
-		Albums: []music.BasicAlbum{
+		Albums: []library.BasicAlbum{
 			{
 				Title: mustAlbumTitle("album1"),
 				Path:  []domain.AlbumId{mustAlbumId("album1")},
@@ -403,14 +429,14 @@ func TestSearch(t *testing.T) {
 		Album      *scanner.Album
 		Query      string
 		PublicOnly bool
-		Access     map[string]domain.Access
+		Access     map[string]domain.Visibility
 
-		ExpectedSearchResult music.SearchResult
+		ExpectedSearchResult library.SearchResult
 		ExpectedError        error
 	}{
 		{
 			Name: "find_public_only",
-			Access: map[string]domain.Access{
+			Access: map[string]domain.Visibility{
 				"public":    domain.NewAccess(true),
 				"no-public": domain.NewAccess(false),
 			},
@@ -448,14 +474,15 @@ func TestSearch(t *testing.T) {
 			}
 			ig := mockIdGenerator{}
 
-			library, err := library.New(trs, ths, al, ig)
-			require.NoError(t, err)
+			repo := libraryrepo.NewInMemoryRepository()
+
+			handler := music.NewBuildLibraryHandler(repo, trs, ths, al, ig, mockTrackDurations{})
 
 			if testCase.Album != nil {
-				require.NoError(t, library.Apply(*testCase.Album))
+				require.NoError(t, handler.Execute(*testCase.Album))
 			}
 
-			result, err := library.Search(testCase.Query, testCase.PublicOnly)
+			result, err := repo.Get().Search(testCase.Query, testCase.PublicOnly)
 			if testCase.ExpectedError == nil {
 				require.NoError(t, err)
 				require.Equal(t, testCase.ExpectedSearchResult, result)
@@ -546,7 +573,7 @@ func TestSortTracks(t *testing.T) {
 					domain.TrackId{},
 					domain.FileId{},
 					mustTrackTitle(s),
-					nil,
+					mustDuration(testTrackDuration),
 				))
 			}
 
@@ -556,7 +583,7 @@ func TestSortTracks(t *testing.T) {
 					domain.TrackId{},
 					domain.FileId{},
 					mustTrackTitle(s),
-					nil,
+					mustDuration(testTrackDuration),
 				))
 			}
 

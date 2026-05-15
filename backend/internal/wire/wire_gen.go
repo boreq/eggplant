@@ -10,14 +10,15 @@ import (
 	"context"
 
 	auth2 "github.com/boreq/eggplant/adapters/auth"
-	library2 "github.com/boreq/eggplant/adapters/music/library"
+	musicAdapters "github.com/boreq/eggplant/adapters/music"
+	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/entrypoints/filesystem"
 	"github.com/boreq/eggplant/entrypoints/http"
+	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/internal/service"
 	"go.etcd.io/bbolt"
 )
@@ -155,40 +156,42 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		Remove:           removeHandler,
 		SetPassword:      setPasswordHandler,
 	}
-	store, err := newThumbnailStore(ctx, conf)
+	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
-	thumbnailHandler := music.NewThumbnailHandler(store)
+	thumbnailHandler := music.NewThumbnailHandler(thumbnailStore)
 	trackStore, err := newTrackStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 	trackHandler := music.NewTrackHandler(trackStore)
-	delimiterAccessLoader := library2.NewDelimiterAccessLoader()
-	idGenerator := library2.NewIdGenerator()
-	libraryLibrary, err := newLibrary(delimiterAccessLoader, trackStore, store, idGenerator)
+	libraryRepo := library.NewInMemoryRepository()
+	scannerConfig, err := newScannerConfig(conf)
 	if err != nil {
 		return nil, err
 	}
-	scannerConfig := newScannerConfig(conf)
 	scannerUpdates, err := newScannerUpdates(conf, scannerConfig)
 	if err != nil {
 		return nil, err
 	}
-	browseHandler := music.NewBrowseHandler(libraryLibrary)
-	searchHandler := music.NewSearchHandler(libraryLibrary)
-	processUpdateHandler := music.NewProcessUpdateHandler(libraryLibrary)
+	delimiterAccessLoader := library.NewDelimiterAccessLoader()
+	getRootAlbumHandler := music.NewGetRootAlbumHandler(libraryRepo)
+	getAlbumHandler := music.NewGetAlbumHandler(libraryRepo)
+	searchHandler := music.NewSearchHandler(libraryRepo)
+	ffProbe := musicAdapters.NewFFProbe()
+	buildLibraryHandler := music.NewBuildLibraryHandler(libraryRepo, trackStore, thumbnailStore, delimiterAccessLoader, ffProbe)
 	applicationMusic := application.Music{
-		Thumbnail:     thumbnailHandler,
-		Track:         trackHandler,
-		Browse:        browseHandler,
-		Search:        searchHandler,
-		ProcessUpdate: processUpdateHandler,
+		Thumbnail:    thumbnailHandler,
+		Track:        trackHandler,
+		GetRootAlbum: getRootAlbumHandler,
+		GetAlbum:     getAlbumHandler,
+		Search:       searchHandler,
+		BuildLibrary: buildLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
-	statsHandler := queries.NewStatsHandler(trackStore, store, queryTransactionProvider)
+	statsHandler := queries.NewStatsHandler(trackStore, thumbnailStore, queryTransactionProvider)
 	applicationQueries := application.Queries{
 		Stats: statsHandler,
 	}
@@ -203,7 +206,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	server := http.NewServer(handler)
-	fsListener := filesystem.NewListener(processUpdateHandler, scannerUpdates)
+	fsListener := filesystem.NewListener(buildLibraryHandler, scannerUpdates)
 	serviceService := service.NewService(server, fsListener, lastSeenUpdater, conf)
 	return serviceService, nil
 }

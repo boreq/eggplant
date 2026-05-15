@@ -282,7 +282,8 @@ export default class Browse extends Vue {
     private load(): void {
         this.clearTimeout();
         const ids = this.getIdsFromRoute();
-        this.apiService.browse(ids)
+        const id = ids.length > 0 ? ids[ids.length - 1] : undefined;
+        this.apiService.browse(id)
             .then(
                 response => {
                     this.album = response.data;

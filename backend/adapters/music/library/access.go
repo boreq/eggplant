@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/library"
 	"github.com/boreq/errors"
 )
 
@@ -16,10 +16,10 @@ func NewDelimiterAccessLoader() *DelimiterAccessLoader {
 	return &DelimiterAccessLoader{}
 }
 
-func (l *DelimiterAccessLoader) Load(file string) (domain.Access, error) {
+func (l *DelimiterAccessLoader) Load(file string) (library.Visibility, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return domain.Access{}, errors.Wrap(err, "could not open the file")
+		return library.Visibility{}, errors.Wrap(err, "could not open the file")
 	}
 	defer f.Close()
 
@@ -32,28 +32,28 @@ func (l *DelimiterAccessLoader) Load(file string) (domain.Access, error) {
 		}
 		key, value, err := l.loadLine(line)
 		if err != nil {
-			return domain.Access{}, errors.Wrap(err, "could not parse a line")
+			return library.Visibility{}, errors.Wrap(err, "could not parse a line")
 		}
 		switch key {
 		case "public":
 			if public != nil {
-				return domain.Access{}, fmt.Errorf("duplicate key '%s'", key)
+				return library.Visibility{}, fmt.Errorf("duplicate key '%s'", key)
 			}
 			public = &value
 		default:
-			return domain.Access{}, fmt.Errorf("unrecognized key '%s'", key)
+			return library.Visibility{}, fmt.Errorf("unrecognized key '%s'", key)
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return domain.Access{}, errors.Wrap(err, "scanner error")
+		return library.Visibility{}, errors.Wrap(err, "scanner error")
 	}
 
 	if public == nil {
-		return domain.Access{}, errors.New("access file is empty")
+		return library.Visibility{}, errors.New("access file is empty")
 	}
 
-	return domain.NewAccess(*public), nil
+	return library.NewVisibility(*public), nil
 }
 
 func (l *DelimiterAccessLoader) loadLine(line string) (string, bool, error) {

@@ -54,9 +54,8 @@ export class ApiService {
             });
     }
 
-    browse(ids: string[]): Promise<AxiosResponse<Album>> {
-        const path = ids.join('/');
-        const url = `browse/${path}`;
+    browse(id?: string): Promise<AxiosResponse<Album>> {
+        const url = id ? `browse/${id}` : 'browse';
         return this.axios.get<Album>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 

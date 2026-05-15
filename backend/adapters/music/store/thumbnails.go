@@ -10,6 +10,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/boreq/eggplant/application/music"
+	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/nfnt/resize"
@@ -19,10 +21,33 @@ const thumbnailSize = 200
 const thumbnailExtension = "jpg"
 const thumbnailDirectory = "thumbnails"
 
-func NewThumbnailStore(ctx context.Context, dataDir string) (*Store, error) {
+type ThumbnailStore struct {
+	*Store
+}
+
+func NewThumbnailStore(ctx context.Context, dataDir string) (*ThumbnailStore, error) {
 	log := logging.New("thumbnailStore")
 	converter := NewThumbnailConverter(dataDir)
-	return NewStore(ctx, log, converter)
+	store, err := NewStore(ctx, log, converter)
+	if err != nil {
+		return nil, err
+	}
+	return &ThumbnailStore{Store: store}, nil
+}
+
+func (s *ThumbnailStore) SetItems(items []music.ThumbnailStoreItem) {
+	converted := make([]Item, 0, len(items))
+	for _, item := range items {
+		converted = append(converted, Item{
+			Id:   item.Id().String(),
+			Path: item.Path().String(),
+		})
+	}
+	s.Store.SetItems(converted)
+}
+
+func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, id domain.ThumbnailId) (domain.ConvertedFile, error) {
+	return s.Store.getConvertedFileForId(ctx, id.String())
 }
 
 func NewThumbnailConverter(dataDir string) *ThumbnailConverter {

@@ -1,8 +1,8 @@
 package http
 
 import (
-	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/library"
 )
 
 type searchResult struct {
@@ -36,24 +36,19 @@ type album struct {
 	Id        string     `json:"id,omitempty"`
 	Title     string     `json:"title,omitempty"`
 	Thumbnail *thumbnail `json:"thumbnail,omitempty"`
-	Access    access     `json:"access,omitempty"`
 	Parents   []album    `json:"parents,omitempty"`
 	Albums    []album    `json:"albums,omitempty"`
 	Tracks    []track    `json:"tracks,omitempty"`
 }
 
-type access struct {
-	Public bool `json:"public"`
-}
-
-func toSearchResult(result music.SearchResult) searchResult {
+func toSearchResult(result library.SearchResult) searchResult {
 	return searchResult{
 		Albums: toBasicAlbums(result.Albums),
 		Tracks: toSearchResultTracks(result.Tracks),
 	}
 }
 
-func toBasicAlbums(albums []music.BasicAlbum) []basicAlbum {
+func toBasicAlbums(albums []library.BasicAlbum) []basicAlbum {
 	var result []basicAlbum
 	for _, a := range albums {
 		result = append(result, toBasicAlbum(a))
@@ -61,7 +56,7 @@ func toBasicAlbums(albums []music.BasicAlbum) []basicAlbum {
 	return result
 }
 
-func toBasicAlbum(a music.BasicAlbum) basicAlbum {
+func toBasicAlbum(a library.BasicAlbum) basicAlbum {
 	return basicAlbum{
 		Path:      toPath(a.Path),
 		Title:     a.Title.String(),
@@ -81,13 +76,13 @@ func toThumbnail(thumb *domain.Thumbnail) *thumbnail {
 	if thumb == nil {
 		return nil
 	}
-	fileId := thumb.FileId()
+	id := thumb.Id()
 	return &thumbnail{
-		FileId: fileId.String(),
+		FileId: id.String(),
 	}
 }
 
-func toSearchResultTracks(tracks []music.SearchResultTrack) []searchResultTrack {
+func toSearchResultTracks(tracks []library.SearchResultTrack) []searchResultTrack {
 	var result []searchResultTrack
 	for _, t := range tracks {
 		result = append(result, toSearchResultTrack(t))
@@ -95,7 +90,7 @@ func toSearchResultTracks(tracks []music.SearchResultTrack) []searchResultTrack 
 	return result
 }
 
-func toSearchResultTrack(t music.SearchResultTrack) searchResultTrack {
+func toSearchResultTrack(t library.SearchResultTrack) searchResultTrack {
 	return searchResultTrack{
 		Track: toTrack(t.Track),
 		Album: toBasicAlbum(t.Album),
@@ -103,18 +98,13 @@ func toSearchResultTrack(t music.SearchResultTrack) searchResultTrack {
 }
 
 func toTrack(t domain.Track) track {
-	var duration float64
-	if d := t.Duration(); d != nil {
-		duration = d.Seconds()
-	}
 	id := t.Id()
-	fileId := t.FileId()
 	title := t.Title()
 	return track{
 		Id:       id.String(),
-		FileId:   fileId.String(),
+		FileId:   id.String(),
 		Title:    title.String(),
-		Duration: duration,
+		Duration: t.Duration().Seconds(),
 	}
 }
 
@@ -125,22 +115,35 @@ func toAlbum(a domain.Album) album {
 		Id:        id.String(),
 		Title:     title.String(),
 		Thumbnail: toThumbnail(a.Thumbnail()),
-		Access:    toAccess(a.Access()),
-		Parents:   toAlbumParents(a.Parents()),
+		Parents:   toParentAlbums(a.Parents()),
 		Albums:    toAlbums(a.Albums()),
 		Tracks:    toTracks(a.Tracks()),
 	}
 }
 
-func toAlbums(albums []domain.Album) []album {
+func toRootAlbum(a domain.RootAlbum) album {
+	return album{
+		Thumbnail: toThumbnail(a.Thumbnail()),
+		Albums:    toAlbums(a.Albums()),
+		Tracks:    toTracks(a.Tracks()),
+	}
+}
+
+func toAlbums(albums []domain.ChildAlbum) []album {
 	var result []album
 	for _, a := range albums {
-		result = append(result, toAlbum(a))
+		id := a.Id()
+		title := a.Title()
+		result = append(result, album{
+			Id:        id.String(),
+			Title:     title.String(),
+			Thumbnail: toThumbnail(a.Thumbnail()),
+		})
 	}
 	return result
 }
 
-func toAlbumParents(parents []domain.AlbumParent) []album {
+func toParentAlbums(parents []domain.ParentAlbum) []album {
 	var result []album
 	for _, p := range parents {
 		id := p.Id()
@@ -159,10 +162,4 @@ func toTracks(tracks []domain.Track) []track {
 		result = append(result, toTrack(t))
 	}
 	return result
-}
-
-func toAccess(a domain.Access) access {
-	return access{
-		Public: a.Public(),
-	}
 }

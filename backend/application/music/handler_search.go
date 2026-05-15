@@ -1,8 +1,10 @@
 package music
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/errors"
 )
 
 const maxQueryLength = 100
@@ -47,19 +49,20 @@ type Search struct {
 }
 
 type SearchHandler struct {
-	library Library
+	repo LibraryRepository
 }
 
-func NewSearchHandler(library Library) *SearchHandler {
-	return &SearchHandler{
-		library: library,
-	}
+func NewSearchHandler(repo LibraryRepository) *SearchHandler {
+	return &SearchHandler{repo: repo}
 }
 
-func (h *SearchHandler) Execute(cmd Search) (SearchResult, error) {
+func (h *SearchHandler) Execute(cmd Search) (library.SearchResult, error) {
 	if cmd.Query.IsZero() {
-		return SearchResult{}, errors.New("zero value of query")
+		return library.SearchResult{}, errors.New("zero value of query")
 	}
-
-	return h.library.Search(cmd.Query.String(), cmd.PublicOnly)
+	lib, err := h.repo.Get()
+	if err != nil {
+		return library.SearchResult{}, errors.Wrap(err, "could not get the library")
+	}
+	return lib.Search(cmd.Query.String(), cmd.PublicOnly)
 }

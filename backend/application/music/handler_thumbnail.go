@@ -17,10 +17,10 @@ func NewThumbnailHandler(thumbnailStore ThumbnailStore) *ThumbnailHandler {
 	}
 }
 
-func (h *ThumbnailHandler) Execute(ctx context.Context, id domain.FileId) (ConvertedFile, error) {
+func (h *ThumbnailHandler) Execute(ctx context.Context, id domain.ThumbnailId) (domain.ConvertedFile, error) {
 	p, err := h.thumbnailStore.GetConvertedFile(ctx, id)
 	if err != nil {
-		return ConvertedFile{}, errors.Wrap(err, "could not get the thumbnail")
+		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the thumbnail")
 	}
 	return p, nil
 }

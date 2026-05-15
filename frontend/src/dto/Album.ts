@@ -1,6 +1,5 @@
 import { Track } from '@/dto/Track';
 import { Thumbnail } from '@/dto/Thumbnail';
-import { Access } from '@/dto/Access';
 
 export class Album {
     id: string;
@@ -9,5 +8,4 @@ export class Album {
     parents: Album[];
     albums: Album[];
     tracks: Track[];
-    access: Access;
 }

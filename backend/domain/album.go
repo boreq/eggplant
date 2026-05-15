@@ -5,28 +5,52 @@ import (
 	"errors"
 )
 
+type RootAlbum struct {
+	thumbnail *Thumbnail
+	albums    []ChildAlbum
+	tracks    []Track
+}
+
+func NewRootAlbum(thumbnail *Thumbnail, albums []ChildAlbum, tracks []Track) (RootAlbum, error) {
+	return RootAlbum{
+		thumbnail: thumbnail,
+		albums:    albums,
+		tracks:    tracks,
+	}, nil
+}
+
+func (r RootAlbum) Thumbnail() *Thumbnail {
+	return r.thumbnail
+}
+
+func (r RootAlbum) Albums() []ChildAlbum {
+	return r.albums
+}
+
+func (r RootAlbum) Tracks() []Track {
+	return r.tracks
+}
+
 type Album struct {
 	id        AlbumId
 	title     AlbumTitle
 	thumbnail *Thumbnail
-	access    Access
-
-	// parents lists the parents of this album starting from the one furthest
-	// away. If non-empty, the last entry is this album itself.
-	parents []AlbumParent
-	albums  []Album
-	tracks  []Track
+	parents   []ParentAlbum
+	albums    []ChildAlbum
+	tracks    []Track
 }
 
-func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, access Access, parents []AlbumParent, albums []Album, tracks []Track) (Album, error) {
-	if len(parents) > 0 && parents[len(parents)-1].Id() != id {
-		return Album{}, errors.New("the last parent must be this album")
+func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []ParentAlbum, albums []ChildAlbum, tracks []Track) (Album, error) {
+	if len(parents) == 0 {
+		return Album{}, errors.New("album must have at least one parent")
+	}
+	if len(albums) == 0 && len(tracks) == 0 {
+		return Album{}, errors.New("album must have at least one child album or track")
 	}
 	return Album{
 		id:        id,
 		title:     title,
 		thumbnail: thumbnail,
-		access:    access,
 		parents:   parents,
 		albums:    albums,
 		tracks:    tracks,
@@ -45,15 +69,11 @@ func (a Album) Thumbnail() *Thumbnail {
 	return a.thumbnail
 }
 
-func (a Album) Access() Access {
-	return a.access
-}
-
-func (a Album) Parents() []AlbumParent {
+func (a Album) Parents() []ParentAlbum {
 	return a.parents
 }
 
-func (a Album) Albums() []Album {
+func (a Album) Albums() []ChildAlbum {
 	return a.albums
 }
 
@@ -61,43 +81,57 @@ func (a Album) Tracks() []Track {
 	return a.tracks
 }
 
-type AlbumParent struct {
+type ChildAlbum struct {
+	id        AlbumId
+	title     AlbumTitle
+	thumbnail *Thumbnail
+}
+
+func NewChildAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail) ChildAlbum {
+	return ChildAlbum{
+		id:        id,
+		title:     title,
+		thumbnail: thumbnail,
+	}
+}
+
+func (a ChildAlbum) Id() AlbumId {
+	return a.id
+}
+
+func (a ChildAlbum) Title() AlbumTitle {
+	return a.title
+}
+
+func (a ChildAlbum) Thumbnail() *Thumbnail {
+	return a.thumbnail
+}
+
+type ParentAlbum struct {
 	id    AlbumId
 	title AlbumTitle
 }
 
-func NewAlbumParent(id AlbumId, title AlbumTitle) AlbumParent {
-	return AlbumParent{
+func NewParentAlbum(id AlbumId, title AlbumTitle) ParentAlbum {
+	return ParentAlbum{
 		id:    id,
 		title: title,
 	}
 }
 
-func (p AlbumParent) Id() AlbumId {
+func (p ParentAlbum) Id() AlbumId {
 	return p.id
 }
 
-func (p AlbumParent) Title() AlbumTitle {
+func (p ParentAlbum) Title() AlbumTitle {
 	return p.title
-}
-
-type Access struct {
-	public bool
-}
-
-func NewAccess(public bool) Access {
-	return Access{public: public}
-}
-
-func (a Access) Public() bool {
-	return a.public
 }
 
 type AlbumId struct {
 	value string
 }
 
-func NewAlbumId(s string) (AlbumId, error) {
+func NewAlbumIdFromString(s string) (AlbumId, error) {
 	if s == "" {
 		return AlbumId{}, errors.New("album id must not be empty")
 	}
@@ -105,6 +139,10 @@ func NewAlbumId(s string) (AlbumId, error) {
 		return AlbumId{}, errors.New("album id must be a hex string")
 	}
 	return AlbumId{value: s}, nil
+}
+
+func NewAlbumId(parents []AlbumId, title AlbumTitle) (AlbumId, error) {
+	return NewAlbumIdFromString(shortHash(parentsAsString(parents) + title.value))
 }
 
 func (id AlbumId) String() string {

@@ -10,84 +10,52 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/adapters/music/scanner/symwalk"
+	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/radovskyb/watcher"
 )
 
-// Track represents an audio track.
-type Track struct {
-	Path string
+type ThumbnailStem struct {
+	value string
 }
 
-func newTrack(path string) Track {
-	return Track{
-		Path: path,
+func NewThumbnailStem(s string) (ThumbnailStem, error) {
+	if s == "" {
+		return ThumbnailStem{}, errors.New("thumbnail stem must not be empty")
 	}
+	return ThumbnailStem{value: s}, nil
 }
 
-// Album is a collection of songs and albums.
-type Album struct {
-	// Thumbnail is a path of an album cover. If the thumbnail is not
-	// available then this field is set to an empty string.
-	Thumbnail string
-
-	// AccessFile is a path of an access file. If the access file is not
-	// available then this field is set to an empty string.
-	AccessFile string
-
-	// Albums uses album titles as its keys.
-	Albums map[string]*Album
-
-	// Tracks uses track titles as its keys.
-	Tracks map[string]Track
-}
-
-func newAlbum() *Album {
-	return &Album{
-		Albums: make(map[string]*Album),
-		Tracks: make(map[string]Track),
-	}
+func (t ThumbnailStem) String() string {
+	return t.value
 }
 
 type Config struct {
-	TrackExtensions     []string
-	ThumbnailStems      []string
-	ThumbnailExtensions []string
+	trackExtensions     []domain.FileExtension
+	thumbnailStems      []ThumbnailStem
+	thumbnailExtensions []domain.FileExtension
 }
 
-func (c Config) Validate() error {
-	if len(c.TrackExtensions) == 0 {
-		return errors.New("missing track extensions")
+func NewConfig(trackExtensions []domain.FileExtension, thumbnailStems []ThumbnailStem, thumbnailExtensions []domain.FileExtension) (Config, error) {
+	if len(trackExtensions) == 0 {
+		return Config{}, errors.New("missing track extensions")
 	}
 
-	for _, ext := range c.TrackExtensions {
-		if !strings.HasPrefix(ext, ".") {
-			return fmt.Errorf("track extension '%s' should start with a dot", ext)
-		}
+	if len(thumbnailStems) == 0 {
+		return Config{}, errors.New("missing thumbnail stems")
 	}
 
-	if len(c.ThumbnailStems) == 0 {
-		return errors.New("missing thumbnail stems")
+	if len(thumbnailExtensions) == 0 {
+		return Config{}, errors.New("missing thumbnail extensions")
 	}
 
-	for _, stem := range c.ThumbnailStems {
-		if stem == "" {
-			return errors.New("passed a blank thumbnail stem")
-		}
-	}
-
-	if len(c.ThumbnailExtensions) == 0 {
-		return errors.New("missing thumbnail extensions")
-	}
-
-	for _, ext := range c.ThumbnailExtensions {
-		if !strings.HasPrefix(ext, ".") {
-			return fmt.Errorf("thumbnail extension '%s' should start with a dot", ext)
-		}
-	}
-
-	return nil
+	return Config{
+		trackExtensions:     trackExtensions,
+		thumbnailStems:      thumbnailStems,
+		thumbnailExtensions: thumbnailExtensions,
+	}, nil
 }
 
 // Scanner watches a hard drive directory containing audio files and produces
@@ -95,20 +63,16 @@ func (c Config) Validate() error {
 type Scanner struct {
 	directory string
 	config    Config
-	log       logging.Logger
+	logger    logging.Logger
 }
 
 // New creates a new scanner which will watch the specified directory when
 // started.
 func New(directory string, config Config) (*Scanner, error) {
-	if err := config.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid configuration")
-	}
-
 	l := &Scanner{
 		directory: directory,
 		config:    config,
-		log:       logging.New("scanner"),
+		logger:    logging.New("scanner"),
 	}
 	return l, nil
 }
@@ -116,7 +80,7 @@ func New(directory string, config Config) (*Scanner, error) {
 // Start starts the watcher and returns a channel on which the updates are
 // sent whenever available. At least one update will be sent on the channel
 // immidiately after calling this method.
-func (s *Scanner) Start() (<-chan Album, error) {
+func (s *Scanner) Start() (<-chan scanner.FoundRootAlbum, error) {
 	// fail early since the initial load carries the highest failure
 	// possiblity
 	album, err := s.load()
@@ -133,14 +97,14 @@ func (s *Scanner) Start() (<-chan Album, error) {
 
 	go func() {
 		if err := w.Start(time.Second * 10); err != nil {
-			s.log.Error("error starting the watcher", "err", err)
+			s.logger.Error("error starting the watcher", "err", err)
 		}
 	}()
 
-	ch := make(chan Album)
+	ch := make(chan scanner.FoundRootAlbum)
 	go func() {
 		defer close(ch)
-		ch <- album
+		ch <- *album
 
 		for {
 			select {
@@ -150,12 +114,12 @@ func (s *Scanner) Start() (<-chan Album, error) {
 				}
 				album, err := s.load()
 				if err != nil {
-					s.log.Error("load error", "err", err)
+					s.logger.Error("load error", "err", err)
 					continue
 				}
-				ch <- album
+				ch <- *album
 			case err := <-w.Error:
-				s.log.Error("watcher error", "err", err)
+				s.logger.Error("watcher error", "err", err)
 			case <-w.Closed:
 				return
 			}
@@ -164,10 +128,10 @@ func (s *Scanner) Start() (<-chan Album, error) {
 	return ch, nil
 }
 
-func (s *Scanner) load() (Album, error) {
+func (s *Scanner) load() (*scanner.FoundRootAlbum, error) {
 	visited := make(map[string]struct{})
 
-	root := *newAlbum()
+	root := newAlbum()
 	if err := symwalk.Walk(s.directory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "received an error")
@@ -193,22 +157,27 @@ func (s *Scanner) load() (Album, error) {
 			return nil
 		}
 
-		if s.isThumbnail(path) {
-			if err := s.addThumbnail(&root, path); err != nil {
+		filePath, err := domain.NewFilePath(path)
+		if err != nil {
+			return errors.Wrap(err, "could not create file path")
+		}
+
+		if s.isThumbnail(filePath) {
+			if err := s.setThumbnailFile(root, filePath); err != nil {
 				return errors.Wrap(err, "could not add a thumbnail")
 			}
 			return nil
 		}
 
 		if s.isAccessFile(path) {
-			if err := s.addAccessFile(&root, path); err != nil {
+			if err := s.setAccessFile(root, filePath); err != nil {
 				return errors.Wrap(err, "could not add an access file")
 			}
 			return nil
 		}
 
-		if s.isTrack(path) {
-			if err := s.addTrack(&root, path); err != nil {
+		if s.isTrack(filePath) {
+			if err := s.addTrack(root, filePath); err != nil {
 				return errors.Wrap(err, "could not add a track")
 			}
 			return nil
@@ -216,42 +185,60 @@ func (s *Scanner) load() (Album, error) {
 
 		return nil
 	}); err != nil {
-		return Album{}, errors.Wrap(err, "walk failed")
+		return nil, errors.Wrap(err, "walk failed")
 	}
 
-	removeEmptyAlbums(&root)
+	removeEmptyAlbums(root)
 
-	return root, nil
+	result, err := toFoundRootAlbum(root)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not build directory scan result")
+	}
+	return &result, nil
 }
 
-func (s *Scanner) addTrack(root *Album, file string) error {
-	album, err := s.findAlbum(root, file)
+func (s *Scanner) addTrack(root *album, file domain.FilePath) error {
+	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
 	}
 
-	title := filenameWithoutExtension(file)
-	album.Tracks[title] = newTrack(file)
+	base := filepath.Base(file.String())
+	stripped := strings.TrimSuffix(base, filepath.Ext(base))
+
+	title, err := domain.NewTrackTitle(stripped)
+	if err != nil {
+		return errors.Wrap(err, "could not create track title")
+	}
+
+	if _, exists := a.tracks[title]; exists {
+		return fmt.Errorf("track with title '%s' already exists", title)
+	}
+	a.tracks[title] = track{path: file}
 	return nil
 }
 
-func (s *Scanner) addThumbnail(root *Album, file string) error {
-	album, err := s.findAlbum(root, file)
+func (s *Scanner) setThumbnailFile(root *album, file domain.FilePath) error {
+	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
 	}
-
-	album.Thumbnail = file
+	if a.thumbnailFile != nil {
+		return fmt.Errorf("thumbnail file already set (%s) but found a new one (%s)", *a.thumbnailFile, file)
+	}
+	a.thumbnailFile = &file
 	return nil
 }
 
-func (s *Scanner) addAccessFile(root *Album, file string) error {
-	album, err := s.findAlbum(root, file)
+func (s *Scanner) setAccessFile(root *album, file domain.FilePath) error {
+	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
 	}
-
-	album.AccessFile = file
+	if a.accessFile != nil {
+		return fmt.Errorf("access file already set (%s) but found a new one (%s)", *a.accessFile, file)
+	}
+	a.accessFile = &file
 	return nil
 }
 
@@ -260,42 +247,29 @@ func (s *Scanner) isAccessFile(path string) bool {
 	return filename == "eggplant.access"
 }
 
-func (s *Scanner) isThumbnail(path string) bool {
-	return s.hasThumbnailStem(path) && s.hasThumbnailExtension(path)
+func (s *Scanner) isThumbnail(path domain.FilePath) bool {
+	for _, thumbnailStem := range s.config.thumbnailStems {
+		for _, thumbnailExt := range s.config.thumbnailExtensions {
+			name := thumbnailStem.String() + thumbnailExt.String()
+			if strings.EqualFold(filepath.Base(path.String()), name) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
-func (s *Scanner) hasThumbnailStem(path string) bool {
-	stem := filenameWithoutExtension(path)
-	for _, thumbnailStem := range s.config.ThumbnailStems {
-		if strings.EqualFold(stem, thumbnailStem) {
+func (s *Scanner) isTrack(path domain.FilePath) bool {
+	for _, trackExt := range s.config.trackExtensions {
+		if path.HasExtension(trackExt) {
 			return true
 		}
 	}
 	return false
 }
 
-func (s *Scanner) hasThumbnailExtension(path string) bool {
-	ext := filepath.Ext(path)
-	for _, thumbnailExt := range s.config.ThumbnailExtensions {
-		if strings.EqualFold(ext, thumbnailExt) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Scanner) isTrack(path string) bool {
-	ext := filepath.Ext(path)
-	for _, trackExt := range s.config.TrackExtensions {
-		if strings.EqualFold(ext, trackExt) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Scanner) findAlbum(root *Album, file string) (*Album, error) {
-	relativePath, err := filepath.Rel(s.directory, file)
+func (s *Scanner) findAlbum(root *album, file domain.FilePath) (*album, error) {
+	relativePath, err := filepath.Rel(s.directory, file.String())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get a relative filepath")
 	}
@@ -307,32 +281,79 @@ func (s *Scanner) findAlbum(root *Album, file string) (*Album, error) {
 
 	names := strings.Split(strings.Trim(dir, string(os.PathSeparator)), string(os.PathSeparator))
 
-	var album *Album = root
+	current := root
 	for _, name := range names {
-		child, ok := album.Albums[name]
+		title, err := domain.NewAlbumTitle(name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not create album title for '%s'", name)
+		}
+		child, ok := current.albums[title]
 		if !ok {
 			child = newAlbum()
-			album.Albums[name] = child
+			current.albums[title] = child
 		}
-		album = child
+		current = child
 	}
-	return album, nil
+	return current, nil
 }
 
-func filenameWithoutExtension(file string) string {
-	_, filename := filepath.Split(file)
-	if index := strings.LastIndex(filename, "."); index >= 0 {
-		return filename[:index]
-	}
-	return filename
+type album struct {
+	thumbnailFile *domain.FilePath
+	accessFile    *domain.FilePath
+	albums        map[domain.AlbumTitle]*album
+	tracks        map[domain.TrackTitle]track
 }
 
-func removeEmptyAlbums(root *Album) {
-	for name, album := range root.Albums {
-		removeEmptyAlbums(album)
+func newAlbum() *album {
+	return &album{
+		albums: map[domain.AlbumTitle]*album{},
+		tracks: map[domain.TrackTitle]track{},
+	}
+}
 
-		if len(album.Albums) == 0 && len(album.Tracks) == 0 {
-			delete(root.Albums, name)
+type track struct {
+	path domain.FilePath
+}
+
+func removeEmptyAlbums(root *album) {
+	for title, a := range root.albums {
+		removeEmptyAlbums(a)
+
+		if len(a.albums) == 0 && len(a.tracks) == 0 {
+			delete(root.albums, title)
 		}
 	}
+}
+
+func toFoundRootAlbum(root *album) (scanner.FoundRootAlbum, error) {
+	albums, err := toFoundAlbums(root.albums)
+	if err != nil {
+		return scanner.FoundRootAlbum{}, err
+	}
+	return scanner.NewFoundRootAlbum(root.thumbnailFile, root.accessFile, albums, toFoundTracks(root.tracks)), nil
+}
+
+func toFoundAlbums(src map[domain.AlbumTitle]*album) (map[domain.AlbumTitle]scanner.FoundAlbum, error) {
+	out := make(map[domain.AlbumTitle]scanner.FoundAlbum, len(src))
+	for title, a := range src {
+		subAlbums, err := toFoundAlbums(a.albums)
+		if err != nil {
+			return nil, err
+		}
+
+		found, err := scanner.NewFoundAlbum(a.thumbnailFile, a.accessFile, subAlbums, toFoundTracks(a.tracks))
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not create found album '%s'", title)
+		}
+		out[title] = found
+	}
+	return out, nil
+}
+
+func toFoundTracks(src map[domain.TrackTitle]track) map[domain.TrackTitle]scanner.FoundTrack {
+	out := make(map[domain.TrackTitle]scanner.FoundTrack, len(src))
+	for title, t := range src {
+		out[title] = scanner.NewFoundTrack(t.path)
+	}
+	return out
 }
