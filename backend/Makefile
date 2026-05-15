@@ -47,12 +47,7 @@ clean:
 	rm -rf ./${BUILD_DIRECTORY}
 
 fmt:
-	goimports -w -l adapters/
-	goimports -w -l application/
-	goimports -w -l cmd/
-	goimports -w -l internal/
-	goimports -w -l logging/
-	goimports -w -l ports/
+	goimports -w -l .
 
 update-golden: build
 	./_build/eggplant default_config > internal/config/data/config.golden.toml

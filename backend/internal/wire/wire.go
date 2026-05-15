@@ -51,6 +51,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	wire.Build(
 		service.NewService,
 		httpSet,
+		filesystemSet,
 		appSet,
 		musicSet,
 		boltSet,
