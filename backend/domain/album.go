@@ -12,6 +12,7 @@ type RootAlbum struct {
 }
 
 func NewRootAlbum(thumbnail *Thumbnail, albums []ChildAlbum, tracks []Track) (RootAlbum, error) {
+	SortTracks(tracks)
 	return RootAlbum{
 		thumbnail: thumbnail,
 		albums:    albums,
@@ -47,6 +48,7 @@ func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []Pare
 	if len(albums) == 0 && len(tracks) == 0 {
 		return Album{}, errors.New("album must have at least one child album or track")
 	}
+	SortTracks(tracks)
 	return Album{
 		id:        id,
 		title:     title,

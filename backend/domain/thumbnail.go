@@ -6,15 +6,20 @@ import (
 )
 
 type Thumbnail struct {
-	id ThumbnailId
+	id     ThumbnailId
+	fileId FileId
 }
 
-func NewThumbnail(id ThumbnailId) Thumbnail {
-	return Thumbnail{id: id}
+func NewThumbnail(id ThumbnailId, fileId FileId) Thumbnail {
+	return Thumbnail{id: id, fileId: fileId}
 }
 
 func (t Thumbnail) Id() ThumbnailId {
 	return t.id
+}
+
+func (t Thumbnail) FileId() FileId {
+	return t.fileId
 }
 
 type ThumbnailId struct {

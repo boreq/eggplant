@@ -37,15 +37,15 @@ func (s *TrackStore) SetItems(items []music.TrackStoreItem) {
 	converted := make([]Item, 0, len(items))
 	for _, item := range items {
 		converted = append(converted, Item{
-			Id:   item.Id().String(),
+			Id:   item.FileId().String(),
 			Path: item.Path().String(),
 		})
 	}
 	s.Store.SetItems(converted)
 }
 
-func (s *TrackStore) GetConvertedFile(ctx context.Context, id domain.TrackId) (domain.ConvertedFile, error) {
-	return s.Store.getConvertedFileForId(ctx, id.String())
+func (s *TrackStore) GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error) {
+	return s.Store.getConvertedFileForId(ctx, fileId.String())
 }
 
 type TrackConverter struct {

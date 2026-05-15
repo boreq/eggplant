@@ -4,23 +4,37 @@ import (
 	"context"
 
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/library"
 	"github.com/boreq/errors"
 )
 
 type TrackHandler struct {
-	trackStore TrackStore
+	libraryRepository LibraryRepository
+	trackStore        TrackStore
 }
 
-func NewTrackHandler(trackStore TrackStore) *TrackHandler {
+func NewTrackHandler(libraryRepository LibraryRepository, trackStore TrackStore) *TrackHandler {
 	return &TrackHandler{
-		trackStore: trackStore,
+		libraryRepository: libraryRepository,
+		trackStore:        trackStore,
 	}
 }
 
-func (h *TrackHandler) Execute(ctx context.Context, id domain.TrackId) (domain.ConvertedFile, error) {
-	p, err := h.trackStore.GetConvertedFile(ctx, id)
+func (h *TrackHandler) Execute(ctx context.Context, accessCtx library.AccessContext, id domain.TrackId) (domain.ConvertedFile, error) {
+	lib, err := h.libraryRepository.Get()
+	if err != nil {
+		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the library")
+	}
+
+	track, err := lib.GetTrack(id, accessCtx)
 	if err != nil {
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the track")
 	}
-	return p, nil
+
+	cf, err := h.trackStore.GetConvertedFile(ctx, track.FileId())
+	if err != nil {
+		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the converted file")
+	}
+
+	return cf, nil
 }

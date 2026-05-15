@@ -15,20 +15,20 @@ var (
 
 type TrackStore interface {
 	SetItems(items []TrackStoreItem)
-	GetConvertedFile(ctx context.Context, id domain.TrackId) (domain.ConvertedFile, error)
+	GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
 }
 
 type TrackStoreItem struct {
-	id   domain.TrackId
-	path domain.FilePath
+	fileId domain.FileId
+	path   domain.FilePath
 }
 
-func NewTrackStoreItem(id domain.TrackId, path domain.FilePath) TrackStoreItem {
-	return TrackStoreItem{id: id, path: path}
+func NewTrackStoreItem(fileId domain.FileId, path domain.FilePath) TrackStoreItem {
+	return TrackStoreItem{fileId: fileId, path: path}
 }
 
-func (t TrackStoreItem) Id() domain.TrackId {
-	return t.id
+func (t TrackStoreItem) FileId() domain.FileId {
+	return t.fileId
 }
 
 func (t TrackStoreItem) Path() domain.FilePath {
@@ -37,20 +37,20 @@ func (t TrackStoreItem) Path() domain.FilePath {
 
 type ThumbnailStore interface {
 	SetItems(items []ThumbnailStoreItem)
-	GetConvertedFile(ctx context.Context, id domain.ThumbnailId) (domain.ConvertedFile, error)
+	GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
 }
 
 type ThumbnailStoreItem struct {
-	id   domain.ThumbnailId
-	path domain.FilePath
+	fileId domain.FileId
+	path   domain.FilePath
 }
 
-func NewThumbnailStoreItem(id domain.ThumbnailId, path domain.FilePath) ThumbnailStoreItem {
-	return ThumbnailStoreItem{id: id, path: path}
+func NewThumbnailStoreItem(fileId domain.FileId, path domain.FilePath) ThumbnailStoreItem {
+	return ThumbnailStoreItem{fileId: fileId, path: path}
 }
 
-func (t ThumbnailStoreItem) Id() domain.ThumbnailId {
-	return t.id
+func (t ThumbnailStoreItem) FileId() domain.FileId {
+	return t.fileId
 }
 
 func (t ThumbnailStoreItem) Path() domain.FilePath {

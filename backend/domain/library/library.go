@@ -2,9 +2,7 @@ package library
 
 import (
 	"sort"
-	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/errors"
@@ -18,20 +16,6 @@ var (
 	ErrThumbnailNotFound = errors.New("thumbnail not found")
 )
 
-var defaultVisibility = NewVisibility(false)
-
-type Visibility struct {
-	public bool
-}
-
-func NewVisibility(public bool) Visibility {
-	return Visibility{public: public}
-}
-
-func (v Visibility) Public() bool {
-	return v.public
-}
-
 type Library struct {
 	root RootAlbum
 }
@@ -40,24 +24,20 @@ func NewLibrary(root RootAlbum) *Library {
 	return &Library{root: root}
 }
 
-func (l *Library) GetRootAlbum(publicOnly bool) (domain.RootAlbum, error) {
+func (l *Library) GetRootAlbum(ctx AccessContext) (domain.RootAlbum, error) {
 	rootVis := visibilityOr(l.root.visibility)
-	if publicOnly && !rootVis.Public() {
+	if !ctx.CanSee(rootVis) {
 		return domain.RootAlbum{}, errors.Wrap(ErrAlbumNotFound, "root not visible")
 	}
 
-	children := buildChildren(l.root.albums, rootVis, publicOnly)
+	children := buildChildren(l.root.albums, rootVis, ctx)
 
-	var tracks []domain.Track
-	if !publicOnly || rootVis.Public() {
-		tracks = append(tracks, l.root.tracks...)
-		SortTracks(tracks)
-	}
+	tracks := append([]domain.Track(nil), l.root.tracks...)
 
 	return domain.NewRootAlbum(l.root.thumbnail, children, tracks)
 }
 
-func (l *Library) GetAlbum(id domain.AlbumId, publicOnly bool) (domain.Album, error) {
+func (l *Library) GetAlbum(id domain.AlbumId, ctx AccessContext) (domain.Album, error) {
 	path, ok := l.findAlbumPath(id)
 	if !ok {
 		return domain.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s'", id)
@@ -70,7 +50,7 @@ func (l *Library) GetAlbum(id domain.AlbumId, publicOnly bool) (domain.Album, er
 		}
 	}
 
-	if publicOnly && !effective.Public() {
+	if !ctx.CanSee(effective) {
 		return domain.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s' not visible", id)
 	}
 
@@ -81,9 +61,8 @@ func (l *Library) GetAlbum(id domain.AlbumId, publicOnly bool) (domain.Album, er
 		parents = append(parents, domain.NewParentAlbum(a.id, a.title))
 	}
 
-	children := buildChildren(target.albums, effective, publicOnly)
+	children := buildChildren(target.albums, effective, ctx)
 	tracks := append([]domain.Track(nil), target.tracks...)
-	SortTracks(tracks)
 
 	if len(children) == 0 && len(tracks) == 0 {
 		return domain.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s' has no visible content", id)
@@ -92,11 +71,11 @@ func (l *Library) GetAlbum(id domain.AlbumId, publicOnly bool) (domain.Album, er
 	return domain.NewAlbum(target.id, target.title, target.thumbnail, parents, children, tracks)
 }
 
-func (l *Library) GetTrack(id domain.TrackId, publicOnly bool) (domain.Track, error) {
+func (l *Library) GetTrack(id domain.TrackId, ctx AccessContext) (domain.Track, error) {
 	rootVis := visibilityOr(l.root.visibility)
 	for _, t := range l.root.tracks {
 		if t.Id() == id {
-			if publicOnly && !rootVis.Public() {
+			if !ctx.CanSee(rootVis) {
 				return domain.Track{}, errors.Wrapf(ErrTrackNotFound, "track '%s' not visible", id)
 			}
 			return t, nil
@@ -107,16 +86,16 @@ func (l *Library) GetTrack(id domain.TrackId, publicOnly bool) (domain.Track, er
 	if !ok {
 		return domain.Track{}, errors.Wrapf(ErrTrackNotFound, "track '%s'", id)
 	}
-	if publicOnly && !vis.Public() {
+	if !ctx.CanSee(vis) {
 		return domain.Track{}, errors.Wrapf(ErrTrackNotFound, "track '%s' not visible", id)
 	}
 	return t, nil
 }
 
-func (l *Library) GetThumbnail(id domain.ThumbnailId, publicOnly bool) (domain.Thumbnail, error) {
+func (l *Library) GetThumbnail(id domain.ThumbnailId, ctx AccessContext) (domain.Thumbnail, error) {
 	rootVis := visibilityOr(l.root.visibility)
 	if t := l.root.thumbnail; t != nil && t.Id() == id {
-		if publicOnly && !rootVis.Public() {
+		if !ctx.CanSee(rootVis) {
 			return domain.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s' not visible", id)
 		}
 		return *t, nil
@@ -126,7 +105,7 @@ func (l *Library) GetThumbnail(id domain.ThumbnailId, publicOnly bool) (domain.T
 	if !ok {
 		return domain.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s'", id)
 	}
-	if publicOnly && !vis.Public() {
+	if !ctx.CanSee(vis) {
 		return domain.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s' not visible", id)
 	}
 	return t, nil
@@ -187,12 +166,11 @@ type SearchTrack struct {
 	Album *SearchTrackAlbum
 }
 
-// Search walks the whole tree, filtering by visibility cascade.
-func (l *Library) Search(query string, publicOnly bool) (SearchResult, error) {
+func (l *Library) Search(query string, ctx AccessContext) (SearchResult, error) {
 	var result SearchResult
 	rootVis := visibilityOr(l.root.visibility)
 
-	if !publicOnly || rootVis.Public() {
+	if ctx.CanSee(rootVis) {
 		for _, t := range l.root.tracks {
 			if len(result.Tracks) >= maxSearchItems {
 				break
@@ -204,40 +182,39 @@ func (l *Library) Search(query string, publicOnly bool) (SearchResult, error) {
 		}
 	}
 
-	searchAlbums(&result, l.root.albums, nil, rootVis, query, publicOnly)
+	searchAlbums(&result, l.root.albums, nil, rootVis, query, ctx)
 	return result, nil
 }
 
-func searchAlbums(result *SearchResult, albums []Album, parentPath []domain.AlbumId, parentVis Visibility, query string, publicOnly bool) {
+func searchAlbums(result *SearchResult, albums []Album, parentPath []domain.AlbumId, parentVis Visibility, query string, ctx AccessContext) {
 	for _, a := range albums {
 		effective := parentVis
 		if a.visibility != nil {
 			effective = *a.visibility
-		}
-		if publicOnly && !effective.Public() {
-			continue
 		}
 
 		path := make([]domain.AlbumId, 0, len(parentPath)+1)
 		path = append(path, parentPath...)
 		path = append(path, a.id)
 
-		if len(result.Albums) < maxSearchItems && containsStringCaseInsensitive(a.title.String(), query) {
-			result.Albums = append(result.Albums, SearchAlbum{Path: path, Title: a.title, Thumbnail: a.thumbnail})
+		if ctx.CanSee(effective) {
+			if len(result.Albums) < maxSearchItems && containsStringCaseInsensitive(a.title.String(), query) {
+				result.Albums = append(result.Albums, SearchAlbum{Path: path, Title: a.title, Thumbnail: a.thumbnail})
+			}
+
+			albumRef := &SearchTrackAlbum{Path: path, Title: a.title}
+			for _, t := range a.tracks {
+				if len(result.Tracks) >= maxSearchItems {
+					break
+				}
+				if !containsStringCaseInsensitive(t.Title().String(), query) {
+					continue
+				}
+				result.Tracks = append(result.Tracks, SearchTrack{Track: t, Album: albumRef})
+			}
 		}
 
-		albumRef := &SearchTrackAlbum{Path: path, Title: a.title}
-		for _, t := range a.tracks {
-			if len(result.Tracks) >= maxSearchItems {
-				break
-			}
-			if !containsStringCaseInsensitive(t.Title().String(), query) {
-				continue
-			}
-			result.Tracks = append(result.Tracks, SearchTrack{Track: t, Album: albumRef})
-		}
-
-		searchAlbums(result, a.albums, path, effective, query, publicOnly)
+		searchAlbums(result, a.albums, path, effective, query, ctx)
 	}
 }
 
@@ -327,14 +304,14 @@ func visibilityOr(v *Visibility) Visibility {
 	return *v
 }
 
-func buildChildren(albums []Album, parentVis Visibility, publicOnly bool) []domain.ChildAlbum {
+func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []domain.ChildAlbum {
 	var out []domain.ChildAlbum
 	for _, a := range albums {
 		vis := parentVis
 		if a.visibility != nil {
 			vis = *a.visibility
 		}
-		if publicOnly && !vis.Public() {
+		if !ctx.CanSee(vis) {
 			continue
 		}
 		out = append(out, domain.NewChildAlbum(a.id, a.title, a.thumbnail))
@@ -366,29 +343,6 @@ func findAlbumPathRec(albums []Album, id domain.AlbumId, path []Album) ([]Album,
 func sortChildren(albums []domain.ChildAlbum) {
 	sort.Slice(albums, func(i, j int) bool {
 		return albums[i].Title().String() < albums[j].Title().String()
-	})
-}
-
-func SortTracks(tracks []domain.Track) {
-	sort.Slice(tracks, func(i, j int) bool {
-		titleI := tracks[i].Title().String()
-		titleJ := tracks[j].Title().String()
-
-		fieldsI := strings.Fields(titleI)
-		fieldsJ := strings.Fields(titleJ)
-
-		if len(fieldsI) > 0 && len(fieldsJ) > 0 {
-			f := func(r rune) bool { return !unicode.IsNumber(r) }
-			numI, errI := strconv.Atoi(strings.TrimFunc(fieldsI[0], f))
-			numJ, errJ := strconv.Atoi(strings.TrimFunc(fieldsJ[0], f))
-			if errI == nil && errJ == nil {
-				if numI == numJ {
-					return strings.Join(fieldsI[1:], "") < strings.Join(fieldsJ[1:], "")
-				}
-				return numI < numJ
-			}
-		}
-		return titleI < titleJ
 	})
 }
 

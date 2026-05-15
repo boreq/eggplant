@@ -44,8 +44,7 @@ func (q Query) String() string {
 }
 
 type Search struct {
-	Query      Query
-	PublicOnly bool
+	Query Query
 }
 
 type SearchHandler struct {
@@ -56,7 +55,7 @@ func NewSearchHandler(repo LibraryRepository) *SearchHandler {
 	return &SearchHandler{repo: repo}
 }
 
-func (h *SearchHandler) Execute(cmd Search) (library.SearchResult, error) {
+func (h *SearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (library.SearchResult, error) {
 	if cmd.Query.IsZero() {
 		return library.SearchResult{}, errors.New("zero value of query")
 	}
@@ -64,5 +63,5 @@ func (h *SearchHandler) Execute(cmd Search) (library.SearchResult, error) {
 	if err != nil {
 		return library.SearchResult{}, errors.Wrap(err, "could not get the library")
 	}
-	return lib.Search(cmd.Query.String(), cmd.PublicOnly)
+	return lib.Search(cmd.Query.String(), accessCtx)
 }

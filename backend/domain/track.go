@@ -8,13 +8,15 @@ import (
 
 type Track struct {
 	id       TrackId
+	fileId   FileId
 	title    TrackTitle
 	duration TrackDuration
 }
 
-func NewTrack(id TrackId, title TrackTitle, duration TrackDuration) Track {
+func NewTrack(id TrackId, fileId FileId, title TrackTitle, duration TrackDuration) Track {
 	return Track{
 		id:       id,
+		fileId:   fileId,
 		title:    title,
 		duration: duration,
 	}
@@ -22,6 +24,10 @@ func NewTrack(id TrackId, title TrackTitle, duration TrackDuration) Track {
 
 func (t Track) Id() TrackId {
 	return t.id
+}
+
+func (t Track) FileId() FileId {
+	return t.fileId
 }
 
 func (t Track) Title() TrackTitle {

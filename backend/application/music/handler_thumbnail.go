@@ -4,23 +4,37 @@ import (
 	"context"
 
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/library"
 	"github.com/boreq/errors"
 )
 
 type ThumbnailHandler struct {
-	thumbnailStore ThumbnailStore
+	libraryRepository LibraryRepository
+	thumbnailStore    ThumbnailStore
 }
 
-func NewThumbnailHandler(thumbnailStore ThumbnailStore) *ThumbnailHandler {
+func NewThumbnailHandler(libraryRepository LibraryRepository, thumbnailStore ThumbnailStore) *ThumbnailHandler {
 	return &ThumbnailHandler{
-		thumbnailStore: thumbnailStore,
+		libraryRepository: libraryRepository,
+		thumbnailStore:    thumbnailStore,
 	}
 }
 
-func (h *ThumbnailHandler) Execute(ctx context.Context, id domain.ThumbnailId) (domain.ConvertedFile, error) {
-	p, err := h.thumbnailStore.GetConvertedFile(ctx, id)
+func (h *ThumbnailHandler) Execute(ctx context.Context, accessCtx library.AccessContext, id domain.ThumbnailId) (domain.ConvertedFile, error) {
+	lib, err := h.libraryRepository.Get()
+	if err != nil {
+		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the library")
+	}
+
+	thumbnail, err := lib.GetThumbnail(id, accessCtx)
 	if err != nil {
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the thumbnail")
 	}
-	return p, nil
+
+	cf, err := h.thumbnailStore.GetConvertedFile(ctx, thumbnail.FileId())
+	if err != nil {
+		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the converted file")
+	}
+
+	return cf, nil
 }

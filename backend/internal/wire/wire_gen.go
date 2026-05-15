@@ -160,13 +160,13 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	if err != nil {
 		return nil, err
 	}
-	thumbnailHandler := music.NewThumbnailHandler(thumbnailStore)
 	trackStore, err := newTrackStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
-	trackHandler := music.NewTrackHandler(trackStore)
 	libraryRepo := library.NewInMemoryRepository()
+	thumbnailHandler := music.NewThumbnailHandler(libraryRepo, thumbnailStore)
+	trackHandler := music.NewTrackHandler(libraryRepo, trackStore)
 	scannerConfig, err := newScannerConfig(conf)
 	if err != nil {
 		return nil, err

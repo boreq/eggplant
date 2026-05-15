@@ -83,11 +83,10 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	publicOnly := u == nil
+	accessCtx := accessContextFor(u)
 
 	if rawId == "" {
-		cmd := music.GetRootAlbum{PublicOnly: publicOnly}
-		a, err := h.app.Music.GetRootAlbum.Execute(cmd)
+		a, err := h.app.Music.GetRootAlbum.Execute(accessCtx)
 		if err != nil {
 			if errors.Is(err, library.ErrAlbumNotFound) {
 				return rest.ErrNotFound
@@ -103,12 +102,7 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
 
-	cmd := music.GetAlbum{
-		Id:         albumId,
-		PublicOnly: publicOnly,
-	}
-
-	a, err := h.app.Music.GetAlbum.Execute(cmd)
+	a, err := h.app.Music.GetAlbum.Execute(accessCtx, music.GetAlbum{Id: albumId})
 	if err != nil {
 		if errors.Is(err, library.ErrAlbumNotFound) {
 			return rest.ErrNotFound
@@ -132,12 +126,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid query.")
 	}
 
-	cmd := music.Search{
-		Query:      query,
-		PublicOnly: u == nil,
-	}
-
-	result, err := h.app.Music.Search.Execute(cmd)
+	result, err := h.app.Music.Search.Execute(accessContextFor(u), music.Search{Query: query})
 	if err != nil {
 		h.log.Error("search error", "err", err)
 		return rest.ErrInternalServerError
@@ -156,8 +145,19 @@ func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
-	p, err := h.app.Music.Track.Execute(r.Context(), id)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	p, err := h.app.Music.Track.Execute(r.Context(), accessContextFor(u), id)
+	if err != nil {
+		if errors.Is(err, library.ErrTrackNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		h.log.Error("track error", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -176,9 +176,20 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	p, err := h.app.Music.Thumbnail.Execute(r.Context(), id)
+	u, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("track error", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessContextFor(u), id)
+	if err != nil {
+		if errors.Is(err, library.ErrThumbnailNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.log.Error("thumbnail error", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -426,4 +437,11 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 
 func (h *Handler) isAdmin(u *AuthenticatedUser) bool {
 	return u != nil && u.User.Administrator
+}
+
+func accessContextFor(u *AuthenticatedUser) library.AccessContext {
+	if u == nil {
+		return library.NewAnonymousAccessContext()
+	}
+	return library.NewLoggedInAccessContext()
 }

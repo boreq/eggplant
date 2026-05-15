@@ -39,15 +39,15 @@ func (s *ThumbnailStore) SetItems(items []music.ThumbnailStoreItem) {
 	converted := make([]Item, 0, len(items))
 	for _, item := range items {
 		converted = append(converted, Item{
-			Id:   item.Id().String(),
+			Id:   item.FileId().String(),
 			Path: item.Path().String(),
 		})
 	}
 	s.Store.SetItems(converted)
 }
 
-func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, id domain.ThumbnailId) (domain.ConvertedFile, error) {
-	return s.Store.getConvertedFileForId(ctx, id.String())
+func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error) {
+	return s.Store.getConvertedFileForId(ctx, fileId.String())
 }
 
 func NewThumbnailConverter(dataDir string) *ThumbnailConverter {

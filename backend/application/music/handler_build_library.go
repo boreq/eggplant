@@ -141,8 +141,13 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 			return nil, errors.Wrapf(err, "could not generate track id for '%s'", title)
 		}
 
-		out = append(out, domain.NewTrack(id, title, duration))
-		b.trackItems = append(b.trackItems, NewTrackStoreItem(id, path))
+		fileId, err := domain.NewFileId(path)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not generate file id for '%s'", path)
+		}
+
+		out = append(out, domain.NewTrack(id, fileId, title, duration))
+		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path))
 	}
 	return out, nil
 }
@@ -162,9 +167,14 @@ func (b *libraryBuilder) buildThumbnail(file *domain.FilePath, parents []domain.
 		return nil, errors.Wrap(err, "could not generate thumbnail id")
 	}
 
-	b.thumbnailItems = append(b.thumbnailItems, NewThumbnailStoreItem(thumbnailId, *file))
+	fileId, err := domain.NewFileId(*file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate file id for '%s'", *file)
+	}
 
-	t := domain.NewThumbnail(thumbnailId)
+	b.thumbnailItems = append(b.thumbnailItems, NewThumbnailStoreItem(fileId, *file))
+
+	t := domain.NewThumbnail(thumbnailId, fileId)
 	return &t, nil
 }
 
