@@ -8,15 +8,14 @@ import (
 type RootAlbum struct {
 	thumbnail *Thumbnail
 	albums    []ChildAlbum
-	tracks    []Track
+	tracks    Tracks
 }
 
 func NewRootAlbum(thumbnail *Thumbnail, albums []ChildAlbum, tracks []Track) (RootAlbum, error) {
-	SortTracks(tracks)
 	return RootAlbum{
 		thumbnail: thumbnail,
 		albums:    albums,
-		tracks:    tracks,
+		tracks:    NewTracks(tracks),
 	}, nil
 }
 
@@ -28,7 +27,7 @@ func (r RootAlbum) Albums() []ChildAlbum {
 	return r.albums
 }
 
-func (r RootAlbum) Tracks() []Track {
+func (r RootAlbum) Tracks() Tracks {
 	return r.tracks
 }
 
@@ -38,7 +37,7 @@ type Album struct {
 	thumbnail *Thumbnail
 	parents   []ParentAlbum
 	albums    []ChildAlbum
-	tracks    []Track
+	tracks    Tracks
 }
 
 func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []ParentAlbum, albums []ChildAlbum, tracks []Track) (Album, error) {
@@ -48,14 +47,13 @@ func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []Pare
 	if len(albums) == 0 && len(tracks) == 0 {
 		return Album{}, errors.New("album must have at least one child album or track")
 	}
-	SortTracks(tracks)
 	return Album{
 		id:        id,
 		title:     title,
 		thumbnail: thumbnail,
 		parents:   parents,
 		albums:    albums,
-		tracks:    tracks,
+		tracks:    NewTracks(tracks),
 	}, nil
 }
 
@@ -79,7 +77,7 @@ func (a Album) Albums() []ChildAlbum {
 	return a.albums
 }
 
-func (a Album) Tracks() []Track {
+func (a Album) Tracks() Tracks {
 	return a.tracks
 }
 

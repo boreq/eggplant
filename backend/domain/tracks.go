@@ -7,7 +7,15 @@ import (
 	"unicode"
 )
 
-func SortTracks(tracks []Track) {
+type Tracks []Track
+
+func NewTracks(tracks []Track) Tracks {
+	sorted := append([]Track(nil), tracks...)
+	sortTracks(sorted)
+	return Tracks(sorted)
+}
+
+func sortTracks(tracks []Track) {
 	sort.Slice(tracks, func(i, j int) bool {
 		titleI := tracks[i].Title().String()
 		titleJ := tracks[j].Title().String()
