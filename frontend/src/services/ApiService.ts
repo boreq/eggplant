@@ -22,7 +22,7 @@ declare module 'vue-property-decorator' {
 
 export class ApiService {
 
-    private readonly axios = axios.create();
+    private readonly axios = axios.create({ withCredentials: import.meta.env.DEV });
     private readonly authService = new AuthService();
 
     constructor(private vue: any) {
