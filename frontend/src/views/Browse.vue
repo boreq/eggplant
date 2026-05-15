@@ -17,7 +17,12 @@
             </div>
 
             <div class="content" ref="content">
-                <spinner v-if="!album" class="spinner"></spinner>
+                <div v-if="!album" class="loading">
+                    <spinner class="spinner"></spinner>
+                    <div v-if="libraryNotReady" class="loading-message">
+                        The music library is being prepared. This page will load automatically when it's ready.
+                    </div>
+                </div>
 
                 <div class="album" v-if="showAlbum">
                     <div class="artwork">

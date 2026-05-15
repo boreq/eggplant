@@ -97,6 +97,11 @@ $topbar-height: 45px;
                 font-size: 20px;
             }
 
+            .loading-message {
+                text-align: center;
+                padding: 0 1em 1em;
+            }
+
             .album {
                 display: flex;
                 margin: -2em -2em 0 -2em;

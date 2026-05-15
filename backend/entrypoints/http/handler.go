@@ -91,6 +91,9 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 			if errors.Is(err, library.ErrAlbumNotFound) {
 				return rest.ErrNotFound
 			}
+			if errors.Is(err, music.ErrLibraryNotReady) {
+				return rest.ErrServiceUnavailable.WithMessage("The music library is being prepared.")
+			}
 			h.log.Error("browse error", "err", err)
 			return rest.ErrInternalServerError
 		}
@@ -106,6 +109,9 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 	if err != nil {
 		if errors.Is(err, library.ErrAlbumNotFound) {
 			return rest.ErrNotFound
+		}
+		if errors.Is(err, music.ErrLibraryNotReady) {
+			return rest.ErrServiceUnavailable.WithMessage("The music library is being prepared.")
 		}
 		h.log.Error("browse error", "err", err)
 		return rest.ErrInternalServerError

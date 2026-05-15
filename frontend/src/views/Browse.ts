@@ -52,6 +52,7 @@ export default class Browse extends Vue {
 
     album: Album = null;
     forbidden = false;
+    libraryNotReady = false;
 
     searchQuery: string = null;
 
@@ -286,6 +287,7 @@ export default class Browse extends Vue {
         this.apiService.browse(id)
             .then(
                 response => {
+                    this.libraryNotReady = false;
                     this.album = response.data;
 
                     if (this.album.tracks) {
@@ -296,10 +298,14 @@ export default class Browse extends Vue {
                     }
                 },
                 error => {
-                    if (error.response.status === 403) {
-                        this.forbidden = true;
+                    if (error.response && error.response.status === 503) {
+                        this.libraryNotReady = true;
+                    } else {
+                        if (error.response && error.response.status === 403) {
+                            this.forbidden = true;
+                        }
+                        Notifications.pushError(this, 'Could not list the tracks and albums.', error);
                     }
-                    Notifications.pushError(this, 'Could not list the tracks and albums.', error);
                     this.scheduleTimeout();
                 });
     }
