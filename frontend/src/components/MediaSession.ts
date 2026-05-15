@@ -26,9 +26,10 @@ export default class MediaSession extends Vue {
                 return;
             }
 
+            const album = this.nowPlaying.album;
             const metadata = {
                 title: this.nowPlaying.track.title,
-                album: this.nowPlaying.album.title,
+                album: album ? album.title : null,
                 artwork: [
                     // hack to clear the artwork if a song doesn't have one
                     {
@@ -38,8 +39,8 @@ export default class MediaSession extends Vue {
                 ],
             };
 
-            if (this.nowPlaying.album.thumbnail) {
-                const url = this.apiService.thumbnailUrl(this.nowPlaying.album.thumbnail);
+            if (album && album.thumbnail) {
+                const url = this.apiService.thumbnailUrl(album.thumbnail);
                 metadata.artwork = [
                     {
                         src: url,

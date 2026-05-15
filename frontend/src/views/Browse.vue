@@ -39,7 +39,7 @@
                         </ul>
 
                         <div class="title">
-                            {{ album.title }}
+                            {{ album.title || 'Eggplant' }}
                         </div>
 
                         <div class="details" v-if="numberOfTracks > 0">

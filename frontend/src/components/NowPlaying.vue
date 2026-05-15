@@ -5,7 +5,7 @@
                 {{ trackTitle }}
             </a>
         </div>
-        <div class="albumTitle" v-if="nowPlaying">
+        <div class="albumTitle" v-if="nowPlaying && albumTitle">
             <a @click="goToNowPlayingAlbum()">
                 {{ albumTitle }}
             </a>

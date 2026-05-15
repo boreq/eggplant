@@ -8,5 +8,10 @@ export class SearchResult {
 
 export class SearchResultTrack {
     track: Track;
-    album: BasicAlbum;
+    album?: SearchTrackAlbum;
+}
+
+export class SearchTrackAlbum {
+    title: string;
+    path: string[];
 }

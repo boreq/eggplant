@@ -18,16 +18,7 @@ var (
 	ErrThumbnailNotFound = errors.New("thumbnail not found")
 )
 
-var rootAlbumTitle = mustAlbumTitle("Eggplant")
 var defaultVisibility = NewVisibility(false)
-
-func mustAlbumTitle(s string) domain.AlbumTitle {
-	t, err := domain.NewAlbumTitle(s)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
 
 type Visibility struct {
 	public bool
@@ -175,28 +166,31 @@ func findThumbnailInAlbums(albums []Album, id domain.ThumbnailId, parentVis Visi
 	return domain.Thumbnail{}, Visibility{}, false
 }
 
-type BasicAlbum struct {
+type SearchAlbum struct {
 	Path      []domain.AlbumId
 	Title     domain.AlbumTitle
 	Thumbnail *domain.Thumbnail
 }
 
 type SearchResult struct {
-	Albums []BasicAlbum
-	Tracks []SearchResultTrack
+	Albums []SearchAlbum
+	Tracks []SearchTrack
 }
 
-type SearchResultTrack struct {
+type SearchTrackAlbum struct {
+	Path  []domain.AlbumId
+	Title domain.AlbumTitle
+}
+
+type SearchTrack struct {
 	Track domain.Track
-	Album BasicAlbum
+	Album *SearchTrackAlbum
 }
 
 // Search walks the whole tree, filtering by visibility cascade.
 func (l *Library) Search(query string, publicOnly bool) (SearchResult, error) {
 	var result SearchResult
 	rootVis := visibilityOr(l.root.visibility)
-
-	rootBasic := BasicAlbum{Title: rootAlbumTitle, Thumbnail: l.root.thumbnail}
 
 	if !publicOnly || rootVis.Public() {
 		for _, t := range l.root.tracks {
@@ -206,7 +200,7 @@ func (l *Library) Search(query string, publicOnly bool) (SearchResult, error) {
 			if !containsStringCaseInsensitive(t.Title().String(), query) {
 				continue
 			}
-			result.Tracks = append(result.Tracks, SearchResultTrack{Track: t, Album: rootBasic})
+			result.Tracks = append(result.Tracks, SearchTrack{Track: t})
 		}
 	}
 
@@ -228,11 +222,11 @@ func searchAlbums(result *SearchResult, albums []Album, parentPath []domain.Albu
 		path = append(path, parentPath...)
 		path = append(path, a.id)
 
-		basic := BasicAlbum{Path: path, Title: a.title, Thumbnail: a.thumbnail}
-
 		if len(result.Albums) < maxSearchItems && containsStringCaseInsensitive(a.title.String(), query) {
-			result.Albums = append(result.Albums, basic)
+			result.Albums = append(result.Albums, SearchAlbum{Path: path, Title: a.title, Thumbnail: a.thumbnail})
 		}
+
+		albumRef := &SearchTrackAlbum{Path: path, Title: a.title}
 		for _, t := range a.tracks {
 			if len(result.Tracks) >= maxSearchItems {
 				break
@@ -240,7 +234,7 @@ func searchAlbums(result *SearchResult, albums []Album, parentPath []domain.Albu
 			if !containsStringCaseInsensitive(t.Title().String(), query) {
 				continue
 			}
-			result.Tracks = append(result.Tracks, SearchResultTrack{Track: t, Album: basic})
+			result.Tracks = append(result.Tracks, SearchTrack{Track: t, Album: albumRef})
 		}
 
 		searchAlbums(result, a.albums, path, effective, query, publicOnly)

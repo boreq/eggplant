@@ -6,11 +6,11 @@ import (
 )
 
 type searchResult struct {
-	Albums []basicAlbum        `json:"albums,omitempty"`
-	Tracks []searchResultTrack `json:"tracks,omitempty"`
+	Albums []searchAlbum `json:"albums,omitempty"`
+	Tracks []searchTrack `json:"tracks,omitempty"`
 }
 
-type basicAlbum struct {
+type searchAlbum struct {
 	Path      []string   `json:"path,omitempty"`
 	Title     string     `json:"title,omitempty"`
 	Thumbnail *thumbnail `json:"thumbnail,omitempty"`
@@ -20,9 +20,14 @@ type thumbnail struct {
 	FileId string `json:"fileId,omitempty"`
 }
 
-type searchResultTrack struct {
-	Track track      `json:"track,omitempty"`
-	Album basicAlbum `json:"album,omitempty"`
+type searchTrack struct {
+	Track track             `json:"track,omitempty"`
+	Album *searchTrackAlbum `json:"album,omitempty"`
+}
+
+type searchTrackAlbum struct {
+	Path  []string `json:"path,omitempty"`
+	Title string   `json:"title,omitempty"`
 }
 
 type track struct {
@@ -43,21 +48,21 @@ type album struct {
 
 func toSearchResult(result library.SearchResult) searchResult {
 	return searchResult{
-		Albums: toBasicAlbums(result.Albums),
-		Tracks: toSearchResultTracks(result.Tracks),
+		Albums: toSearchAlbums(result.Albums),
+		Tracks: toSearchTracks(result.Tracks),
 	}
 }
 
-func toBasicAlbums(albums []library.BasicAlbum) []basicAlbum {
-	var result []basicAlbum
+func toSearchAlbums(albums []library.SearchAlbum) []searchAlbum {
+	var result []searchAlbum
 	for _, a := range albums {
-		result = append(result, toBasicAlbum(a))
+		result = append(result, toSearchAlbum(a))
 	}
 	return result
 }
 
-func toBasicAlbum(a library.BasicAlbum) basicAlbum {
-	return basicAlbum{
+func toSearchAlbum(a library.SearchAlbum) searchAlbum {
+	return searchAlbum{
 		Path:      toPath(a.Path),
 		Title:     a.Title.String(),
 		Thumbnail: toThumbnail(a.Thumbnail),
@@ -82,18 +87,28 @@ func toThumbnail(thumb *domain.Thumbnail) *thumbnail {
 	}
 }
 
-func toSearchResultTracks(tracks []library.SearchResultTrack) []searchResultTrack {
-	var result []searchResultTrack
+func toSearchTracks(tracks []library.SearchTrack) []searchTrack {
+	var result []searchTrack
 	for _, t := range tracks {
-		result = append(result, toSearchResultTrack(t))
+		result = append(result, toSearchTrack(t))
 	}
 	return result
 }
 
-func toSearchResultTrack(t library.SearchResultTrack) searchResultTrack {
-	return searchResultTrack{
+func toSearchTrack(t library.SearchTrack) searchTrack {
+	return searchTrack{
 		Track: toTrack(t.Track),
-		Album: toBasicAlbum(t.Album),
+		Album: toSearchTrackAlbum(t.Album),
+	}
+}
+
+func toSearchTrackAlbum(a *library.SearchTrackAlbum) *searchTrackAlbum {
+	if a == nil {
+		return nil
+	}
+	return &searchTrackAlbum{
+		Path:  toPath(a.Path),
+		Title: a.Title.String(),
 	}
 }
 

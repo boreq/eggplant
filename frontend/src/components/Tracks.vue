@@ -36,8 +36,8 @@
                             Remove from queue
                         </a>
                     </dropdown-element>
-                    <dropdown-divider v-if="showGoToAlbum"></dropdown-divider>
-                    <dropdown-element v-if="showGoToAlbum">
+                    <dropdown-divider v-if="showGoToAlbum && entry.album"></dropdown-divider>
+                    <dropdown-element v-if="showGoToAlbum && entry.album">
                         <a @click="goToAlbum(entry)">
                             Go to album
                         </a>
