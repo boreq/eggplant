@@ -10,10 +10,10 @@
         </div>
         <div>
             <div class="label">
-                Conversion progress
+                Number of converted items
             </div>
             <div class="value">
-                {{ conversionProgress }}
+                {{ stats.convertedItems }}
             </div>
         </div>
         <div>

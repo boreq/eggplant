@@ -9,14 +9,6 @@ export default class StoreStats extends Vue {
     @Prop()
     stats: StoreStatsDto;
 
-    get conversionProgress(): string {
-        if (this.stats.allItems === 0) {
-            return '100%';
-        }
-        const ratio = this.stats.convertedItems / this.stats.allItems;
-        return Math.round(ratio * 100) + '%';
-    }
-
     get originalSize(): string {
         return this.humanize(this.stats.originalSize);
     }
