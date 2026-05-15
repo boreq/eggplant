@@ -11,7 +11,7 @@
                 </a>
 
                 <div class="number">
-                    {{ index + 1 }}.
+                    <i class="icon fas fa-music"></i>
                 </div>
             </div>
 
