@@ -45,5 +45,9 @@ func (h *HttpAuthProvider) Get(r *http.Request) (*AuthenticatedUser, error) {
 }
 
 func (h *HttpAuthProvider) getToken(r *http.Request) auth.AccessToken {
-	return auth.AccessToken(r.Header.Get("Access-Token"))
+	c, err := r.Cookie("auth-token")
+	if err != nil {
+		return ""
+	}
+	return auth.AccessToken(c.Value)
 }

@@ -20,27 +20,12 @@ declare module 'vue-property-decorator' {
 }
 */
 
-const authTokenHeaderName = 'Access-Token';
-
 export class ApiService {
 
     private readonly axios = axios.create();
     private readonly authService = new AuthService();
 
     constructor(private vue: any) {
-        this.axios.interceptors.request.use(
-            config => {
-                const token = this.authService.getToken();
-                if (token) {
-                    config.headers[authTokenHeaderName] = token;
-                }
-                return config;
-            },
-            error => {
-                return Promise.reject(error);
-            },
-        );
-
         this.axios.interceptors.response.use(
             response => {
                 return response;
