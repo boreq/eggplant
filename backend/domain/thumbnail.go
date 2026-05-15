@@ -37,7 +37,7 @@ func NewThumbnailIdFromString(s string) (ThumbnailId, error) {
 }
 
 func NewThumbnailId(parents []AlbumId, name FileName) (ThumbnailId, error) {
-	return NewThumbnailIdFromString(shortHash(parentsAsString(parents) + name.value))
+	return NewThumbnailIdFromString(hash(parentsAsString(parents) + name.value))
 }
 
 func (id ThumbnailId) String() string {

@@ -5,11 +5,9 @@ import (
 	"encoding/hex"
 )
 
-const shortHashLength = 20
-
-func shortHash(s string) string {
+func hash(s string) string {
 	sum := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(sum[:])[:shortHashLength]
+	return hex.EncodeToString(sum[:])
 }
 
 func parentsAsString(parents []AlbumId) string {

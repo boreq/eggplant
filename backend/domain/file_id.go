@@ -10,7 +10,7 @@ func NewFileId(path FilePath) (FileId, error) {
 	if path.value == "" {
 		return FileId{}, errors.New("file path must not be empty")
 	}
-	return FileId{value: shortHash(path.value)}, nil
+	return FileId{value: hash(path.value)}, nil
 }
 
 func (f FileId) String() string {

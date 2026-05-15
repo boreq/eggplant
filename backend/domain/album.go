@@ -142,7 +142,7 @@ func NewAlbumIdFromString(s string) (AlbumId, error) {
 }
 
 func NewAlbumId(parents []AlbumId, title AlbumTitle) (AlbumId, error) {
-	return NewAlbumIdFromString(shortHash(parentsAsString(parents) + title.value))
+	return NewAlbumIdFromString(hash(parentsAsString(parents) + title.value))
 }
 
 func (id AlbumId) String() string {
