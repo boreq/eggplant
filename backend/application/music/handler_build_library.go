@@ -1,10 +1,14 @@
 package music
 
 import (
+	"runtime"
+	"sync"
+
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/domain/library"
 	scannerdomain "github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 type BuildLibraryHandler struct {
@@ -32,9 +36,14 @@ func NewBuildLibraryHandler(
 }
 
 func (h *BuildLibraryHandler) Execute(scan scannerdomain.FoundRootAlbum) error {
+	pathDurations, err := h.probeDurations(scan)
+	if err != nil {
+		return errors.Wrap(err, "could not probe track durations")
+	}
+
 	b := &libraryBuilder{
-		accessLoader: h.accessLoader,
-		durations:    h.durations,
+		accessLoader:  h.accessLoader,
+		pathDurations: pathDurations,
 	}
 
 	root, err := b.buildRoot(scan)
@@ -48,9 +57,54 @@ func (h *BuildLibraryHandler) Execute(scan scannerdomain.FoundRootAlbum) error {
 	return nil
 }
 
+func (h *BuildLibraryHandler) probeDurations(scan scannerdomain.FoundRootAlbum) (map[string]domain.TrackDuration, error) {
+	paths := uniqueTrackPaths(scan)
+	out := make(map[string]domain.TrackDuration, len(paths))
+	var mu sync.Mutex
+
+	var g errgroup.Group
+	g.SetLimit(runtime.NumCPU())
+	for _, p := range paths {
+		g.Go(func() error {
+			d, err := h.durations.GetDuration(p)
+			if err != nil {
+				return errors.Wrapf(err, "could not measure duration of '%s'", p)
+			}
+			mu.Lock()
+			out[p] = d
+			mu.Unlock()
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func uniqueTrackPaths(scan scannerdomain.FoundRootAlbum) []string {
+	seen := map[string]struct{}{}
+	var walk func(albums map[domain.AlbumTitle]scannerdomain.FoundAlbum, tracks map[domain.TrackTitle]scannerdomain.FoundTrack)
+	walk = func(albums map[domain.AlbumTitle]scannerdomain.FoundAlbum, tracks map[domain.TrackTitle]scannerdomain.FoundTrack) {
+		for _, t := range tracks {
+			seen[t.Path().String()] = struct{}{}
+		}
+		for _, a := range albums {
+			walk(a.Albums(), a.Tracks())
+		}
+	}
+	walk(scan.Albums(), scan.Tracks())
+
+	out := make([]string, 0, len(seen))
+	for p := range seen {
+		out = append(out, p)
+	}
+	return out
+}
+
 type libraryBuilder struct {
 	accessLoader   AccessLoader
-	durations      TrackDurations
+	pathDurations  map[string]domain.TrackDuration
 	trackItems     []TrackStoreItem
 	thumbnailItems []ThumbnailStoreItem
 }
@@ -131,9 +185,9 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 	for title, ft := range src {
 		path := ft.Path()
 
-		duration, err := b.durations.GetDuration(path.String())
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not measure duration of '%s'", path)
+		duration, ok := b.pathDurations[path.String()]
+		if !ok {
+			return nil, errors.New("missing duration for '" + path.String() + "'")
 		}
 
 		id, err := domain.NewTrackId(parents, title)
