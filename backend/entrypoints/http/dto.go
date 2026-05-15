@@ -17,7 +17,7 @@ type searchAlbum struct {
 }
 
 type thumbnail struct {
-	FileId string `json:"fileId,omitempty"`
+	Id string `json:"id,omitempty"`
 }
 
 type searchTrack struct {
@@ -32,7 +32,6 @@ type searchTrackAlbum struct {
 
 type track struct {
 	Id       string  `json:"id,omitempty"`
-	FileId   string  `json:"fileId,omitempty"`
 	Title    string  `json:"title,omitempty"`
 	Duration float64 `json:"duration,omitempty"`
 }
@@ -81,9 +80,8 @@ func toThumbnail(thumb *domain.Thumbnail) *thumbnail {
 	if thumb == nil {
 		return nil
 	}
-	id := thumb.Id()
 	return &thumbnail{
-		FileId: id.String(),
+		Id: thumb.Id().String(),
 	}
 }
 
@@ -113,12 +111,9 @@ func toSearchTrackAlbum(a *library.SearchTrackAlbum) *searchTrackAlbum {
 }
 
 func toTrack(t domain.Track) track {
-	id := t.Id()
-	title := t.Title()
 	return track{
-		Id:       id.String(),
-		FileId:   id.String(),
-		Title:    title.String(),
+		Id:       t.Id().String(),
+		Title:    t.Title().String(),
 		Duration: t.Duration().Seconds(),
 	}
 }

@@ -77,12 +77,12 @@ export class ApiService {
     }
 
     trackUrl(track: Track): string {
-        const url = `track/${track.fileId}`;
+        const url = `track/${track.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
     thumbnailUrl(thumbnail: Thumbnail): string {
-        const url = `thumbnail/${thumbnail.fileId}`;
+        const url = `thumbnail/${thumbnail.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
