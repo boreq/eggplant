@@ -1,15 +1,15 @@
 $album-size-small: 250px;
 
 .albums {
-    display: flex;
-    flex-flow: row wrap;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2em;
 
     .album {
         color: $box-normal-text-color;
-        padding: 1em;
         font-size: 16px;
         box-sizing: border-box;
-        width: 20%;
+        width: 100%;
         transition: transform $transition-duration;
 
         .image {
@@ -41,9 +41,8 @@ $album-size-small: 250px;
 
 @media (max-width: $responsive-threshold-mobile) {
     .albums {
-        justify-content: center;
-        align-items: center;
-        flex-flow: column;
+        grid-template-columns: 1fr;
+        justify-items: center;
 
         .album {
             text-align: center;
