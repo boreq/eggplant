@@ -1,5 +1,5 @@
 <template>
-    <div class="browse" :class="{forbidden: forbidden}">
+    <div class="browse" :class="state">
         <div class="wrapper">
             <div class="topbar">
                 <search-input class="search" v-model="searchQuery"></search-input>
@@ -17,13 +17,6 @@
             </div>
 
             <div class="content" ref="content">
-                <div v-if="!album" class="loading">
-                    <spinner class="spinner"></spinner>
-                    <div v-if="libraryNotReady" class="loading-message">
-                        The music library is being prepared. This page will load automatically when it's ready.
-                    </div>
-                </div>
-
                 <div class="album" v-if="showAlbum">
                     <div class="artwork">
                         <thumbnail :album="basicAlbum"></thumbnail>
@@ -104,12 +97,30 @@
                 <search :query="searchQuery" @select-album="selectAlbum"></search>
             </div>
 
-            <div class="forbidden-message">
+            <div class="message-overlay loading-message">
+                <div class="message">
+                    <div class="icon">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="message-overlay permission-denied-message">
                 <div class="message">
                     <div class="icon">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     Access denied, please confirm that you are signed in.
+                </div>
+            </div>
+
+            <div class="message-overlay library-not-ready-message">
+                <div class="message">
+                    <div class="icon">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                    </div>
+                    The music library is being prepared.
+                    This page will load automatically when it's ready.
                 </div>
             </div>
         </div>

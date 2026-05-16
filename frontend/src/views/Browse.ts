@@ -1,5 +1,6 @@
 import { Component, Vue, Ref, Watch } from 'vue-property-decorator';
 import { ApiService } from '@/services/ApiService';
+import { HttpStatus } from '@/services/HttpStatus';
 import { NavigationService } from '@/services/NavigationService';
 import { Album } from '@/dto/Album';
 import { BasicAlbum } from '@/dto/BasicAlbum';
@@ -16,7 +17,6 @@ import Thumbnail from '@/components/Thumbnail.vue';
 import NowPlaying from '@/components/NowPlaying.vue';
 import LoginButton from '@/components/LoginButton.vue';
 import SearchInput from '@/components/forms/SearchInput.vue';
-import Spinner from '@/components/Spinner.vue';
 import Queue from '@/components/Queue.vue';
 import Search from '@/components/Search.vue';
 import Dropdown from '@/components/Dropdown.vue';
@@ -27,6 +27,13 @@ enum View {
     Browse = 'browse',
     Search = 'search',
     Queue = 'queue',
+}
+
+enum BrowseState {
+    Loading = 'loading',
+    Ready = 'ready',
+    PermissionDenied = 'permission-denied',
+    LibraryNotReady = 'library-not-ready',
 }
 
 
@@ -40,7 +47,6 @@ enum View {
         NowPlaying,
         SearchInput,
         LoginButton,
-        Spinner,
         Queue,
         Search,
         Dropdown,
@@ -51,8 +57,7 @@ enum View {
 export default class Browse extends Vue {
 
     album: Album = null;
-    forbidden = false;
-    libraryNotReady = false;
+    state: BrowseState = BrowseState.Loading;
 
     searchQuery: string = null;
 
@@ -72,6 +77,7 @@ export default class Browse extends Vue {
     @Watch('$route')
     onRouteChanged(): void {
         this.album = null;
+        this.state = BrowseState.Loading;
         this.load();
         this.scrollContentToTop();
         this.switchView(View.Browse);
@@ -287,7 +293,7 @@ export default class Browse extends Vue {
         this.apiService.browse(id)
             .then(
                 response => {
-                    this.libraryNotReady = false;
+                    this.state = BrowseState.Ready;
                     this.album = response.data;
 
                     if (this.album.tracks) {
@@ -298,12 +304,13 @@ export default class Browse extends Vue {
                     }
                 },
                 error => {
-                    if (error.response && error.response.status === 503) {
-                        this.libraryNotReady = true;
+                    const status = error.response && error.response.status;
+                    if (status === HttpStatus.ServiceUnavailable) {
+                        this.state = BrowseState.LibraryNotReady;
+                    } else if (status === HttpStatus.Forbidden) {
+                        this.state = BrowseState.PermissionDenied;
+                        Notifications.pushError(this, 'Could not list the tracks and albums.', error);
                     } else {
-                        if (error.response && error.response.status === 403) {
-                            this.forbidden = true;
-                        }
                         Notifications.pushError(this, 'Could not list the tracks and albums.', error);
                     }
                     this.scheduleTimeout();
