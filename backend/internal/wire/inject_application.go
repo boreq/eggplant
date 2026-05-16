@@ -26,7 +26,9 @@ var appSet = wire.NewSet(
 	auth.NewSetPasswordHandler,
 
 	wire.Struct(new(application.Music), "*"),
-	music.NewTrackHandler,
+	music.NewTrackPlaylistHandler,
+	music.NewTrackInitHandler,
+	music.NewTrackFragmentHandler,
 	music.NewThumbnailHandler,
 	music.NewGetRootAlbumHandler,
 	music.NewGetAlbumHandler,

@@ -3,6 +3,8 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/boreq/eggplant/application"
@@ -47,7 +49,9 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
-	h.router.GET("/api/track/:id", h.track)
+	h.router.GET("/api/track/:id/playlist.m3u8", h.trackPlaylist)
+	h.router.GET("/api/track/:id/init.mp4", h.trackInit)
+	h.router.GET("/api/track/:id/fragment/:fragmentId", h.trackFragment)
 	h.router.GET("/api/thumbnail/:id", h.thumbnail)
 
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/register-initial", rest.Wrap(h.registerInitial))
@@ -148,35 +152,123 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 	)
 }
 
-func (h *Handler) track(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := domain.NewTrackIdFromString(ps.ByName("id"))
+func (h *Handler) trackPlaylist(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, err := domain.NewTrackIdFromString(ps.ByName("id"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.resolveAccessContext(r)
 	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
+		h.log.Error("could not resolve access context", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	p, err := h.app.Music.Track.Execute(r.Context(), accessContextFor(u), id)
+	p, err := h.app.Music.TrackPlaylist.Execute(r.Context(), accessCtx, music.TrackPlaylist{Id: trackId})
 	if err != nil {
-		if errors.Is(err, library.ErrTrackNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		h.log.Error("track error", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		h.writeTrackError(w, err)
 		return
 	}
 	defer p.Content.Close()
 
-	w.Header().Add("Accept-Ranges", "bytes")
+	h.serveConvertedFile(w, r, p, "application/vnd.apple.mpegurl")
+}
+
+func (h *Handler) trackInit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, err := domain.NewTrackIdFromString(ps.ByName("id"))
+	if err != nil {
+		h.log.Warn("invalid track id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	accessCtx, err := h.resolveAccessContext(r)
+	if err != nil {
+		h.log.Error("could not resolve access context", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	p, err := h.app.Music.TrackInit.Execute(r.Context(), accessCtx, music.TrackInit{Id: trackId})
+	if err != nil {
+		h.writeTrackError(w, err)
+		return
+	}
+	defer p.Content.Close()
+
+	h.serveConvertedFile(w, r, p, "video/mp4")
+}
+
+func (h *Handler) trackFragment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, err := domain.NewTrackIdFromString(ps.ByName("id"))
+	if err != nil {
+		h.log.Warn("invalid track id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	fragmentId, err := parseFragmentFilename(ps.ByName("fragmentId"))
+	if err != nil {
+		h.log.Warn("invalid fragment id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	accessCtx, err := h.resolveAccessContext(r)
+	if err != nil {
+		h.log.Error("could not resolve access context", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	p, err := h.app.Music.TrackFragment.Execute(r.Context(), accessCtx, music.TrackFragment{Id: trackId, FragmentId: fragmentId})
+	if err != nil {
+		h.writeTrackError(w, err)
+		return
+	}
+	defer p.Content.Close()
+
+	h.serveConvertedFile(w, r, p, "video/iso.segment")
+}
+
+var fragmentFilenamePattern = regexp.MustCompile(`^seg_(\d+)\.m4s$`)
+
+func parseFragmentFilename(s string) (domain.TrackFragmentId, error) {
+	m := fragmentFilenamePattern.FindStringSubmatch(s)
+	if m == nil {
+		return domain.TrackFragmentId{}, errors.New("fragment filename must match seg_NNN.m4s")
+	}
+	n, err := strconv.Atoi(m[1])
+	if err != nil {
+		return domain.TrackFragmentId{}, errors.Wrap(err, "could not parse fragment number")
+	}
+	return domain.NewTrackFragmentId(n)
+}
+
+func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, error) {
+	u, err := h.authProvider.Get(r)
+	if err != nil {
+		return nil, errors.Wrap(err, "auth provider get failed")
+	}
+	return accessContextFor(u), nil
+}
+
+func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p domain.ConvertedFile, contentType string) {
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Accept-Ranges", "bytes")
 	http.ServeContent(w, r, p.Name, p.Modtime, p.Content)
+}
+
+func (h *Handler) writeTrackError(w http.ResponseWriter, err error) {
+	if errors.Is(err, library.ErrTrackNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	h.log.Error("track error", "err", err)
+	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -187,14 +279,14 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.resolveAccessContext(r)
 	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
+		h.log.Error("could not resolve access context", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessContextFor(u), id)
+	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessCtx, id)
 	if err != nil {
 		if errors.Is(err, library.ErrThumbnailNotFound) {
 			w.WriteHeader(http.StatusNotFound)
@@ -206,8 +298,7 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 	defer p.Content.Close()
 
-	w.Header().Add("Accept-Ranges", "bytes")
-	http.ServeContent(w, r, p.Name, p.Modtime, p.Content)
+	h.serveConvertedFile(w, r, p, "image/webp")
 }
 
 func (h *Handler) stats(r *http.Request) rest.RestResponse {

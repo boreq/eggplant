@@ -191,7 +191,7 @@ func (s *Store) getFile(id string) (*os.File, error) {
 }
 
 func (s *Store) scheduleConversion(ctx context.Context, id string) <-chan error {
-	s.mutex.Lock()
+	s.mutex.Lock() // todo incorrect code aka this mutex is not needed I think?
 	defer s.mutex.Unlock()
 
 	errCh := make(chan error)

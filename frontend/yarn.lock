@@ -1221,6 +1221,7 @@ __metadata:
     eslint-plugin-vue: "npm:9.33.0"
     filesize: "npm:6.4.0"
     globals: "npm:15.15.0"
+    hls.js: "npm:^1.6.16"
     js-cookie: "npm:2.2.1"
     sass: "npm:1.99.0"
     typescript: "npm:5.9.3"
@@ -1714,6 +1715,13 @@ __metadata:
   bin:
     he: bin/he
   checksum: 10c0/a27d478befe3c8192f006cdd0639a66798979dfa6e2125c6ac582a19a5ebfec62ad83e8382e6036170d873f46e4536a7e795bf8b95bf7c247f4cc0825ccc8c17
+  languageName: node
+  linkType: hard
+
+"hls.js@npm:^1.6.16":
+  version: 1.6.16
+  resolution: "hls.js@npm:1.6.16"
+  checksum: 10c0/dedf0255fdea857f29e46caab990b2bbdfde9410e64932466e03fc95018238b94486ce57e4b6a96aa4d0e8f9fd26c877e3905951f900fd58437f5eab2b284722
   languageName: node
   linkType: hard
 

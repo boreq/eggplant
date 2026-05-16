@@ -10,8 +10,8 @@ import (
 	"context"
 
 	auth2 "github.com/boreq/eggplant/adapters/auth"
-	music2 "github.com/boreq/eggplant/adapters/music"
 	"github.com/boreq/eggplant/adapters/music/library"
+	"github.com/boreq/eggplant/adapters/music/tracks"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
@@ -166,20 +166,24 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	if err != nil {
 		return nil, err
 	}
-	trackHandler := music.NewTrackHandler(inMemoryRepository, trackStore)
+	trackPlaylistHandler := music.NewTrackPlaylistHandler(inMemoryRepository, trackStore)
+	trackInitHandler := music.NewTrackInitHandler(inMemoryRepository, trackStore)
+	trackFragmentHandler := music.NewTrackFragmentHandler(inMemoryRepository, trackStore)
 	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
-	ffProbe := music2.NewFFProbe()
+	ffProbe := tracks.NewFFProbe()
 	buildLibraryHandler := music.NewBuildLibraryHandler(inMemoryRepository, trackStore, thumbnailStore, delimiterAccessLoader, ffProbe)
 	applicationMusic := application.Music{
-		Thumbnail:    thumbnailHandler,
-		Track:        trackHandler,
-		GetRootAlbum: getRootAlbumHandler,
-		GetAlbum:     getAlbumHandler,
-		Search:       searchHandler,
-		BuildLibrary: buildLibraryHandler,
+		Thumbnail:     thumbnailHandler,
+		TrackPlaylist: trackPlaylistHandler,
+		TrackInit:     trackInitHandler,
+		TrackFragment: trackFragmentHandler,
+		GetRootAlbum:  getRootAlbumHandler,
+		GetAlbum:      getAlbumHandler,
+		Search:        searchHandler,
+		BuildLibrary:  buildLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)

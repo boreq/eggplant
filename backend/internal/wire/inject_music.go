@@ -3,10 +3,10 @@ package wire
 import (
 	"context"
 
-	musicAdapters "github.com/boreq/eggplant/adapters/music"
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/scanner"
 	"github.com/boreq/eggplant/adapters/music/store"
+	"github.com/boreq/eggplant/adapters/music/tracks"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/domain"
@@ -24,14 +24,14 @@ var musicSet = wire.NewSet(
 	newScannerConfig,
 	library.NewDelimiterAccessLoader,
 	library.NewInMemoryRepository,
-	musicAdapters.NewFFProbe,
+	tracks.NewFFProbe,
 
 	wire.Bind(new(music.AccessLoader), new(*library.DelimiterAccessLoader)),
-	wire.Bind(new(music.TrackStore), new(*store.TrackStore)),
+	wire.Bind(new(music.TrackStore), new(*tracks.Converter)),
 	wire.Bind(new(music.ThumbnailStore), new(*store.ThumbnailStore)),
-	wire.Bind(new(music.TrackDurations), new(*musicAdapters.FFProbe)),
+	wire.Bind(new(music.TrackDurations), new(*tracks.FFProbe)),
 	wire.Bind(new(music.LibraryRepository), new(*library.InMemoryRepository)),
-	wire.Bind(new(queries.TrackStore), new(*store.TrackStore)),
+	wire.Bind(new(queries.TrackStore), new(*tracks.Converter)),
 	wire.Bind(new(queries.ThumbnailStore), new(*store.ThumbnailStore)),
 )
 
@@ -47,12 +47,12 @@ func newScannerUpdates(conf *config.Config, scannerConf scanner.Config) (<-chan 
 	return ch, nil
 }
 
-func newTrackStore(ctx context.Context, conf *config.Config) (*store.TrackStore, error) {
-	trackStore, err := store.NewTrackStore(ctx, conf.CacheDirectory)
+func newTrackStore(ctx context.Context, conf *config.Config) (*tracks.Converter, error) {
+	converter, err := tracks.NewConverter(ctx, conf.CacheDirectory)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create a track store")
+		return nil, errors.Wrap(err, "could not create a track converter")
 	}
-	return trackStore, nil
+	return converter, nil
 }
 
 func newThumbnailStore(ctx context.Context, conf *config.Config) (*store.ThumbnailStore, error) {

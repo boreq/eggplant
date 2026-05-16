@@ -8,32 +8,36 @@ import (
 	"github.com/boreq/errors"
 )
 
-type TrackHandler struct {
+type TrackPlaylist struct {
+	Id domain.TrackId
+}
+
+type TrackPlaylistHandler struct {
 	libraryRepository LibraryRepository
 	trackStore        TrackStore
 }
 
-func NewTrackHandler(libraryRepository LibraryRepository, trackStore TrackStore) *TrackHandler {
-	return &TrackHandler{
+func NewTrackPlaylistHandler(libraryRepository LibraryRepository, trackStore TrackStore) *TrackPlaylistHandler {
+	return &TrackPlaylistHandler{
 		libraryRepository: libraryRepository,
 		trackStore:        trackStore,
 	}
 }
 
-func (h *TrackHandler) Execute(ctx context.Context, accessCtx library.AccessContext, id domain.TrackId) (domain.ConvertedFile, error) {
+func (h *TrackPlaylistHandler) Execute(ctx context.Context, accessCtx library.AccessContext, cmd TrackPlaylist) (domain.ConvertedFile, error) {
 	lib, err := h.libraryRepository.Get()
 	if err != nil {
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(accessCtx, id)
+	track, err := lib.GetTrack(accessCtx, cmd.Id)
 	if err != nil {
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the track")
 	}
 
-	cf, err := h.trackStore.GetConvertedFile(ctx, track.FileId())
+	cf, err := h.trackStore.GetPlaylist(ctx, track.FileId())
 	if err != nil {
-		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the converted file")
+		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the playlist")
 	}
 
 	return cf, nil
