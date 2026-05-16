@@ -1,6 +1,8 @@
 # Eggplant [![CI][ci-badge]][ci]
 
-Eggplant is a self-hosted music streaming service.
+Eggplant is a self-hosted music streaming service. Do you have a large music collection that you want to be able to
+listen to from anywhere? Simply point Eggplant at your music directory and it will make it available via your web
+browser. This is similar to what Jellyfin is except for music and with way fewer features
 
 ![Eggplant][screenshot]
 
@@ -35,12 +37,11 @@ The repository comes with a `Dockerfile`. The easiest way to use the `Dockerfile
     $ docker compose up
 
 In this example Eggplant is exposed on the host system under port `8123`. It's that first number under ports, you can
-change that to something else. Normally you would then point your reverse proxy e.g. `nginx` at this port.
+change that to something else. Normally you would then point your reverse proxy e.g. `nginx` at this port. If you don't
+want to use Docker Compose then I presume you know how to figure this out by yourself via Kubernetes or by using
+Docker directly based on the example above.
 
-Music directory is documented below. 
-
-If you don't want to use Docker Compose then I presume you know how to figure this out by yourself via Kubernetes
-or by using Docker directly based on the example above.
+The layout of the music directory is documented below. 
 
 ### I don't want to use Docker
 
