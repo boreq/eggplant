@@ -105,7 +105,7 @@
             <div class="message-overlay loading-message">
                 <div class="message">
                     <div class="icon">
-                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <spinner></spinner>
                     </div>
                 </div>
             </div>
@@ -123,7 +123,7 @@
             <div class="message-overlay library-not-ready-message">
                 <div class="message">
                     <div class="icon">
-                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <spinner></spinner>
                     </div>
                     The music library is being prepared.
                     This page will load automatically when it's ready.

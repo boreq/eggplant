@@ -7,7 +7,9 @@
         </action-bar>
         <main-header text="Settings"></main-header>
 
-        <template v-if="user && user.administrator">
+        <spinner v-if="user === undefined"></spinner>
+
+        <template v-else-if="user && user.administrator">
             <sub-header text="Invitations"></sub-header>
             <Invitations></Invitations>
 

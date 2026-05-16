@@ -1,6 +1,6 @@
 <template>
     <div class="spinner">
-        <i class="fas fa-circle-notch fa-spin"></i>
+        <span class="eggplant">🍆</span>
     </div>
 </template>
 <script lang="ts" src="./Spinner.ts"></script>

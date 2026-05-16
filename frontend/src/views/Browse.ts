@@ -22,6 +22,7 @@ import Search from '@/components/Search.vue';
 import Dropdown from '@/components/Dropdown.vue';
 import DropdownElement from '@/components/DropdownElement.vue';
 import DropdownDivider from '@/components/DropdownDivider.vue';
+import Spinner from '@/components/Spinner.vue';
 
 enum View {
     Browse = 'browse',
@@ -53,6 +54,7 @@ enum BrowseState {
         Dropdown,
         DropdownElement,
         DropdownDivider,
+        Spinner,
     },
 })
 export default class Browse extends Vue {

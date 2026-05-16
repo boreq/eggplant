@@ -37,6 +37,19 @@ a {
         transition: padding 1s, width 1s, height 1s, max-width 1s, max-height 1s;
         align-items: center;
 
+        .spinner {
+            font-size: 30px;
+            padding: 1em;
+        }
+
+        .button .spinner,
+        .app-button .spinner,
+        .action-bar-button .spinner,
+        .message .spinner {
+            font-size: inherit;
+            padding: 0;
+        }
+
         > .wrapper {
             background-color: $box-normal-background-color;
             box-shadow: $box-normal-box-shadow;

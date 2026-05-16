@@ -10,6 +10,7 @@ import Notifications from '@/components/Notifications';
 import { User } from '@/dto/User';
 import Users from '@/components/Users.vue';
 import Invitations from '@/components/Invitations.vue';
+import Spinner from '@/components/Spinner.vue';
 
 
 @Component({
@@ -22,6 +23,7 @@ import Invitations from '@/components/Invitations.vue';
         ActionBarButton,
         Users,
         Invitations,
+        Spinner,
     },
 })
 export default class Settings extends Vue {
