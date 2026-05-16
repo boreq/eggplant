@@ -62,22 +62,18 @@ export default class Player extends Vue {
 
     private loadSource(url: string): void {
         this.destroyHls();
-        if (this.audio.canPlayType('application/vnd.apple.mpegurl')) {
-            this.audio.crossOrigin = 'use-credentials';
-            this.audio.src = url;
-            this.audio.currentTime = 0;
-        } else if (Hls.isSupported()) {
-            this.hls = new Hls({
-                xhrSetup: (xhr) => {
-                    xhr.withCredentials = true;
-                },
-                startPosition: 0,
-            });
-            this.hls.loadSource(url);
-            this.hls.attachMedia(this.audio);
-        } else {
+        if (!Hls.isSupported()) {
             Notifications.pushError(this, 'Your browser does not support HLS playback.');
+            return;
         }
+        this.hls = new Hls({
+            xhrSetup: (xhr) => {
+                xhr.withCredentials = true;
+            },
+            startPosition: 0,
+        });
+        this.hls.loadSource(url);
+        this.hls.attachMedia(this.audio);
     }
 
     private destroyHls(): void {
