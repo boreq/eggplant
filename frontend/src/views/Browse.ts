@@ -32,6 +32,7 @@ enum View {
 enum BrowseState {
     Loading = 'loading',
     Ready = 'ready',
+    Empty = 'empty',
     PermissionDenied = 'permission-denied',
     LibraryNotReady = 'library-not-ready',
 }
@@ -293,10 +294,12 @@ export default class Browse extends Vue {
         this.apiService.browse(id)
             .then(
                 response => {
-                    this.state = BrowseState.Ready;
                     this.album = response.data;
+                    this.state = this.noContent ? BrowseState.Empty : BrowseState.Ready;
 
-                    if (this.album.tracks) {
+                    if (this.state === BrowseState.Empty) {
+                        this.scheduleTimeout();
+                    } else if (this.album.tracks) {
                         const trackAwaitingConversion = this.album.tracks.find(track => !track.duration);
                         if (trackAwaitingConversion) {
                             this.scheduleTimeout();

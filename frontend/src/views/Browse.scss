@@ -232,10 +232,6 @@ $topbar-height: 45px;
             }
         }
 
-        .no-content-message {
-            text-align: center;
-        }
-
         .message-overlay {
             display: none;
             height: 100%;
@@ -254,7 +250,7 @@ $topbar-height: 45px;
         }
     }
 
-    &.loading, &.permission-denied, &.library-not-ready {
+    &.loading, &.empty, &.permission-denied, &.library-not-ready {
         .wrapper {
             grid-template-areas: "topbar topbar" "overlay overlay";
 
@@ -266,6 +262,13 @@ $topbar-height: 45px;
 
     &.loading {
         .wrapper .loading-message {
+            display: flex;
+            grid-area: overlay;
+        }
+    }
+
+    &.empty {
+        .wrapper .empty-message {
             display: flex;
             grid-area: overlay;
         }

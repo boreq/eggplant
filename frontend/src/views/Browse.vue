@@ -81,10 +81,6 @@
                     <Albums :albums="albums" @select-album="selectAlbum"></Albums>
                 </div>
 
-                <div v-if="album && !album.albums && !album.tracks" class="no-content-message">
-                    The music library is empty or you do not have permissions
-                    to view any tracks or albums.
-                </div>
             </div>
 
             <div class="content queue" v-if="showQueue">
@@ -95,6 +91,15 @@
             <div class="content search" v-if="showSearch">
                 <main-header text="Search"></main-header>
                 <search :query="searchQuery" @select-album="selectAlbum"></search>
+            </div>
+
+            <div class="message-overlay empty-message">
+                <div class="message">
+                    <div class="icon">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    The music library is empty or you do not have permission to view any tracks or albums.
+                </div>
             </div>
 
             <div class="message-overlay loading-message">
@@ -110,7 +115,8 @@
                     <div class="icon">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    Access denied, please confirm that you are signed in.
+                    The music library may be empty, this album may not exist or you may not have permission to access
+                    any tracks or albums.
                 </div>
             </div>
 
