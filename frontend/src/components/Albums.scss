@@ -1,5 +1,4 @@
-$image-size: 200px;
-$image-size-small: 100px;
+$album-size-small: 250px;
 
 .albums {
     display: flex;
@@ -9,12 +8,14 @@ $image-size-small: 100px;
         color: $box-normal-text-color;
         padding: 1em;
         font-size: 16px;
+        box-sizing: border-box;
+        width: 20%;
+        transition: transform $transition-duration;
 
         .image {
-            width: $image-size;
-            height: $image-size;
+            width: 100%;
+            aspect-ratio: 1 / 1;
             margin: 0 auto;
-            transition: transform $transition-duration;
 
             img {
                 height: 100%;
@@ -25,7 +26,6 @@ $image-size-small: 100px;
         .title {
             margin: 0 auto;
             margin-top: .5em;
-            max-width: $image-size;
             min-height: 4em;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -34,10 +34,7 @@ $image-size-small: 100px;
         &:hover {
             cursor: pointer;
             color: $primary-color;
-
-            .image {
-                transform: scale(1.05);
-            }
+            transform: scale(1.05);
         }
     }
 }
@@ -45,16 +42,13 @@ $image-size-small: 100px;
 @media (max-width: $responsive-threshold-mobile) {
     .albums {
         justify-content: center;
-        align-items: stretch;
+        align-items: center;
         flex-flow: column;
 
         .album {
             text-align: center;
-
-            .image {
-                width: $image-size-small;
-                height: $image-size-small;
-            }
+            width: $album-size-small;
+            max-width: 100%;
 
             .title {
                 min-height: 0;
