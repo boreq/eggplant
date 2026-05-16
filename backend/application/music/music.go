@@ -15,7 +15,9 @@ var (
 
 type TrackStore interface {
 	SetItems(items []TrackStoreItem)
-	GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
+	GetPlaylist(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
+	GetInit(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
+	GetFragment(ctx context.Context, fileId domain.FileId, fragmentId domain.TrackFragmentId) (domain.ConvertedFile, error)
 }
 
 type TrackStoreItem struct {

@@ -1,4 +1,5 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
+import Hls from 'hls.js';
 import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
 import { PlaybackData } from '@/dto/PlaybackData';
@@ -17,6 +18,8 @@ export default class Player extends Vue {
     private readonly apiService = new ApiService(this);
 
     private currentNowPlaying: Entry = null;
+
+    private hls: Hls = null;
 
     get nowPlaying(): Entry {
         return this.$store.getters.nowPlaying;
@@ -52,8 +55,35 @@ export default class Player extends Vue {
 
         if (!this.currentNowPlaying || this.currentNowPlaying !== this.nowPlaying) {
             this.currentNowPlaying = this.nowPlaying;
-            this.audio.src = this.nowPlayingUrl;
+            this.loadSource(this.nowPlayingUrl);
             this.play();
+        }
+    }
+
+    private loadSource(url: string): void {
+        this.destroyHls();
+        if (this.audio.canPlayType('application/vnd.apple.mpegurl')) {
+            this.audio.crossOrigin = 'use-credentials';
+            this.audio.src = url;
+            this.audio.currentTime = 0;
+        } else if (Hls.isSupported()) {
+            this.hls = new Hls({
+                xhrSetup: (xhr) => {
+                    xhr.withCredentials = true;
+                },
+                startPosition: 0,
+            });
+            this.hls.loadSource(url);
+            this.hls.attachMedia(this.audio);
+        } else {
+            Notifications.pushError(this, 'Your browser does not support HLS playback.');
+        }
+    }
+
+    private destroyHls(): void {
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
         }
     }
 
@@ -79,13 +109,14 @@ export default class Player extends Vue {
         this.audio.volume = this.volume;
         this.$root.$on(seekEvent, (position: number) => {
             if (this.nowPlaying) {
-                this.audio.currentTime = this.audio.duration * position;
+                this.audio.currentTime = this.nowPlaying.track.duration * position;
             }
         });
     }
 
     destroyed(): void {
         window.clearInterval(this.intervalID);
+        this.destroyHls();
     }
 
     onEnded(): void {
@@ -110,7 +141,6 @@ export default class Player extends Vue {
         if (this.audio) {
             const playbackData: PlaybackData = {
                 currentTime: this.audio.currentTime,
-                duration: this.audio.duration,
             };
             this.$emit('playback-data', playbackData);
         }

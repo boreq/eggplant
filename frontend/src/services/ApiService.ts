@@ -62,7 +62,7 @@ export class ApiService {
     }
 
     trackUrl(track: Track): string {
-        const url = `track/${track.id}`;
+        const url = `track/${track.id}/playlist.m3u8`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
