@@ -26,7 +26,7 @@ func (h *TrackHandler) Execute(ctx context.Context, accessCtx library.AccessCont
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(id, accessCtx)
+	track, err := lib.GetTrack(accessCtx, id)
 	if err != nil {
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the track")
 	}

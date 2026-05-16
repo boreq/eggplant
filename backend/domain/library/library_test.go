@@ -32,10 +32,11 @@ func TestGetRootAlbumAccess(t *testing.T) {
 		expectTracks       []string
 	}{
 		{
-			name:               "anonymous_default_root",
-			rootVis:            visDefault,
-			access:             anonymous,
-			notAllowedToAccess: true,
+			name:         "anonymous_default_root",
+			rootVis:      visDefault,
+			access:       anonymous,
+			expectAlbums: []string{"public_album"},
+			expectTracks: []string{"song"},
 		},
 		{
 			name:               "anonymous_private_root",
@@ -76,8 +77,8 @@ func TestGetRootAlbumAccess(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			lib := buildLib(t, baseTree(tc.rootVis))
 			got, albumErr := lib.GetRootAlbum(tc.access)
-			_, trackErr := lib.GetTrack(trackIdFor(t, "song"), tc.access)
-			_, thumbErr := lib.GetThumbnail(thumbnailIdFor(t, "thumbnail"), tc.access)
+			_, trackErr := lib.GetTrack(tc.access, trackIdFor(t, "song"))
+			_, thumbErr := lib.GetThumbnail(tc.access, thumbnailIdFor(t, "thumbnail"))
 			if tc.notAllowedToAccess {
 				require.ErrorIs(t, albumErr, library.ErrAlbumNotFound)
 				require.ErrorIs(t, trackErr, library.ErrTrackNotFound)
@@ -249,9 +250,9 @@ func TestGetAlbumAccess(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			lib := buildLib(t, baseTree(tc.rootVis, tc.parentVis))
-			got, albumErr := lib.GetAlbum(albumIdFor(t, "parent"), tc.access)
-			_, trackErr := lib.GetTrack(trackIdFor(t, "parent_song"), tc.access)
-			_, thumbErr := lib.GetThumbnail(thumbnailIdFor(t, "parent_thumbnail"), tc.access)
+			got, albumErr := lib.GetAlbum(tc.access, albumIdFor(t, "parent"))
+			_, trackErr := lib.GetTrack(tc.access, trackIdFor(t, "parent_song"))
+			_, thumbErr := lib.GetThumbnail(tc.access, thumbnailIdFor(t, "parent_thumbnail"))
 			if tc.expectErr != nil {
 				require.ErrorIs(t, albumErr, tc.expectErr)
 				require.ErrorIs(t, trackErr, library.ErrTrackNotFound)
@@ -431,9 +432,9 @@ func TestGetGrandchildAlbumAccess(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			lib := buildLib(t, baseTree(tc.parentVis, tc.grandchildVis))
-			got, albumErr := lib.GetAlbum(albumIdFor(t, "grandchild"), tc.access)
-			_, trackErr := lib.GetTrack(trackIdFor(t, "grandchild_song"), tc.access)
-			_, thumbErr := lib.GetThumbnail(thumbnailIdFor(t, "grandchild_thumbnail"), tc.access)
+			got, albumErr := lib.GetAlbum(tc.access, albumIdFor(t, "grandchild"))
+			_, trackErr := lib.GetTrack(tc.access, trackIdFor(t, "grandchild_song"))
+			_, thumbErr := lib.GetThumbnail(tc.access, thumbnailIdFor(t, "grandchild_thumbnail"))
 			if tc.expectErr != nil {
 				require.ErrorIs(t, albumErr, tc.expectErr)
 				require.ErrorIs(t, trackErr, library.ErrTrackNotFound)
@@ -497,11 +498,18 @@ func TestSearchAccess(t *testing.T) {
 			access:       anonymous,
 			expectTitles: []string{"public_song", "deep_song"},
 		},
+		{
+			name:         "anonymous_sees_root_track_when_root_default",
+			rootVis:      visDefault,
+			query:        "song",
+			access:       anonymous,
+			expectTitles: []string{"root_song", "public_song", "deep_song"},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			lib := buildLib(t, baseTree(tc.rootVis))
-			result, err := lib.Search(tc.query, tc.access)
+			result, err := lib.Search(tc.access, tc.query)
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expectTitles, trackTitles(result.Tracks))
 		})
@@ -515,7 +523,7 @@ func TestGetAlbumNotFound(t *testing.T) {
 			{title: "present", visibility: visPublic},
 		},
 	})
-	_, err := lib.GetAlbum(albumIdFor(t, "nonexistent"), loggedIn)
+	_, err := lib.GetAlbum(loggedIn, albumIdFor(t, "nonexistent"))
 	require.ErrorIs(t, err, library.ErrAlbumNotFound)
 }
 
@@ -532,7 +540,7 @@ func TestGetAlbumWithNoVisibleContent(t *testing.T) {
 			},
 		},
 	})
-	_, err := lib.GetAlbum(albumIdFor(t, "parent"), anonymous)
+	_, err := lib.GetAlbum(anonymous, albumIdFor(t, "parent"))
 	require.ErrorIs(t, err, library.ErrAlbumNotFound)
 }
 
@@ -543,7 +551,7 @@ func TestGetTrackNotFound(t *testing.T) {
 			{title: "album", visibility: visPublic, tracks: []string{"present"}},
 		},
 	})
-	_, err := lib.GetTrack(trackIdFor(t, "nope"), loggedIn)
+	_, err := lib.GetTrack(loggedIn, trackIdFor(t, "nope"))
 	require.ErrorIs(t, err, library.ErrTrackNotFound)
 }
 
@@ -554,7 +562,7 @@ func TestGetThumbnailNotFound(t *testing.T) {
 			{title: "album", visibility: visPublic},
 		},
 	})
-	_, err := lib.GetThumbnail(thumbnailIdFor(t, "nope.jpg"), loggedIn)
+	_, err := lib.GetThumbnail(loggedIn, thumbnailIdFor(t, "nope.jpg"))
 	require.ErrorIs(t, err, library.ErrThumbnailNotFound)
 }
 
@@ -572,7 +580,7 @@ func TestSearchContent(t *testing.T) {
 				},
 			},
 		})
-		result, err := lib.Search("findme", anonymous)
+		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Albums, 1)
 		require.Equal(t, "findme", result.Albums[0].Title.String())
@@ -589,7 +597,7 @@ func TestSearchContent(t *testing.T) {
 				{title: "parent", visibility: visPublic, tracks: []string{"findme"}},
 			},
 		})
-		result, err := lib.Search("findme", anonymous)
+		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Tracks, 1)
 		require.NotNil(t, result.Tracks[0].Album)
@@ -605,7 +613,7 @@ func TestSearchContent(t *testing.T) {
 				{title: "placeholder", visibility: visPublic},
 			},
 		})
-		result, err := lib.Search("findme", anonymous)
+		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Tracks, 1)
 		require.Nil(t, result.Tracks[0].Album)
@@ -619,7 +627,7 @@ func TestSearchContent(t *testing.T) {
 				{title: "alpha", visibility: visPublic},
 			},
 		})
-		result, err := lib.Search("zzz", loggedIn)
+		result, err := lib.Search(loggedIn, "zzz")
 		require.NoError(t, err)
 		require.Empty(t, result.Albums)
 		require.Empty(t, result.Tracks)

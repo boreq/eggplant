@@ -63,5 +63,5 @@ func (h *SearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (li
 	if err != nil {
 		return library.SearchResult{}, errors.Wrap(err, "could not get the library")
 	}
-	return lib.Search(cmd.Query.String(), accessCtx)
+	return lib.Search(accessCtx, cmd.Query.String())
 }

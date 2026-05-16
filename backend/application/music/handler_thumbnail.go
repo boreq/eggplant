@@ -26,7 +26,7 @@ func (h *ThumbnailHandler) Execute(ctx context.Context, accessCtx library.Access
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the library")
 	}
 
-	thumbnail, err := lib.GetThumbnail(id, accessCtx)
+	thumbnail, err := lib.GetThumbnail(accessCtx, id)
 	if err != nil {
 		return domain.ConvertedFile{}, errors.Wrap(err, "could not get the thumbnail")
 	}

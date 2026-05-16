@@ -24,7 +24,7 @@ func (h *GetAlbumHandler) Execute(accessCtx library.AccessContext, cmd GetAlbum)
 		return domain.Album{}, errors.Wrap(err, "could not get the library")
 	}
 
-	album, err := lib.GetAlbum(cmd.Id, accessCtx)
+	album, err := lib.GetAlbum(accessCtx, cmd.Id)
 	if err != nil {
 		return domain.Album{}, errors.Wrap(err, "could not get the album")
 	}
