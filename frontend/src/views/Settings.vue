@@ -7,11 +7,17 @@
         </action-bar>
         <main-header text="Settings"></main-header>
 
-        <sub-header text="Invitations"></sub-header>
-        <Invitations v-if="user && user.administrator"></Invitations>
+        <template v-if="user && user.administrator">
+            <sub-header text="Invitations"></sub-header>
+            <Invitations></Invitations>
 
-        <sub-header text="Users"></sub-header>
-        <Users v-if="user && user.administrator"></Users>
+            <sub-header text="Users"></sub-header>
+            <Users></Users>
+        </template>
+
+        <div v-else class="no-admin-settings">
+            There are no additional settings available to your account.
+        </div>
     </div>
 </template>
 <script lang="ts" src="./Settings.ts"></script>
