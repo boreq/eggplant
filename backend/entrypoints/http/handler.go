@@ -43,7 +43,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 
 	// API
 	h.router.HandlerFunc(http.MethodGet, "/api/browse", rest.Wrap(h.browse))
-	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.browse))
+	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.browseById))
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
@@ -74,6 +74,22 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) browse(r *http.Request) rest.RestResponse {
+	u, err := h.authProvider.Get(r)
+	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	accessCtx := accessContextFor(u)
+
+	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx)
+	if err != nil {
+		return h.handleBrowseError(err)
+	}
+	return rest.NewResponse(toRootAlbum(a))
+}
+
+func (h *Handler) browseById(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 	rawId := ps.ByName("id")
 
@@ -85,21 +101,6 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 
 	accessCtx := accessContextFor(u)
 
-	if rawId == "" {
-		a, err := h.app.Music.GetRootAlbum.Execute(accessCtx)
-		if err != nil {
-			if errors.Is(err, library.ErrAlbumNotFound) {
-				return rest.ErrNotFound
-			}
-			if errors.Is(err, music.ErrLibraryNotReady) {
-				return rest.ErrServiceUnavailable.WithMessage("The music library is being prepared.")
-			}
-			h.log.Error("browse error", "err", err)
-			return rest.ErrInternalServerError
-		}
-		return rest.NewResponse(toRootAlbum(a))
-	}
-
 	albumId, err := domain.NewAlbumIdFromString(rawId)
 	if err != nil {
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
@@ -107,17 +108,21 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 
 	a, err := h.app.Music.GetAlbum.Execute(accessCtx, music.GetAlbum{Id: albumId})
 	if err != nil {
-		if errors.Is(err, library.ErrAlbumNotFound) {
-			return rest.ErrNotFound
-		}
-		if errors.Is(err, music.ErrLibraryNotReady) {
-			return rest.ErrServiceUnavailable.WithMessage("The music library is being prepared.")
-		}
-		h.log.Error("browse error", "err", err)
-		return rest.ErrInternalServerError
+		return h.handleBrowseError(err)
 	}
 
 	return rest.NewResponse(toAlbum(a))
+}
+
+func (h *Handler) handleBrowseError(err error) rest.RestResponse {
+	if errors.Is(err, library.ErrAlbumNotFound) {
+		return rest.ErrNotFound
+	}
+	if errors.Is(err, music.ErrLibraryNotReady) {
+		return rest.ErrServiceUnavailable.WithMessage("The music library is being prepared.")
+	}
+	h.log.Error("browse error", "err", err)
+	return rest.ErrInternalServerError
 }
 
 func (h *Handler) search(r *http.Request) rest.RestResponse {
