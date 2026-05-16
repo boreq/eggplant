@@ -98,7 +98,7 @@ $topbar-height: 45px;
 
                 .artwork {
                     width: $artwork-size;
-                    height: $artwork-size;
+                    aspect-ratio: 1;
                     margin-right: 2em;
                 }
 
@@ -295,15 +295,23 @@ $topbar-height: 45px;
                     align-items: center;
 
                     .artwork {
-                        margin: 0 0 2em;
-                        width: 100px;
-                        height: 100px;
+                        margin: 2em 0;
+                        width: 100%;
+                        max-width: 300px;
+                        height: auto;
+                        aspect-ratio: 1 / 1;
                     }
 
                     .info {
-                        display: flex;
-                        flex-flow: column nowrap;
-                        align-items: center;
+                        display: contents;
+
+                        .actions {
+                            margin: 1em 0;
+                        }
+                    }
+
+                    .crumbs {
+                        order: -1;
                     }
                 }
             }

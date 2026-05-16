@@ -1,5 +1,3 @@
-$album-size-small: 250px;
-
 .albums {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -40,16 +38,16 @@ $album-size-small: 250px;
     .albums {
         grid-template-columns: 1fr;
         justify-items: center;
+        max-width: 200px;
+        margin: 0 auto;
 
         .album {
             text-align: center;
-            width: $album-size-small;
-            max-width: 100%;
+            width: 100%;
 
             .title {
                 min-height: 0;
                 text-wrap: none;
-                white-space: nowrap;
                 max-width: 100%;
             }
         }

@@ -16,6 +16,10 @@
             width: 100%;
         }
 
+        > img {
+            object-fit: cover;
+        }
+
         .spinner-container {
             position: absolute;
             top: 0;

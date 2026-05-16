@@ -38,7 +38,6 @@ enum BrowseState {
     LibraryNotReady = 'library-not-ready',
 }
 
-
 @Component({
     components: {
         Albums,
