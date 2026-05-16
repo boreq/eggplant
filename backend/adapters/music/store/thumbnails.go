@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"image"
 	_ "image/gif"
-	"image/jpeg"
+	_ "image/jpeg"
 	_ "image/png"
 	"os"
 	"path"
@@ -14,11 +14,13 @@ import (
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
+	"github.com/chai2010/webp"
 	"github.com/nfnt/resize"
 )
 
 const thumbnailSize = 200
-const thumbnailExtension = "jpg"
+const thumbnailQuality = 90
+const thumbnailExtension = "webp"
 const thumbnailDirectory = "thumbnails"
 
 type ThumbnailStore struct {
@@ -86,10 +88,7 @@ func (c *ThumbnailConverter) Convert(item Item) error {
 
 	resized := resize.Resize(thumbnailSize, thumbnailSize, img, resize.Lanczos3)
 
-	options := &jpeg.Options{
-		Quality: 95,
-	}
-	if err := jpeg.Encode(output, resized, options); err != nil {
+	if err := webp.Encode(output, resized, &webp.Options{Quality: thumbnailQuality}); err != nil {
 		return errors.Wrap(err, "encoding failed")
 	}
 

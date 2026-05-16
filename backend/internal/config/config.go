@@ -69,6 +69,7 @@ func Default() *Config {
 			".jpeg",
 			".png",
 			".gif",
+			".webp",
 		},
 	}
 	return conf

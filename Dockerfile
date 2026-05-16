@@ -7,7 +7,7 @@ COPY frontend/ .
 RUN yarn build
 
 FROM golang:1.26-alpine AS backend
-RUN apk add git
+RUN apk add git build-base
 WORKDIR /eggplant
 COPY backend/ .
 COPY --from=frontend /frontend/dist/ ./entrypoints/http/frontend/

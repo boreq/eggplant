@@ -106,6 +106,7 @@ files inside of them.
 - `.jpeg`
 - `.png`
 - `.gif`
+- `.webp`
 
 ### Supported thumbnail stems
 
