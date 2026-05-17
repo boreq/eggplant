@@ -166,9 +166,10 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	if err != nil {
 		return nil, err
 	}
-	trackPlaylistHandler := music.NewTrackPlaylistHandler(inMemoryRepository, converter)
-	trackInitHandler := music.NewTrackInitHandler(inMemoryRepository, converter)
-	trackFragmentHandler := music.NewTrackFragmentHandler(inMemoryRepository, converter)
+	startStreamingHandler := music.NewStartStreamingHandler(inMemoryRepository, converter)
+	streamPlaylistHandler := music.NewStreamPlaylistHandler(inMemoryRepository, converter)
+	streamInitHandler := music.NewStreamInitHandler(inMemoryRepository, converter)
+	streamFragmentHandler := music.NewStreamFragmentHandler(inMemoryRepository, converter)
 	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
@@ -176,14 +177,15 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	ffProbe := tracks.NewFFProbe()
 	buildLibraryHandler := music.NewBuildLibraryHandler(inMemoryRepository, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
 	applicationMusic := application.Music{
-		Thumbnail:     thumbnailHandler,
-		TrackPlaylist: trackPlaylistHandler,
-		TrackInit:     trackInitHandler,
-		TrackFragment: trackFragmentHandler,
-		GetRootAlbum:  getRootAlbumHandler,
-		GetAlbum:      getAlbumHandler,
-		Search:        searchHandler,
-		BuildLibrary:  buildLibraryHandler,
+		Thumbnail:      thumbnailHandler,
+		StartStreaming: startStreamingHandler,
+		StreamPlaylist: streamPlaylistHandler,
+		StreamInit:     streamInitHandler,
+		StreamFragment: streamFragmentHandler,
+		GetRootAlbum:   getRootAlbumHandler,
+		GetAlbum:       getAlbumHandler,
+		Search:         searchHandler,
+		BuildLibrary:   buildLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)

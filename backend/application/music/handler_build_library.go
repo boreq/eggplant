@@ -14,7 +14,7 @@ import (
 
 type BuildLibraryHandler struct {
 	repo           LibraryRepository
-	trackStore     TrackStore
+	trackStore     TrackConverter
 	thumbnailStore ThumbnailStore
 	accessLoader   AccessLoader
 	durations      TrackDurations
@@ -22,7 +22,7 @@ type BuildLibraryHandler struct {
 
 func NewBuildLibraryHandler(
 	repo LibraryRepository,
-	trackStore TrackStore,
+	trackStore TrackConverter,
 	thumbnailStore ThumbnailStore,
 	accessLoader AccessLoader,
 	durations TrackDurations,
@@ -202,7 +202,7 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 		}
 
 		out = append(out, domain.NewTrack(id, fileId, title, duration))
-		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path))
+		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path, duration))
 	}
 	return out, nil
 }

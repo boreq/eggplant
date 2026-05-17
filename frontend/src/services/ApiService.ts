@@ -61,8 +61,16 @@ export class ApiService {
         return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
-    trackUrl(track: Track): string {
-        const url = `track/${track.id}/playlist.m3u8`;
+    streamWebSocketUrl(track: Track, seekSeconds?: number): string {
+        let url = import.meta.env.VUE_APP_WS_PREFIX + `track/${track.id}/stream`;
+        if (seekSeconds !== undefined && seekSeconds > 0) {
+            url += `?seek=${encodeURIComponent(seekSeconds.toString())}`;
+        }
+        return url;
+    }
+
+    streamPlaylistUrl(track: Track, streamId: string): string {
+        const url = `track/${track.id}/stream/${streamId}/playlist`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 

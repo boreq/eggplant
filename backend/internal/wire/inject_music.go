@@ -27,7 +27,7 @@ var musicSet = wire.NewSet(
 	tracks.NewFFProbe,
 
 	wire.Bind(new(music.AccessLoader), new(*library.DelimiterAccessLoader)),
-	wire.Bind(new(music.TrackStore), new(*tracks.Converter)),
+	wire.Bind(new(music.TrackConverter), new(*tracks.Converter)),
 	wire.Bind(new(music.ThumbnailStore), new(*store.ThumbnailStore)),
 	wire.Bind(new(music.TrackDurations), new(*tracks.FFProbe)),
 	wire.Bind(new(music.LibraryRepository), new(*library.InMemoryRepository)),

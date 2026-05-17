@@ -4,6 +4,7 @@ import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
 import { PlaybackData } from '@/dto/PlaybackData';
 import { Entry } from '@/dto/Entry';
+import { Track } from '@/dto/Track';
 import Notifications from '@/components/Notifications';
 
 export const seekEvent = 'seek';
@@ -21,20 +22,16 @@ export default class Player extends Vue {
 
     private hls: Hls = null;
 
+    private streamWs: WebSocket = null;
+
+    private streamStartOffset = 0;
+
     get nowPlaying(): Entry {
         return this.$store.getters.nowPlaying;
     }
 
     get paused(): boolean {
         return this.$store.state.paused;
-    }
-
-    get nowPlayingUrl(): string {
-        const entry = this.nowPlaying;
-        if (entry) {
-            return this.apiService.trackUrl(entry.track);
-        }
-        return null;
     }
 
     get audio(): HTMLAudioElement {
@@ -49,23 +46,52 @@ export default class Player extends Vue {
     onNowPlayingChanged(): void {
         if (!this.nowPlaying) {
             this.currentNowPlaying = null;
+            this.tearDownStream();
             this.pause();
             return;
         }
 
         if (!this.currentNowPlaying || this.currentNowPlaying !== this.nowPlaying) {
             this.currentNowPlaying = this.nowPlaying;
-            this.loadSource(this.nowPlayingUrl);
-            this.play();
+            this.startStream(this.nowPlaying.track);
         }
     }
 
-    private loadSource(url: string): void {
-        this.destroyHls();
+    private startStream(track: Track, seekSeconds?: number): void {
+        this.tearDownStream();
         if (!Hls.isSupported()) {
             Notifications.pushError(this, 'Your browser does not support HLS playback.');
             return;
         }
+
+        this.streamStartOffset = seekSeconds && seekSeconds > 0 ? seekSeconds : 0;
+
+        const ws = new WebSocket(this.apiService.streamWebSocketUrl(track, seekSeconds));
+        this.streamWs = ws;
+
+        ws.onmessage = (event) => {
+            if (this.streamWs !== ws) {
+                return;
+            }
+            const streamId = typeof event.data === 'string' ? event.data : '';
+            if (!streamId) {
+                Notifications.pushError(this, `Could not start streaming "${track.title}".`);
+                return;
+            }
+            this.loadHls(this.apiService.streamPlaylistUrl(track, streamId));
+            this.play();
+        };
+
+        ws.onerror = () => {
+            if (this.streamWs !== ws) {
+                return;
+            }
+            Notifications.pushError(this, `Could not start streaming "${track.title}".`);
+        };
+    }
+
+    private loadHls(url: string): void {
+        this.destroyHls();
         this.hls = new Hls({
             xhrSetup: (xhr) => {
                 xhr.withCredentials = true;
@@ -81,6 +107,21 @@ export default class Player extends Vue {
             this.hls.destroy();
             this.hls = null;
         }
+    }
+
+    private closeStreamWs(): void {
+        if (this.streamWs) {
+            this.streamWs.onmessage = null;
+            this.streamWs.onerror = null;
+            this.streamWs.onclose = null;
+            this.streamWs.close();
+            this.streamWs = null;
+        }
+    }
+
+    private tearDownStream(): void {
+        this.destroyHls();
+        this.closeStreamWs();
     }
 
     @Watch('paused')
@@ -104,15 +145,23 @@ export default class Player extends Vue {
     mounted(): void {
         this.audio.volume = this.volume;
         this.$root.$on(seekEvent, (position: number) => {
-            if (this.nowPlaying) {
-                this.audio.currentTime = this.nowPlaying.track.duration * position;
+            if (!this.nowPlaying) {
+                return;
+            }
+            const trackTarget = this.nowPlaying.track.duration * position;
+            const localTarget = trackTarget - this.streamStartOffset;
+            const loaded = this.audio.duration;
+            if (localTarget >= 0 && isFinite(loaded) && localTarget < loaded) {
+                this.audio.currentTime = localTarget;
+            } else {
+                this.startStream(this.nowPlaying.track, trackTarget);
             }
         });
     }
 
     destroyed(): void {
         window.clearInterval(this.intervalID);
-        this.destroyHls();
+        this.tearDownStream();
     }
 
     onEnded(): void {
@@ -136,7 +185,7 @@ export default class Player extends Vue {
     private emitValues(): void {
         if (this.audio) {
             const playbackData: PlaybackData = {
-                currentTime: this.audio.currentTime,
+                currentTime: this.streamStartOffset + this.audio.currentTime,
             };
             this.$emit('playback-data', playbackData);
         }

@@ -84,29 +84,10 @@ func NewTrackDuration(d time.Duration) (TrackDuration, error) {
 	return TrackDuration{value: d}, nil
 }
 
+func (d TrackDuration) Duration() time.Duration {
+	return d.value
+}
+
 func (d TrackDuration) Seconds() float64 {
 	return d.value.Seconds()
-}
-
-type TrackFragmentId struct {
-	value int
-}
-
-func NewTrackFragmentId(n int) (TrackFragmentId, error) {
-	if n < 0 {
-		return TrackFragmentId{}, errors.New("track fragment id must not be negative")
-	}
-	return TrackFragmentId{value: n}, nil
-}
-
-func MustNewTrackFragmentId(n int) TrackFragmentId {
-	v, err := NewTrackFragmentId(n)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (t TrackFragmentId) Int() int {
-	return t.value
 }

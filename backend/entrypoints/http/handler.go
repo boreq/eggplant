@@ -1,9 +1,9 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -16,8 +16,13 @@ import (
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
+	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
 )
+
+var streamWsUpgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 type AuthenticatedUser struct {
 	User  auth.ReadUser
@@ -49,9 +54,10 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
-	h.router.GET("/api/track/:id/playlist.m3u8", h.trackPlaylist)
-	h.router.GET("/api/track/:id/init.mp4", h.trackInit)
-	h.router.GET("/api/track/:id/fragment/:fragmentId", h.trackFragment)
+	h.router.GET("/api/track/:trackid/stream", h.trackStreamWS)
+	h.router.GET("/api/track/:trackid/stream/:streamid/playlist", h.streamPlaylist)
+	h.router.GET("/api/track/:trackid/stream/:streamid/init", h.streamInit)
+	h.router.GET("/api/track/:trackid/stream/:streamid/fragment/:number", h.streamFragment)
 	h.router.GET("/api/thumbnail/:id", h.thumbnail)
 
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/register-initial", rest.Wrap(h.registerInitial))
@@ -152,10 +158,17 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 	)
 }
 
-func (h *Handler) trackPlaylist(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, err := domain.NewTrackIdFromString(ps.ByName("id"))
+func (h *Handler) trackStreamWS(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, err := domain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	seekPos, err := parseSeekParam(r.URL.Query().Get("seek"))
+	if err != nil {
+		h.log.Warn("invalid seek param", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -167,9 +180,69 @@ func (h *Handler) trackPlaylist(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	p, err := h.app.Music.TrackPlaylist.Execute(r.Context(), accessCtx, music.TrackPlaylist{Id: trackId})
+	conn, err := streamWsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		h.writeTrackError(w, err)
+		h.log.Warn("websocket upgrade failed", "err", err)
+		return
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	streamId, err := h.app.Music.StartStreaming.Execute(ctx, accessCtx, music.StartStreaming{
+		TrackId:      trackId,
+		SeekPosition: seekPos,
+	})
+	if err != nil {
+		if errors.Is(err, library.ErrTrackNotFound) {
+			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "track not found"))
+			return
+		}
+		h.log.Error("start streaming failed", "err", err)
+		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "start streaming failed"))
+		return
+	}
+
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(streamId.String())); err != nil {
+		return
+	}
+
+	// Hold the connection open.
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			return
+		}
+	}
+}
+
+func parseSeekParam(s string) (*domain.RequestedSeekPosition, error) {
+	if s == "" {
+		return nil, nil
+	}
+	secs, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not parse seek seconds")
+	}
+	sp, err := domain.NewRequestedSeekPosition(time.Duration(secs * float64(time.Second)))
+	if err != nil {
+		return nil, err
+	}
+	return &sp, nil
+}
+
+func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+	if !ok {
+		return
+	}
+
+	p, err := h.app.Music.StreamPlaylist.Execute(accessCtx, music.StreamPlaylist{
+		TrackId:  trackId,
+		StreamId: streamId,
+	})
+	if err != nil {
+		h.writeStreamError(w, err)
 		return
 	}
 	defer p.Content.Close()
@@ -177,24 +250,18 @@ func (h *Handler) trackPlaylist(w http.ResponseWriter, r *http.Request, ps httpr
 	h.serveConvertedFile(w, r, p, "application/vnd.apple.mpegurl")
 }
 
-func (h *Handler) trackInit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, err := domain.NewTrackIdFromString(ps.ByName("id"))
-	if err != nil {
-		h.log.Warn("invalid track id", "err", err)
-		w.WriteHeader(http.StatusBadRequest)
+func (h *Handler) streamInit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+	if !ok {
 		return
 	}
 
-	accessCtx, err := h.resolveAccessContext(r)
+	p, err := h.app.Music.StreamInit.Execute(accessCtx, music.StreamInit{
+		TrackId:  trackId,
+		StreamId: streamId,
+	})
 	if err != nil {
-		h.log.Error("could not resolve access context", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	p, err := h.app.Music.TrackInit.Execute(r.Context(), accessCtx, music.TrackInit{Id: trackId})
-	if err != nil {
-		h.writeTrackError(w, err)
+		h.writeStreamError(w, err)
 		return
 	}
 	defer p.Content.Close()
@@ -202,31 +269,32 @@ func (h *Handler) trackInit(w http.ResponseWriter, r *http.Request, ps httproute
 	h.serveConvertedFile(w, r, p, "video/mp4")
 }
 
-func (h *Handler) trackFragment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, err := domain.NewTrackIdFromString(ps.ByName("id"))
-	if err != nil {
-		h.log.Warn("invalid track id", "err", err)
-		w.WriteHeader(http.StatusBadRequest)
+func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+	if !ok {
 		return
 	}
 
-	fragmentId, err := parseFragmentFilename(ps.ByName("fragmentId"))
+	n, err := strconv.Atoi(ps.ByName("number"))
+	if err != nil {
+		h.log.Warn("invalid fragment number", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fragmentId, err := domain.NewFragmentId(n)
 	if err != nil {
 		h.log.Warn("invalid fragment id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	accessCtx, err := h.resolveAccessContext(r)
+	p, err := h.app.Music.StreamFragment.Execute(accessCtx, music.StreamFragment{
+		TrackId:    trackId,
+		StreamId:   streamId,
+		FragmentId: fragmentId,
+	})
 	if err != nil {
-		h.log.Error("could not resolve access context", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	p, err := h.app.Music.TrackFragment.Execute(r.Context(), accessCtx, music.TrackFragment{Id: trackId, FragmentId: fragmentId})
-	if err != nil {
-		h.writeTrackError(w, err)
+		h.writeStreamError(w, err)
 		return
 	}
 	defer p.Content.Close()
@@ -234,18 +302,31 @@ func (h *Handler) trackFragment(w http.ResponseWriter, r *http.Request, ps httpr
 	h.serveConvertedFile(w, r, p, "video/iso.segment")
 }
 
-var fragmentFilenamePattern = regexp.MustCompile(`^seg_(\d+)\.m4s$`)
-
-func parseFragmentFilename(s string) (domain.TrackFragmentId, error) {
-	m := fragmentFilenamePattern.FindStringSubmatch(s)
-	if m == nil {
-		return domain.TrackFragmentId{}, errors.New("fragment filename must match seg_NNN.m4s")
-	}
-	n, err := strconv.Atoi(m[1])
+func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (domain.TrackId, domain.StreamId, library.AccessContext, bool) {
+	trackId, err := domain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
-		return domain.TrackFragmentId{}, errors.Wrap(err, "could not parse fragment number")
+		h.log.Warn("invalid track id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return domain.TrackId{}, domain.StreamId{}, nil, false
 	}
-	return domain.NewTrackFragmentId(n)
+	streamId, err := domain.NewStreamIdFromString(ps.ByName("streamid"))
+	if err != nil {
+		h.log.Warn("invalid stream id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return domain.TrackId{}, domain.StreamId{}, nil, false
+	}
+	accessCtx, err := h.resolveAccessContext(r)
+	if err != nil {
+		h.log.Error("could not resolve access context", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return domain.TrackId{}, domain.StreamId{}, nil, false
+	}
+	return trackId, streamId, accessCtx, true
+}
+
+func (h *Handler) writeStreamError(w http.ResponseWriter, err error) {
+	h.log.Warn("stream error", "err", err)
+	w.WriteHeader(http.StatusNotFound)
 }
 
 func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, error) {
@@ -256,19 +337,10 @@ func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, 
 	return accessContextFor(u), nil
 }
 
-func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p domain.ConvertedFile, contentType string) {
+func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p music.ConvertedFile, contentType string) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Accept-Ranges", "bytes")
 	http.ServeContent(w, r, p.Name, p.Modtime, p.Content)
-}
-
-func (h *Handler) writeTrackError(w http.ResponseWriter, err error) {
-	if errors.Is(err, library.ErrTrackNotFound) {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	h.log.Error("track error", "err", err)
-	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

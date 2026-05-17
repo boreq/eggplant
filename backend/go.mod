@@ -7,9 +7,11 @@ require (
 	github.com/boreq/rest v0.1.0
 	github.com/chai2010/webp v1.4.0
 	github.com/google/wire v0.7.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/inconshreveable/log15 v2.16.0+incompatible
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/oklog/ulid/v2 v2.1.1
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pkg/errors v0.9.1
 	github.com/radovskyb/watcher v1.0.7
