@@ -1,8 +1,7 @@
 package domain
 
 import (
-	"encoding/hex"
-	"errors"
+	"github.com/boreq/errors"
 )
 
 type RootAlbum struct {
@@ -128,25 +127,23 @@ func (p ParentAlbum) Title() AlbumTitle {
 }
 
 type AlbumId struct {
-	value string
-}
-
-func NewAlbumIdFromString(s string) (AlbumId, error) {
-	if s == "" {
-		return AlbumId{}, errors.New("album id must not be empty")
-	}
-	if _, err := hex.DecodeString(s); err != nil {
-		return AlbumId{}, errors.New("album id must be a hex string")
-	}
-	return AlbumId{value: s}, nil
+	id idForHumans
 }
 
 func NewAlbumId(parents []AlbumId, title AlbumTitle) (AlbumId, error) {
-	return NewAlbumIdFromString(hash(parentsAsString(parents) + title.value))
+	return AlbumId{id: newIdForHumans(parents, title)}, nil
 }
 
-func (id AlbumId) String() string {
-	return id.value
+func NewAlbumIdFromString(s string) (AlbumId, error) {
+	id, err := newIdForHumansFromString(s)
+	if err != nil {
+		return AlbumId{}, errors.Wrap(err, "invalid album id")
+	}
+	return AlbumId{id: id}, nil
+}
+
+func (a AlbumId) String() string {
+	return a.id.String()
 }
 
 type AlbumTitle struct {

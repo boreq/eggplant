@@ -1,9 +1,6 @@
 package domain
 
-import (
-	"encoding/hex"
-	"errors"
-)
+import "github.com/boreq/errors"
 
 type Thumbnail struct {
 	id     ThumbnailId
@@ -23,23 +20,21 @@ func (t Thumbnail) FileId() FileId {
 }
 
 type ThumbnailId struct {
-	value string
-}
-
-func NewThumbnailIdFromString(s string) (ThumbnailId, error) {
-	if s == "" {
-		return ThumbnailId{}, errors.New("thumbnail id must not be empty")
-	}
-	if _, err := hex.DecodeString(s); err != nil {
-		return ThumbnailId{}, errors.New("thumbnail id must be a hex string")
-	}
-	return ThumbnailId{value: s}, nil
+	id idForHumans
 }
 
 func NewThumbnailId(parents []AlbumId, name FileName) (ThumbnailId, error) {
-	return NewThumbnailIdFromString(hash(parentsAsString(parents) + name.value))
+	return ThumbnailId{id: newIdForHumans(parents, name)}, nil
 }
 
-func (id ThumbnailId) String() string {
-	return id.value
+func NewThumbnailIdFromString(s string) (ThumbnailId, error) {
+	id, err := newIdForHumansFromString(s)
+	if err != nil {
+		return ThumbnailId{}, errors.Wrap(err, "invalid thumbnail id")
+	}
+	return ThumbnailId{id: id}, nil
+}
+
+func (t ThumbnailId) String() string {
+	return t.id.String()
 }

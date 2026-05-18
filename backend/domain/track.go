@@ -1,9 +1,9 @@
 package domain
 
 import (
-	"encoding/hex"
-	"errors"
 	"time"
+
+	"github.com/boreq/errors"
 )
 
 type Track struct {
@@ -39,25 +39,23 @@ func (t Track) Duration() TrackDuration {
 }
 
 type TrackId struct {
-	value string
-}
-
-func NewTrackIdFromString(s string) (TrackId, error) {
-	if s == "" {
-		return TrackId{}, errors.New("track id must not be empty")
-	}
-	if _, err := hex.DecodeString(s); err != nil {
-		return TrackId{}, errors.New("track id must be a hex string")
-	}
-	return TrackId{value: s}, nil
+	id idForHumans
 }
 
 func NewTrackId(parents []AlbumId, title TrackTitle) (TrackId, error) {
-	return NewTrackIdFromString(hash(parentsAsString(parents) + title.value))
+	return TrackId{id: newIdForHumans(parents, title)}, nil
 }
 
-func (id TrackId) String() string {
-	return id.value
+func NewTrackIdFromString(s string) (TrackId, error) {
+	id, err := newIdForHumansFromString(s)
+	if err != nil {
+		return TrackId{}, errors.Wrap(err, "invalid track id")
+	}
+	return TrackId{id: id}, nil
+}
+
+func (t TrackId) String() string {
+	return t.id.String()
 }
 
 type TrackTitle struct {

@@ -1,7 +1,6 @@
 package library_test
 
 import (
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -721,21 +720,27 @@ func buildAlbum(t *testing.T, spec albumSpec) library.Album {
 
 func albumIdFor(t *testing.T, title string) domain.AlbumId {
 	t.Helper()
-	id, err := domain.NewAlbumIdFromString(hex.EncodeToString([]byte(title)))
+	at, err := domain.NewAlbumTitle(title)
+	require.NoError(t, err)
+	id, err := domain.NewAlbumId(nil, at)
 	require.NoError(t, err)
 	return id
 }
 
 func trackIdFor(t *testing.T, title string) domain.TrackId {
 	t.Helper()
-	id, err := domain.NewTrackIdFromString(hex.EncodeToString([]byte(title)))
+	tt, err := domain.NewTrackTitle(title)
+	require.NoError(t, err)
+	id, err := domain.NewTrackId(nil, tt)
 	require.NoError(t, err)
 	return id
 }
 
 func thumbnailIdFor(t *testing.T, filename string) domain.ThumbnailId {
 	t.Helper()
-	id, err := domain.NewThumbnailIdFromString(hex.EncodeToString([]byte(filename)))
+	name, err := domain.NewFileName(filename)
+	require.NoError(t, err)
+	id, err := domain.NewThumbnailId(nil, name)
 	require.NoError(t, err)
 	return id
 }
