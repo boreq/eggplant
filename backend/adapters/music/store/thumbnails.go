@@ -48,7 +48,7 @@ func (s *ThumbnailStore) SetItems(items []music.ThumbnailStoreItem) {
 	s.Store.SetItems(converted)
 }
 
-func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error) {
+func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId domain.FileId) (music.ConvertedFile, error) {
 	return s.getConvertedFileForId(ctx, fileId.String())
 }
 

@@ -12,4 +12,5 @@ linters:
       exclude-functions:
         - (io.Closer).Close
         - (*os.File).Close
+        - (*github.com/gorilla/websocket.Conn).Close
         - (*os.Process).Kill

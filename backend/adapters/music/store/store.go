@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 )
@@ -76,7 +76,7 @@ func NewStore(ctx context.Context, log logging.Logger, converter Converter) (*St
 }
 
 type ConvertedFileOrError struct {
-	ConvertedFile domain.ConvertedFile
+	ConvertedFile music.ConvertedFile
 	Err           error
 }
 
@@ -119,7 +119,7 @@ func (s *Store) SetItems(items []Item) {
 	}
 }
 
-func (s *Store) getConvertedFileForId(ctx context.Context, id string) (domain.ConvertedFile, error) {
+func (s *Store) getConvertedFileForId(ctx context.Context, id string) (music.ConvertedFile, error) {
 	ch := make(chan ConvertedFileOrError)
 	go func() {
 		convertedFile, err := s.getConvertedFile(ctx, id)
@@ -134,44 +134,44 @@ func (s *Store) getConvertedFileForId(ctx context.Context, id string) (domain.Co
 
 	select {
 	case <-ctx.Done():
-		return domain.ConvertedFile{}, ctx.Err()
+		return music.ConvertedFile{}, ctx.Err()
 	case v := <-ch:
 		if err := v.Err; err != nil {
-			return domain.ConvertedFile{}, errors.Wrap(err, "error getting converted file")
+			return music.ConvertedFile{}, errors.Wrap(err, "error getting converted file")
 		}
 		return v.ConvertedFile, nil
 	}
 }
 
-func (s *Store) getConvertedFile(ctx context.Context, id string) (domain.ConvertedFile, error) {
+func (s *Store) getConvertedFile(ctx context.Context, id string) (music.ConvertedFile, error) {
 	f, err := s.getFile(id)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return domain.ConvertedFile{}, errors.Wrap(err, "error getting the file")
+			return music.ConvertedFile{}, errors.Wrap(err, "error getting the file")
 		}
 
 		errCh := s.scheduleConversion(ctx, id)
 		select {
 		case err := <-errCh:
 			if err != nil {
-				return domain.ConvertedFile{}, errors.Wrap(err, "conversion error")
+				return music.ConvertedFile{}, errors.Wrap(err, "conversion error")
 			}
 		case <-ctx.Done():
-			return domain.ConvertedFile{}, ctx.Err()
+			return music.ConvertedFile{}, ctx.Err()
 		}
 
 		f, err = s.getFile(id)
 		if err != nil {
-			return domain.ConvertedFile{}, errors.Wrap(err, "error getting the file again")
+			return music.ConvertedFile{}, errors.Wrap(err, "error getting the file again")
 		}
 	}
 
 	fileInfo, err := f.Stat()
 	if err != nil {
-		return domain.ConvertedFile{}, errors.Wrap(err, "stat error")
+		return music.ConvertedFile{}, errors.Wrap(err, "stat error")
 	}
 
-	return domain.ConvertedFile{
+	return music.ConvertedFile{
 		Name:    f.Name(),
 		Modtime: fileInfo.ModTime(),
 		Content: f,

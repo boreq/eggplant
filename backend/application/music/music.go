@@ -3,6 +3,8 @@ package music
 import (
 	"context"
 	"errors"
+	"io"
+	"time"
 
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/domain/library"
@@ -13,20 +15,22 @@ var (
 	ErrLibraryNotReady = errors.New("library not ready")
 )
 
-type TrackStore interface {
+type TrackConverter interface {
 	SetItems(items []TrackStoreItem)
-	GetPlaylist(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
-	GetInit(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
-	GetFragment(ctx context.Context, fileId domain.FileId, fragmentId domain.TrackFragmentId) (domain.ConvertedFile, error)
+	StartStream(ctx context.Context, fileId domain.FileId, seekPosition *domain.SeekPosition) (domain.StreamId, error)
+	GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (ConvertedFile, error)
+	GetInit(fileId domain.FileId, streamId domain.StreamId) (ConvertedFile, error)
+	GetFragment(fileId domain.FileId, streamId domain.StreamId, fragmentId domain.FragmentId) (ConvertedFile, error)
 }
 
 type TrackStoreItem struct {
-	fileId domain.FileId
-	path   domain.FilePath
+	fileId   domain.FileId
+	path     domain.FilePath
+	duration domain.TrackDuration
 }
 
-func NewTrackStoreItem(fileId domain.FileId, path domain.FilePath) TrackStoreItem {
-	return TrackStoreItem{fileId: fileId, path: path}
+func NewTrackStoreItem(fileId domain.FileId, path domain.FilePath, duration domain.TrackDuration) TrackStoreItem {
+	return TrackStoreItem{fileId: fileId, path: path, duration: duration}
 }
 
 func (t TrackStoreItem) FileId() domain.FileId {
@@ -37,9 +41,13 @@ func (t TrackStoreItem) Path() domain.FilePath {
 	return t.path
 }
 
+func (t TrackStoreItem) Duration() domain.TrackDuration {
+	return t.duration
+}
+
 type ThumbnailStore interface {
 	SetItems(items []ThumbnailStoreItem)
-	GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error)
+	GetConvertedFile(ctx context.Context, fileId domain.FileId) (ConvertedFile, error)
 }
 
 type ThumbnailStoreItem struct {
@@ -70,4 +78,16 @@ type AccessLoader interface {
 type LibraryRepository interface {
 	Get() (*library.Library, error)
 	Save(library *library.Library)
+}
+
+type ConvertedFile struct {
+	// Name is just a filename used for mimetype detection. It is here just to
+	// check its extension type basically.
+	Name string
+
+	// Modtime is used to figure out if the content has changed.
+	Modtime time.Time
+
+	// Content must be closed by the caller.
+	Content io.ReadSeekCloser
 }
