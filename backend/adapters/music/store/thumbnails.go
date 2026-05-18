@@ -18,7 +18,7 @@ import (
 	"github.com/nfnt/resize"
 )
 
-const thumbnailSize = 200
+const thumbnailSize = 300
 const thumbnailQuality = 90
 const thumbnailExtension = "webp"
 const thumbnailDirectory = "thumbnails"
