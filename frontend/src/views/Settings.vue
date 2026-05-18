@@ -15,6 +15,9 @@
 
             <sub-header text="Users"></sub-header>
             <Users></Users>
+
+            <sub-header text="Version"></sub-header>
+            <Version></Version>
         </template>
 
         <div v-else class="no-admin-settings">

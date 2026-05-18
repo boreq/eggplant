@@ -24,6 +24,8 @@ var streamWsUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
+var Version = "unknown"
+
 type AuthenticatedUser struct {
 	User  auth.ReadUser
 	Token auth.AccessToken
@@ -67,6 +69,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/create-invitation", rest.Wrap(h.createInvitation))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.getCurrentUser))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
+	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.removeUser))
 
 	// Frontend
@@ -607,6 +610,24 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 	}
 
 	return rest.NewResponse(nil)
+}
+
+type getVersionResponse struct {
+	Version string `json:"version"`
+}
+
+func (h *Handler) getVersion(r *http.Request) rest.RestResponse {
+	u, err := h.authProvider.Get(r)
+	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	if !h.isAdmin(u) {
+		return rest.ErrForbidden.WithMessage("Only an administrator can view the version.")
+	}
+
+	return rest.NewResponse(getVersionResponse{Version: Version})
 }
 
 func (h *Handler) isAdmin(u *AuthenticatedUser) bool {

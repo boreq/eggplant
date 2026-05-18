@@ -145,6 +145,11 @@ export class ApiService {
         });
     }
 
+    getVersion(): Promise<AxiosResponse<{ version: string }>> {
+        const url = `version`;
+        return this.axios.get<{ version: string }>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
     register(cmd: RegisterCommand): Promise<AxiosResponse<void>> {
         const url = `auth/register`;
         return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url, cmd);

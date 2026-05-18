@@ -1,2 +1,4 @@
 frontend/dist
 frontend/node_modules
+_*/
+**/_*/

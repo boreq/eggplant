@@ -13,11 +13,8 @@ build-directory:
 build: build-directory
 	go build -o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
 
-build-race: build-directory
-	go build -race -o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
-
 check-repository-unchanged:
-	../_tools/check_repository_unchanged.sh
+	../tools/check_repository_unchanged.sh
 
 tools:
 	 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
@@ -51,4 +48,4 @@ fmt:
 update-golden: build
 	./_build/eggplant default_config > internal/config/data/config.golden.toml
 
-.PHONY: all build build-directory -repository-unchanged build-race tools dependencies lint test test-verbose clean fmt tidy dev update-golden
+.PHONY: all build build-directory check-repository-unchanged tools dependencies lint test test-verbose clean fmt tidy dev update-golden
