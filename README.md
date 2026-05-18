@@ -2,7 +2,7 @@
 
 Eggplant is a self-hosted music streaming service. Do you have a large music collection that you want to be able to
 listen to from anywhere? Simply point Eggplant at your music directory and it will make it available via your web
-browser. This is similar to what Jellyfin is except for music and with way fewer features
+browser. This is similar to what Jellyfin is except for music and with way fewer features.
 
 ![Eggplant][screenshot]
 
@@ -152,8 +152,8 @@ dev server (running on a different port) to talk to the backend.
     $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
     $ go run -tags insecurecors cmd/eggplant/main.go run /path/to/config.toml
 
-[ci-badge]:https://github.com/boreq/eggplant/workflows/CI/badge.svg
-[ci]:https://github.com/boreq/eggplant/actions
+[ci-badge]:https://github.com/boreq/eggplant/actions/workflows/ci.yml/badge.svg?branch=master
+[ci]:https://github.com/boreq/eggplant/actions/workflows/ci.yml?query=branch%3Amaster
 [screenshot]: https://user-images.githubusercontent.com/1935975/108577272-5bb61100-7318-11eb-8aba-5fcc0183b58c.png
 [anchor-music-directory]: #music-directory
 [anchor-supported-track-extensions]: #supported-track-extensions
