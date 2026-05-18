@@ -252,8 +252,12 @@ $topbar-height: 45px;
         .wrapper {
             grid-template-areas: "topbar topbar" "overlay overlay";
 
-            .content, .sidebar {
+            .content:not(.queue):not(.search) {
                 display: none;
+            }
+
+            .content.queue, .content.search {
+                grid-area: overlay;
             }
         }
     }
