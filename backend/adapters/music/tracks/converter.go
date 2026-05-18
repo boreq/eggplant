@@ -26,7 +26,7 @@ const (
 	streamsDirectory = "streams"
 
 	hlsSegmentSeconds    = 4
-	readinessTimeout     = 60 * time.Second
+	readinessTimeout     = 30 * time.Second
 	readinessPoll        = 50 * time.Millisecond
 	readinessFragments   = 5
 	jobAcceptanceTimeout = 30 * time.Second
@@ -45,12 +45,6 @@ type Converter struct {
 	streams map[string]*streamSession
 
 	ffmpegJobs chan ffmpegJob
-}
-
-type ffmpegJob struct {
-	ctx    context.Context
-	s      *streamSession
-	result chan<- error
 }
 
 func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
@@ -72,24 +66,25 @@ func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
 
 func (c *Converter) ffmpegWorker(ctx context.Context) {
 	for {
-		var job ffmpegJob
 		select {
 		case <-ctx.Done():
 			return
-		case job = <-c.ffmpegJobs:
+		case job := <-c.ffmpegJobs:
+			ffmpegCtx, cancel := mergeContexts(job.ctx, ctx)
+
+			start := time.Now()
+			err := c.runFFmpeg(ffmpegCtx, job.s)
+			cancel()
+			job.s.log.Debug("ffmpeg exited", "duration", time.Since(start), "err", err)
+
+			select {
+			case job.result <- err:
+			case <-job.ctx.Done():
+			case <-ctx.Done():
+				return
+			}
 		}
 
-		ffmpegCtx, cancel := mergeContexts(job.ctx, ctx)
-		start := time.Now()
-		err := c.runFFmpeg(ffmpegCtx, job.s)
-		cancel()
-		job.s.log.Debug("ffmpeg exited", "duration", time.Since(start), "err", err)
-		select {
-		case job.result <- err:
-		case <-job.ctx.Done():
-		case <-ctx.Done():
-			return
-		}
 	}
 }
 
@@ -439,4 +434,10 @@ type streamSession struct {
 	log     logging.Logger
 
 	ready chan error
+}
+
+type ffmpegJob struct {
+	ctx    context.Context
+	s      *streamSession
+	result chan<- error
 }
