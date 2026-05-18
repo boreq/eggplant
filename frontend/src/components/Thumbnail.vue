@@ -1,7 +1,8 @@
 <template>
-    <div class="thumbnail">
+    <div class="thumbnail" :class="{ tilt: tilt }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" ref="root">
         <div class="artwork" v-if="album.thumbnail">
             <img :src="thumbnailUrl" @error="onError" @load="onLoad" ref="image">
+            <div class="glare" v-if="tilt" aria-hidden="true"></div>
             <div class="spinner-container" v-if="converting" v-tooltip="'This thumbnail has not been converted yet.'">
                 <spinner></spinner>
             </div>

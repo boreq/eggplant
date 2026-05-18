@@ -8,6 +8,52 @@
         width: 100%;
     }
 
+    &.tilt {
+        perspective: 1000px;
+        --tilt-x: 0deg;
+        --tilt-y: 0deg;
+        --glare-x: 50%;
+        --glare-y: 50%;
+        --glare-opacity: 0;
+
+        .artwork {
+            position: relative;
+            transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease-out;
+            will-change: transform;
+        }
+
+        &:hover .artwork {
+            transition: transform 0.35s ease-out;
+        }
+
+        .glare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background: radial-gradient(
+                circle at var(--glare-x) var(--glare-y),
+                rgba(255, 255, 255, 0.55) 0%,
+                rgba(255, 255, 255, 0) 50%
+            );
+            opacity: var(--glare-opacity);
+            transition: opacity 0.2s ease-out;
+            mix-blend-mode: overlay;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .artwork {
+                transform: none !important;
+                transition: none;
+            }
+            .glare {
+                display: none;
+            }
+        }
+    }
+
     .artwork {
         box-shadow: $box-normal-box-shadow;
 

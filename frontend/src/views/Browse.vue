@@ -19,7 +19,7 @@
             <div class="content" ref="content">
                 <div class="album" v-if="showAlbum">
                     <div class="artwork">
-                        <thumbnail :album="basicAlbum"></thumbnail>
+                        <thumbnail :album="basicAlbum" tilt></thumbnail>
                     </div>
 
                     <div class="info">
