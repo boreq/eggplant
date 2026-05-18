@@ -162,19 +162,19 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	thumbnailHandler := music.NewThumbnailHandler(inMemoryRepository, thumbnailStore)
-	trackStore, err := newTrackStore(ctx, conf)
+	converter, err := newTrackStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
-	trackPlaylistHandler := music.NewTrackPlaylistHandler(inMemoryRepository, trackStore)
-	trackInitHandler := music.NewTrackInitHandler(inMemoryRepository, trackStore)
-	trackFragmentHandler := music.NewTrackFragmentHandler(inMemoryRepository, trackStore)
+	trackPlaylistHandler := music.NewTrackPlaylistHandler(inMemoryRepository, converter)
+	trackInitHandler := music.NewTrackInitHandler(inMemoryRepository, converter)
+	trackFragmentHandler := music.NewTrackFragmentHandler(inMemoryRepository, converter)
 	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
 	ffProbe := tracks.NewFFProbe()
-	buildLibraryHandler := music.NewBuildLibraryHandler(inMemoryRepository, trackStore, thumbnailStore, delimiterAccessLoader, ffProbe)
+	buildLibraryHandler := music.NewBuildLibraryHandler(inMemoryRepository, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
 	applicationMusic := application.Music{
 		Thumbnail:     thumbnailHandler,
 		TrackPlaylist: trackPlaylistHandler,
@@ -187,7 +187,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
-	statsHandler := queries.NewStatsHandler(trackStore, thumbnailStore, queryTransactionProvider)
+	statsHandler := queries.NewStatsHandler(converter, thumbnailStore, queryTransactionProvider)
 	applicationQueries := application.Queries{
 		Stats: statsHandler,
 	}
