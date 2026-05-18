@@ -153,8 +153,8 @@ dev server (running on a different port) to talk to the backend.
     $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
     $ go run -tags insecurecors cmd/eggplant/main.go run /path/to/config.toml
 
-[ci-badge]:https://github.com/boreq/eggplant/actions/workflows/ci.yml/badge.svg?branch=master
-[ci]:https://github.com/boreq/eggplant/actions/workflows/ci.yml?query=branch%3Amaster
+[ci-badge]:https://github.com/boreq/eggplant/actions/workflows/ci.yml/badge.svg?branch=main
+[ci]:https://github.com/boreq/eggplant/actions/workflows/ci.yml?query=branch%3Amain
 [screenshot]: https://user-images.githubusercontent.com/1935975/108577272-5bb61100-7318-11eb-8aba-5fcc0183b58c.png
 [anchor-music-directory]: #music-directory
 [anchor-supported-track-extensions]: #supported-track-extensions
