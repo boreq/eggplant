@@ -196,11 +196,11 @@ func (h *Handler) trackStreamWS(w http.ResponseWriter, r *http.Request, ps httpr
 	})
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
-			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "track not found"))
+			_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "track not found"))
 			return
 		}
 		h.log.Error("start streaming failed", "err", err)
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "start streaming failed"))
+		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "start streaming failed"))
 		return
 	}
 
