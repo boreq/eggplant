@@ -44,6 +44,21 @@ above.
 
 The layout of the music directory is documented in the section ["Music directory"][anchor-music-directory]. 
 
+Your reverse proxy needs to support websocket connections. For example if you are using `nginx` then your configuration
+would look something like this:
+
+```
+location / {
+    proxy_set_header X-Forwarded-For $proxy_protocol_addr;
+    proxy_set_header X-Real-IP $proxy_protocol_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Host $host;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_pass http://127.0.0.1:8123/;
+}
+```
+
 ### I don't want to use Docker
 
 If you prefer to suffer instead and want to build and install everything
