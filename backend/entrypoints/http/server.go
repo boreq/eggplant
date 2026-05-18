@@ -42,6 +42,7 @@ func (s *Server) Serve(ctx context.Context, address string) error {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}
+		return errors.Wrap(err, "error starting listening")
 	}
 
 	return nil
