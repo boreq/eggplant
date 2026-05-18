@@ -25,7 +25,7 @@
                     <div class="info">
                         <ul class="crumbs">
                             <li>
-                                <router-link to="/browse">
+                                <router-link :to="{ name: 'browse' }">
                                     Eggplant
                                 </router-link>
                             </li>

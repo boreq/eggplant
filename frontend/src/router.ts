@@ -19,7 +19,7 @@ export default new Router({
             component: Browse,
         },
         {
-            path: '/browse',
+            path: '/',
             name: 'browse',
             component: Browse,
         },
@@ -50,7 +50,7 @@ export default new Router({
         },
         {
             path: '*',
-            redirect: 'browse',
+            redirect: { name: 'browse' },
         },
     ],
 });
