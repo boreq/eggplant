@@ -34,6 +34,9 @@
                                     {{ parent.title }}
                                 </router-link>
                             </li>
+                            <li v-if="album.id">
+                                {{ album.title }}
+                            </li>
                         </ul>
 
                         <div class="title">

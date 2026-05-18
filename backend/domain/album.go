@@ -40,8 +40,15 @@ type Album struct {
 }
 
 func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []ParentAlbum, albums []ChildAlbum, tracks []Track) (Album, error) {
-	if len(parents) == 0 {
-		return Album{}, errors.New("album must have at least one parent")
+	for _, p := range parents {
+		if p.id == id {
+			return Album{}, errors.New("parents must not contain the album itself")
+		}
+	}
+	for _, c := range albums {
+		if c.id == id {
+			return Album{}, errors.New("child albums must not contain the album itself")
+		}
 	}
 	if len(albums) == 0 && len(tracks) == 0 {
 		return Album{}, errors.New("album must have at least one child album or track")

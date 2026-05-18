@@ -53,8 +53,9 @@ func (l *Library) GetAlbum(accessCtx AccessContext, id domain.AlbumId) (domain.A
 
 	target := path[len(path)-1]
 
-	parents := make([]domain.ParentAlbum, 0, len(path))
-	for _, a := range path {
+	ancestors := path[:len(path)-1]
+	parents := make([]domain.ParentAlbum, 0, len(ancestors))
+	for _, a := range ancestors {
 		parents = append(parents, domain.NewParentAlbum(a.id, a.title))
 	}
 

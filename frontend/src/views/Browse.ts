@@ -241,6 +241,9 @@ export default class Browse extends Vue {
             .map(v => {
                 const basic = this.toBasicAlbum(v);
                 basic.path = this.album.parents ? this.album.parents.map(p => p.id) : [];
+                if (this.album.id) {
+                    basic.path.push(this.album.id);
+                }
                 basic.path.push(v.id);
                 return basic;
             });
@@ -346,9 +349,13 @@ export default class Browse extends Vue {
     }
 
     private toBasicAlbum(album: Album): BasicAlbum {
+        const path = album.parents ? album.parents.map(v => v.id) : [];
+        if (album.id) {
+            path.push(album.id);
+        }
         return {
             title: album.title,
-            path: album.parents ? album.parents.map(v => v.id) : [],
+            path: path,
             thumbnail: album.thumbnail,
         };
     }
