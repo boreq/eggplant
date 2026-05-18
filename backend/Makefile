@@ -20,9 +20,9 @@ check-repository-unchanged:
 	../_tools/check_repository_unchanged.sh
 
 tools:
-	 go install honnef.co/go/tools/cmd/staticcheck@latest
-	 go install github.com/google/wire/cmd/wire@latest
-	 go install golang.org/x/tools/cmd/goimports@latest
+	 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+	 go install github.com/google/wire/cmd/wire@v0.7.0
+	 go install golang.org/x/tools/cmd/goimports@v0.45.0
 
 dependencies:
 	go get ./...
@@ -33,9 +33,8 @@ tidy:
 generate:
 	 go generate ./...
 
-lint: 
-	go vet ./...
-	staticcheck ./...
+lint:
+	golangci-lint run ./...
 
 test:
 	go test ./...

@@ -49,7 +49,7 @@ func (s *ThumbnailStore) SetItems(items []music.ThumbnailStoreItem) {
 }
 
 func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId domain.FileId) (domain.ConvertedFile, error) {
-	return s.Store.getConvertedFileForId(ctx, fileId.String())
+	return s.getConvertedFileForId(ctx, fileId.String())
 }
 
 func NewThumbnailConverter(dataDir string) *ThumbnailConverter {

@@ -1,6 +1,7 @@
 package music
 
 import (
+	"context"
 	"runtime"
 	"sync"
 
@@ -35,8 +36,8 @@ func NewBuildLibraryHandler(
 	}
 }
 
-func (h *BuildLibraryHandler) Execute(scan scannerdomain.FoundRootAlbum) error {
-	pathDurations, err := h.probeDurations(scan)
+func (h *BuildLibraryHandler) Execute(ctx context.Context, scan scannerdomain.FoundRootAlbum) error {
+	pathDurations, err := h.probeDurations(ctx, scan)
 	if err != nil {
 		return errors.Wrap(err, "could not probe track durations")
 	}
@@ -57,7 +58,7 @@ func (h *BuildLibraryHandler) Execute(scan scannerdomain.FoundRootAlbum) error {
 	return nil
 }
 
-func (h *BuildLibraryHandler) probeDurations(scan scannerdomain.FoundRootAlbum) (map[string]domain.TrackDuration, error) {
+func (h *BuildLibraryHandler) probeDurations(ctx context.Context, scan scannerdomain.FoundRootAlbum) (map[string]domain.TrackDuration, error) {
 	paths := uniqueTrackPaths(scan)
 	out := make(map[string]domain.TrackDuration, len(paths))
 	var mu sync.Mutex
@@ -66,7 +67,7 @@ func (h *BuildLibraryHandler) probeDurations(scan scannerdomain.FoundRootAlbum) 
 	g.SetLimit(runtime.NumCPU())
 	for _, p := range paths {
 		g.Go(func() error {
-			d, err := h.durations.GetDuration(p)
+			d, err := h.durations.GetDuration(ctx, p)
 			if err != nil {
 				return errors.Wrapf(err, "could not measure duration of '%s'", p)
 			}

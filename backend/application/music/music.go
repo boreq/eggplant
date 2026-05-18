@@ -60,7 +60,7 @@ func (t ThumbnailStoreItem) Path() domain.FilePath {
 }
 
 type TrackDurations interface {
-	GetDuration(path string) (domain.TrackDuration, error)
+	GetDuration(ctx context.Context, path string) (domain.TrackDuration, error)
 }
 
 type AccessLoader interface {

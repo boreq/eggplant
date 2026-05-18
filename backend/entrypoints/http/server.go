@@ -34,7 +34,7 @@ func (s *Server) Serve(ctx context.Context, address string) error {
 
 	go func() {
 		<-ctx.Done()
-		httpServer.Close()
+		_ = httpServer.Close()
 	}()
 
 	s.log.Info("starting listening", "address", address)

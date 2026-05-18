@@ -2,6 +2,7 @@ package tracks
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"strings"
 	"time"
@@ -16,14 +17,14 @@ func NewFFProbe() *FFProbe {
 	return &FFProbe{}
 }
 
-func (p *FFProbe) GetDuration(path string) (domain.TrackDuration, error) {
+func (p *FFProbe) GetDuration(ctx context.Context, path string) (domain.TrackDuration, error) {
 	args := []string{
 		"-v", "error",
 		"-show_entries", "format=duration",
 		"-of", "default=noprint_wrappers=1:nokey=1",
 		path,
 	}
-	cmd := exec.Command("ffprobe", args...)
+	cmd := exec.CommandContext(ctx, "ffprobe", args...)
 	bufErr := &bytes.Buffer{}
 	cmd.Stderr = bufErr
 	output, err := cmd.Output()

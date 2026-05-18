@@ -31,7 +31,7 @@ func (l *Listener) Run(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			if err := l.buildLibrary.Execute(scan); err != nil {
+			if err := l.buildLibrary.Execute(ctx, scan); err != nil {
 				l.log.Error("could not process a scanner update", "err", err)
 			}
 		}

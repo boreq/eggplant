@@ -79,7 +79,7 @@ func New(directory string, config Config) (*Scanner, error) {
 
 // Start starts the watcher and returns a channel on which the updates are
 // sent whenever available. At least one update will be sent on the channel
-// immidiately after calling this method.
+// immediately after calling this method.
 func (s *Scanner) Start() (<-chan scanner.FoundRootAlbum, error) {
 	// fail early since the initial load carries the highest failure
 	// possiblity
