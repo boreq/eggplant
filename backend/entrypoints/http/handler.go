@@ -24,6 +24,8 @@ var streamWsUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
+const streamWsPingInterval = 15 * time.Second
+
 var Version = "unknown"
 
 type AuthenticatedUser struct {
@@ -211,11 +213,31 @@ func (h *Handler) trackStreamWS(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	// Hold the connection open.
+	go h.keepWebsocketAlive(ctx, conn)
+
+	// Hold the connection open
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			h.log.Debug("read error, exiting", "err", err)
 			return
+		}
+	}
+}
+
+func (h *Handler) keepWebsocketAlive(ctx context.Context, conn *websocket.Conn) {
+	ticker := time.NewTicker(streamWsPingInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			deadline := time.Now().Add(streamWsPingInterval)
+			if err := conn.WriteControl(websocket.PingMessage, nil, deadline); err != nil {
+				h.log.Debug("ping error, exiting", "err", err)
+				return
+			}
 		}
 	}
 }
