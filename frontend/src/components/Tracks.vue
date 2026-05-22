@@ -46,12 +46,7 @@
             </dropdown>
 
             <div class="duration">
-                <div v-if="!isBeingConverted(entry.track)">
-                    {{ formatDuration(entry.track) }}
-                </div>
-                <div v-if="isBeingConverted(entry.track)">
-                    <spinner v-tooltip="'This track has not been converted yet.'"></spinner>
-                </div>
+                {{ formatDuration(entry.track) }}
             </div>
         </li>
     </ul>

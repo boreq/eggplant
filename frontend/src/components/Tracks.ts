@@ -65,10 +65,6 @@ export default class Tracks extends Vue {
         return false;
     }
 
-    isBeingConverted(track: Track): boolean {
-        return !track.duration;
-    }
-
     onPlayTrackButtonClicked(index: number): void {
         if (this.isNowPlaying(index, this.entries[index].track)) {
             if (this.paused()) {
