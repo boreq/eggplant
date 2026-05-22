@@ -214,6 +214,7 @@ func (h *Handler) trackStreamWS(w http.ResponseWriter, r *http.Request, ps httpr
 	// Hold the connection open.
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
+			h.log.Debug("read error, exiting", "err", err)
 			return
 		}
 	}
