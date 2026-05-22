@@ -309,13 +309,13 @@ $topbar-height: 45px;
                     .info {
                         display: contents;
 
+                        .crumbs {
+                            margin-bottom: 1em;
+                        }
+
                         .actions {
                             margin: 1em 0;
                         }
-                    }
-
-                    .crumbs {
-                        order: -1;
                     }
                 }
             }
