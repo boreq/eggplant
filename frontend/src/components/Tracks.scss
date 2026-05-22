@@ -1,19 +1,30 @@
 .tracks {
     padding: 0;
     margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
 
     .track {
-        display: flex;
-        padding: 1em 2em;
+        display: contents;
 
-        &:nth-child(even) {
+        &:nth-child(even) > * {
             background-color: $box-normal-background-color-alt;
         }
 
-        .play {
-            margin: 0 1em 0 0;
-            width: 11px;
+        > * {
+            padding: 1em 0.5em;
+        }
 
+        > :first-child {
+            padding-left: 2em;
+        }
+
+        > :last-child {
+            padding-right: 2em;
+        }
+
+        .play {
             .button {
                 display: none;
             }
@@ -64,20 +75,18 @@
         }
 
         .title {
-            flex: 1;
+            min-width: 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .duration {
-            margin-left: 1em;
-            width: 30px;
             text-align: right;
         }
     }
 
-    @media (any-hover: none) {
+    @media (hover: none) {
         .track {
             .play {
                 .button {
