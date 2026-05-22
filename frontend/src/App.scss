@@ -78,6 +78,7 @@ a {
         position: absolute;
         bottom: 0;
         right: 0;
+        overflow: hidden;
     }
 
     @media (max-width: $responsive-threshold-mobile), (max-height: 700px) {
