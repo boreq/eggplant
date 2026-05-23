@@ -1,10 +1,17 @@
 export class Stats {
     users: number;
-    thumbnails: StoreStats;
-    tracks: StoreStats;
+    thumbnails: ThumbnailStats;
+    tracks: TrackStats;
 }
 
-export class StoreStats {
+export class TrackStats {
+    numberOfTracks: number;
+    sizeOfTracks: number;
+    numberOfStreams: number;
+    sizeOfConvertedTracks: number;
+}
+
+export class ThumbnailStats {
     allItems: number;
     convertedItems: number;
     originalSize: number;

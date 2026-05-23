@@ -6,7 +6,8 @@ import Notifications from '@/components/Notifications';
 import { ApiService } from '@/services/ApiService';
 import { Stats as StatsDto } from '@/dto/Stats';
 import Spinner from '@/components/Spinner.vue';
-import StoreStats from '@/components/StoreStats.vue';
+import TrackStats from '@/components/TrackStats.vue';
+import ThumbnailStats from '@/components/ThumbnailStats.vue';
 import SubHeader from '@/components/SubHeader.vue';
 
 
@@ -17,7 +18,8 @@ import SubHeader from '@/components/SubHeader.vue';
         ActionBar,
         ActionBarButton,
         Spinner,
-        StoreStats,
+        TrackStats,
+        ThumbnailStats,
     },
 })
 export default class Stats extends Vue {

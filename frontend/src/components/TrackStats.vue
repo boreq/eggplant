@@ -2,34 +2,34 @@
     <div class="store-stats">
         <div>
             <div class="label">
-               Number of items
+                Number of tracks
             </div>
             <div class="value">
-                {{ stats.allItems }}
+                {{ stats.numberOfTracks }}
             </div>
         </div>
         <div>
             <div class="label">
-                Number of converted items
+                Number of streams
             </div>
             <div class="value">
-                {{ stats.convertedItems }}
+                {{ stats.numberOfStreams }}
             </div>
         </div>
         <div>
             <div class="label">
-                Original size
+                Size of tracks
             </div>
             <div class="value">
-                {{ originalSize }}
+                {{ sizeOfTracks }}
             </div>
         </div>
         <div>
             <div class="label">
-                Converted size
+                Size of converted tracks
             </div>
             <div class="value">
-                {{ convertedSize }}
+                {{ sizeOfConvertedTracks }}
             </div>
         </div>
         <div>
@@ -42,5 +42,5 @@
         </div>
     </div>
 </template>
-<script lang="ts" src="./StoreStats.ts"></script>
+<script lang="ts" src="./TrackStats.ts"></script>
 <style scoped lang="scss" src="./StoreStats.scss"></style>

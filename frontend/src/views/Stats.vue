@@ -7,10 +7,10 @@
         <spinner v-if="!stats" class="spinner"></spinner>
         <div v-if="stats">
             <sub-header text="Tracks"></sub-header>
-            <store-stats :stats="stats.tracks"></store-stats>
+            <track-stats :stats="stats.tracks"></track-stats>
 
             <sub-header text="Thumbnails"></sub-header>
-            <store-stats :stats="stats.thumbnails"></store-stats>
+            <thumbnail-stats :stats="stats.thumbnails"></thumbnail-stats>
         </div>
     </div>
 </template>

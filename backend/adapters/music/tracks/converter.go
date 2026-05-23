@@ -171,7 +171,7 @@ func (c *Converter) GetFragment(fileId domain.FileId, streamId domain.StreamId, 
 	return openFile(c.fragmentPathInDir(s.dir, fragmentId))
 }
 
-func (c *Converter) GetStats() (queries.StoreStats, error) {
+func (c *Converter) GetStats() (queries.TrackStats, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -179,21 +179,22 @@ func (c *Converter) GetStats() (queries.StoreStats, error) {
 	for _, it := range c.items {
 		info, err := os.Stat(it.Path().String())
 		if err != nil {
-			return queries.StoreStats{}, errors.Wrap(err, "could not stat original")
+			return queries.TrackStats{}, errors.Wrap(err, "could not stat original")
 		}
 		originalSize += info.Size()
 	}
 
 	convertedSize, convertedCount, err := c.streamsStats()
 	if err != nil {
-		return queries.StoreStats{}, errors.Wrap(err, "could not read stream stats")
+		return queries.TrackStats{}, errors.Wrap(err, "could not read stream stats")
 	}
 
-	return queries.StoreStats{
-		AllItems:       int64(len(c.items)),
-		ConvertedItems: convertedCount,
-		OriginalSize:   originalSize,
-		ConvertedSize:  convertedSize,
+	return queries.TrackStats{
+		NumberOfTracks: int64(len(c.items)),
+		SizeOfTracks:   originalSize,
+
+		NumberOfStreams:       convertedCount,
+		SizeOfConvertedTracks: convertedSize,
 	}, nil
 }
 

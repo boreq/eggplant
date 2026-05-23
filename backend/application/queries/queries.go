@@ -5,20 +5,28 @@ type UserRepository interface {
 }
 
 type TrackStore interface {
-	GetStats() (StoreStats, error)
+	GetStats() (TrackStats, error)
 }
 
 type ThumbnailStore interface {
-	GetStats() (StoreStats, error)
+	GetStats() (ThumbnailStats, error)
 }
 
 type Stats struct {
-	Users      int        `json:"users"`
-	Thumbnails StoreStats `json:"thumbnails"`
-	Tracks     StoreStats `json:"tracks"`
+	Users      int            `json:"users"`
+	Thumbnails ThumbnailStats `json:"thumbnails"`
+	Tracks     TrackStats     `json:"tracks"`
 }
 
-type StoreStats struct {
+type TrackStats struct {
+	NumberOfTracks int64 `json:"numberOfTracks"`
+	SizeOfTracks   int64 `json:"sizeOfTracks"`
+
+	NumberOfStreams       int64 `json:"numberOfStreams"`
+	SizeOfConvertedTracks int64 `json:"sizeOfConvertedTracks"`
+}
+
+type ThumbnailStats struct {
 	AllItems       int64 `json:"allItems"`
 	ConvertedItems int64 `json:"convertedItems"`
 	OriginalSize   int64 `json:"originalSize"`

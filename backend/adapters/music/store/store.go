@@ -80,21 +80,21 @@ type ConvertedFileOrError struct {
 	Err           error
 }
 
-func (s *Store) GetStats() (queries.StoreStats, error) {
+func (s *Store) GetStats() (queries.ThumbnailStats, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	originalSize, err := s.getOriginalSize()
 	if err != nil {
-		return queries.StoreStats{}, errors.Wrap(err, "could not get the original size")
+		return queries.ThumbnailStats{}, errors.Wrap(err, "could not get the original size")
 	}
 
 	convertedSize, convertedCount, err := s.getConvertedStats()
 	if err != nil {
-		return queries.StoreStats{}, errors.Wrap(err, "could not get the converted size")
+		return queries.ThumbnailStats{}, errors.Wrap(err, "could not get the converted size")
 	}
 
-	stats := queries.StoreStats{
+	stats := queries.ThumbnailStats{
 		AllItems:       int64(len(s.items)),
 		ConvertedItems: convertedCount,
 		OriginalSize:   originalSize,

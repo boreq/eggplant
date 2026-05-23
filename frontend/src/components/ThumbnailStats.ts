@@ -1,13 +1,13 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { StoreStats as StoreStatsDto } from '@/dto/Stats';
+import { ThumbnailStats as ThumbnailStatsDto } from '@/dto/Stats';
 import filesize from 'filesize';
 
 
 @Component
-export default class StoreStats extends Vue {
+export default class ThumbnailStats extends Vue {
 
     @Prop()
-    stats: StoreStatsDto;
+    stats: ThumbnailStatsDto;
 
     get originalSize(): string {
         return this.humanize(this.stats.originalSize);
