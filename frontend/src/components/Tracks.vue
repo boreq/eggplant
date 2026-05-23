@@ -1,7 +1,7 @@
 <template>
     <ul class="tracks">
-        <li v-for="(entry, index) in entries" :key="entry.track.id" class="track">
-            <div class="play" :class="{ playing: isNowPlaying(index, entry.track) }">
+        <li v-for="(entry, index) in entries" :key="entry.track.id" class="track" :class="{ playing: isNowPlaying(index, entry.track) }" @click="onTrackRowClicked(index)">
+            <div class="play">
                 <a @click="onPlayTrackButtonClicked(index)" class="button" v-if="!showPlayAlbumButtonAsPause(index, entry.track)">
                     <i class="icon fas fa-play"></i>
                 </a>
@@ -11,7 +11,8 @@
                 </a>
 
                 <div class="number">
-                    <i class="icon fas fa-music"></i>
+                    <template v-if="entry.track.number != null">{{ entry.track.number }}</template>
+                    <i v-else class="icon fas fa-music"></i>
                 </div>
             </div>
 
@@ -19,7 +20,7 @@
                 {{ entry.track.title }}
             </div>
 
-            <dropdown class="actions" ref="dropdowns">
+            <dropdown class="actions" ref="dropdowns" @click.native.stop="">
                 <template v-slot:trigger>
                     <div class="target">
                         <i class="fas fa-ellipsis-h"></i>

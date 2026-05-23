@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/titleparser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -167,7 +168,7 @@ func TestNewTracks(t *testing.T) {
 			input := mkTracks(t, tc.input)
 			expected := mkTracks(t, tc.output)
 			got := domain.NewTracks(input)
-			require.Equal(t, domain.Tracks(expected), got)
+			require.Equal(t, expected, got.Items())
 		})
 	}
 }
@@ -178,9 +179,9 @@ func mkTracks(t *testing.T, titles []string) []domain.Track {
 	require.NoError(t, err)
 	tracks := make([]domain.Track, 0, len(titles))
 	for _, s := range titles {
-		title, err := domain.NewTrackTitle(s)
+		parsed, err := titleparser.Parse(s)
 		require.NoError(t, err)
-		tracks = append(tracks, domain.NewTrack(domain.TrackId{}, domain.FileId{}, title, dur))
+		tracks = append(tracks, domain.NewTrack(domain.TrackId{}, domain.FileId{}, parsed.Number(), parsed.Title(), dur))
 	}
 	return tracks
 }

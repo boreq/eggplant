@@ -32,6 +32,7 @@ type searchTrackAlbum struct {
 
 type track struct {
 	Id       string  `json:"id,omitempty"`
+	Number   *int    `json:"number,omitempty"`
 	Title    string  `json:"title,omitempty"`
 	Duration float64 `json:"duration,omitempty"`
 }
@@ -111,8 +112,14 @@ func toSearchTrackAlbum(a *library.SearchTrackAlbum) *searchTrackAlbum {
 }
 
 func toTrack(t domain.Track) track {
+	var number *int
+	if n := t.Number(); n != nil {
+		v := n.Int()
+		number = &v
+	}
 	return track{
 		Id:       t.Id().String(),
+		Number:   number,
 		Title:    t.Title().String(),
 		Duration: t.Duration().Seconds(),
 	}
@@ -127,7 +134,7 @@ func toAlbum(a domain.Album) album {
 		Thumbnail: toThumbnail(a.Thumbnail()),
 		Parents:   toParentAlbums(a.Parents()),
 		Albums:    toAlbums(a.Albums()),
-		Tracks:    toTracks(a.Tracks()),
+		Tracks:    toTracks(a.Tracks().Items()),
 	}
 }
 
@@ -135,7 +142,7 @@ func toRootAlbum(a domain.RootAlbum) album {
 	return album{
 		Thumbnail: toThumbnail(a.Thumbnail()),
 		Albums:    toAlbums(a.Albums()),
-		Tracks:    toTracks(a.Tracks()),
+		Tracks:    toTracks(a.Tracks().Items()),
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/domain/library"
 	scannerdomain "github.com/boreq/eggplant/domain/scanner"
+	"github.com/boreq/eggplant/domain/titleparser"
 	"github.com/boreq/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -191,9 +192,14 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 			return nil, errors.New("missing duration for '" + path.String() + "'")
 		}
 
-		id, err := domain.NewTrackId(parents, title)
+		parsed, err := titleparser.Parse(title.String())
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not generate track id for '%s'", title)
+			return nil, errors.Wrapf(err, "could not parse track title '%s'", title)
+		}
+
+		id, err := domain.NewTrackId(parents, parsed.Title())
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not generate track id for '%s'", parsed.Title())
 		}
 
 		fileId, err := domain.NewFileId(path)
@@ -201,7 +207,7 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 			return nil, errors.Wrapf(err, "could not generate file id for '%s'", path)
 		}
 
-		out = append(out, domain.NewTrack(id, fileId, title, duration))
+		out = append(out, domain.NewTrack(id, fileId, parsed.Number(), parsed.Title(), duration))
 		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path, duration))
 	}
 	return out, nil

@@ -9,14 +9,16 @@ import (
 type Track struct {
 	id       TrackId
 	fileId   FileId
+	number   *TrackNumber
 	title    TrackTitle
 	duration TrackDuration
 }
 
-func NewTrack(id TrackId, fileId FileId, title TrackTitle, duration TrackDuration) Track {
+func NewTrack(id TrackId, fileId FileId, number *TrackNumber, title TrackTitle, duration TrackDuration) Track {
 	return Track{
 		id:       id,
 		fileId:   fileId,
+		number:   number,
 		title:    title,
 		duration: duration,
 	}
@@ -32,6 +34,10 @@ func (t Track) FileId() FileId {
 
 func (t Track) Title() TrackTitle {
 	return t.title
+}
+
+func (t Track) Number() *TrackNumber {
+	return t.number
 }
 
 func (t Track) Duration() TrackDuration {
@@ -71,6 +77,21 @@ func NewTrackTitle(s string) (TrackTitle, error) {
 
 func (t TrackTitle) String() string {
 	return t.value
+}
+
+type TrackNumber struct {
+	value int
+}
+
+func NewTrackNumber(n int) (TrackNumber, error) {
+	if n < 0 {
+		return TrackNumber{}, errors.New("track number must not be negative")
+	}
+	return TrackNumber{value: n}, nil
+}
+
+func (n TrackNumber) Int() int {
+	return n.value
 }
 
 type TrackDuration struct {

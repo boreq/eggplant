@@ -25,36 +25,24 @@
         }
 
         .play {
+            min-width: 1.5em;
+            text-align: right;
+
             .button {
                 display: none;
             }
 
             .number {
-                text-align: left;
+                text-align: right;
+                color: $box-normal-text-dimmed-color;
             }
 
-            &.playing, &:hover {
+            &:hover {
                 color: $primary-color;
             }
 
             &:active {
                 color: $primary-color-dark;
-            }
-        }
-
-        &:hover .play, .play.playing {
-            .button {
-                display: block;
-            }
-
-            .number {
-                display: none;
-            }
-        }
-
-        &:hover {
-            .actions .target {
-                display: block;
             }
         }
 
@@ -86,15 +74,57 @@
         }
     }
 
-    @media (hover: none) {
+    @media (hover: hover) {
         .track {
-            .play {
-                .button {
-                    display: block;
+            &:hover {
+                .play {
+                    .button {
+                        display: block;
+                    }
+
+                    .number {
+                        display: none;
+                    }
                 }
 
-                .number {
-                    display: none;
+                .actions .target {
+                    display: block;
+                }
+            }
+
+            &.playing {
+                .play {
+                    .button {
+                        display: block;
+                        color: $primary-color;
+                    }
+
+                    .number {
+                        display: none;
+                    }
+                }
+            }
+
+        }
+    }
+
+    @media (hover: none) {
+        .track {
+            &:hover {
+                .play {
+                    .button {
+                        display: none;
+                    }
+
+                    .number {
+                        display: block;
+                    }
+                }
+            }
+
+            &.playing {
+                .title {
+                    color: $primary-color;
                 }
             }
 

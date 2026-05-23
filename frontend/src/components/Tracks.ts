@@ -65,6 +65,13 @@ export default class Tracks extends Vue {
         return false;
     }
 
+    onTrackRowClicked(index: number): void {
+        if (!window.matchMedia('(hover: none)').matches) {
+            return;
+        }
+        this.onPlayTrackButtonClicked(index);
+    }
+
     onPlayTrackButtonClicked(index: number): void {
         if (this.isNowPlaying(index, this.entries[index].track)) {
             if (this.paused()) {

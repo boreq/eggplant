@@ -87,7 +87,7 @@ func TestGetRootAlbumAccess(t *testing.T) {
 				require.NoError(t, trackErr)
 				require.NoError(t, thumbErr)
 				require.ElementsMatch(t, tc.expectAlbums, childAlbumTitles(got.Albums()))
-				require.ElementsMatch(t, tc.expectTracks, trackListTitles(got.Tracks()))
+				require.ElementsMatch(t, tc.expectTracks, trackListTitles(got.Tracks().Items()))
 			}
 		})
 	}
@@ -263,7 +263,7 @@ func TestGetAlbumAccess(t *testing.T) {
 			require.NoError(t, thumbErr)
 			require.Equal(t, "parent", got.Title().String())
 			require.ElementsMatch(t, tc.expectAlbums, childAlbumTitles(got.Albums()))
-			require.ElementsMatch(t, []string{"parent_song"}, trackListTitles(got.Tracks()))
+			require.ElementsMatch(t, []string{"parent_song"}, trackListTitles(got.Tracks().Items()))
 		})
 	}
 }
@@ -445,7 +445,7 @@ func TestGetGrandchildAlbumAccess(t *testing.T) {
 			require.NoError(t, thumbErr)
 			require.Equal(t, "grandchild", got.Title().String())
 			require.ElementsMatch(t, tc.expectAlbums, childAlbumTitles(got.Albums()))
-			require.ElementsMatch(t, []string{"grandchild_song"}, trackListTitles(got.Tracks()))
+			require.ElementsMatch(t, []string{"grandchild_song"}, trackListTitles(got.Tracks().Items()))
 		})
 	}
 }
@@ -756,7 +756,7 @@ func mkTrack(t *testing.T, title string) domain.Track {
 	require.NoError(t, err)
 	fileId, err := domain.NewFileId(p)
 	require.NoError(t, err)
-	return domain.NewTrack(id, fileId, tt, d)
+	return domain.NewTrack(id, fileId, nil, tt, d)
 }
 
 func mkThumb(t *testing.T, filename string) domain.Thumbnail {
