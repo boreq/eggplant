@@ -29,6 +29,8 @@ export default class MediaSession extends Vue {
             const album = this.nowPlaying.album;
             const metadata = {
                 title: this.nowPlaying.track.title,
+                // album title is set as artist because the album field is unlikely to be displayed in mobile notifications
+                artist: album ? album.title : null,
                 album: album ? album.title : null,
                 artwork: [
                     // hack to clear the artwork if a song doesn't have one
