@@ -38,14 +38,10 @@ const (
 	stateTitle
 )
 
-func Parse(s string) (NumberAndTitle, error) {
-	numberAndTitle, err := tryParse(s)
+func Parse(t domain.TrackTitle) (NumberAndTitle, error) {
+	numberAndTitle, err := tryParse(t.String())
 	if err != nil {
-		title, err := domain.NewTrackTitle(s)
-		if err != nil {
-			return NumberAndTitle{}, errors.Wrap(err, "error creating a fallback track title")
-		}
-		return NewNumberAndTitle(nil, title), nil
+		return NewNumberAndTitle(nil, t), nil
 	}
 	return numberAndTitle, nil
 }

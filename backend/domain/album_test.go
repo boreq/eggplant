@@ -72,5 +72,5 @@ func validTrack(t *testing.T) domain.Track {
 	require.NoError(t, err)
 	dur, err := domain.NewTrackDuration(time.Second)
 	require.NoError(t, err)
-	return domain.NewTrack(domain.TrackId{}, domain.FileId{}, nil, title, dur)
+	return domain.NewTrack(domain.TrackId{}, domain.FileId{}, title, dur)
 }

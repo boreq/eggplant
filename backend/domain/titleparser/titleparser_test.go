@@ -133,7 +133,10 @@ func TestParse(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := titleparser.Parse(tc.input)
+			input, err := domain.NewTrackTitle(tc.input)
+			require.NoError(t, err)
+
+			got, err := titleparser.Parse(input)
 			require.NoError(t, err)
 
 			number := got.Number()
@@ -149,9 +152,4 @@ func TestParse(t *testing.T) {
 			require.Equal(t, expectedTitle, got.Title(), "title")
 		})
 	}
-}
-
-func TestParseEmpty(t *testing.T) {
-	_, err := titleparser.Parse("")
-	require.Error(t, err)
 }

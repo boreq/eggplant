@@ -179,9 +179,11 @@ func mkTracks(t *testing.T, titles []string) []domain.Track {
 	require.NoError(t, err)
 	tracks := make([]domain.Track, 0, len(titles))
 	for _, s := range titles {
-		parsed, err := titleparser.Parse(s)
+		title, err := domain.NewTrackTitle(s)
 		require.NoError(t, err)
-		tracks = append(tracks, domain.NewTrack(domain.TrackId{}, domain.FileId{}, parsed.Number(), parsed.Title(), dur))
+		parsed, err := titleparser.Parse(title)
+		require.NoError(t, err)
+		tracks = append(tracks, domain.NewTrackWithNumber(domain.TrackId{}, domain.FileId{}, parsed.Number(), parsed.Title(), dur))
 	}
 	return tracks
 }

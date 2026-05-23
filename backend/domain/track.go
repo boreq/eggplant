@@ -14,7 +14,17 @@ type Track struct {
 	duration TrackDuration
 }
 
-func NewTrack(id TrackId, fileId FileId, number *TrackNumber, title TrackTitle, duration TrackDuration) Track {
+func NewTrack(id TrackId, fileId FileId, title TrackTitle, duration TrackDuration) Track {
+	return Track{
+		id:       id,
+		fileId:   fileId,
+		number:   nil,
+		title:    title,
+		duration: duration,
+	}
+}
+
+func NewTrackWithNumber(id TrackId, fileId FileId, number *TrackNumber, title TrackTitle, duration TrackDuration) Track {
 	return Track{
 		id:       id,
 		fileId:   fileId,

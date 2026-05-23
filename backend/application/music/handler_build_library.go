@@ -192,14 +192,9 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 			return nil, errors.New("missing duration for '" + path.String() + "'")
 		}
 
-		parsed, err := titleparser.Parse(title.String())
+		id, err := domain.NewTrackId(parents, title)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse track title '%s'", title)
-		}
-
-		id, err := domain.NewTrackId(parents, parsed.Title())
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not generate track id for '%s'", parsed.Title())
+			return nil, errors.Wrapf(err, "could not generate track id for '%s'", title)
 		}
 
 		fileId, err := domain.NewFileId(path)
@@ -207,10 +202,24 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 			return nil, errors.Wrapf(err, "could not generate file id for '%s'", path)
 		}
 
-		out = append(out, domain.NewTrack(id, fileId, parsed.Number(), parsed.Title(), duration))
+		out = append(out, domain.NewTrack(id, fileId, title, duration))
 		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path, duration))
 	}
-	return out, nil
+	return tryAddingTrackNumbers(out), nil
+}
+
+// tryAddingTrackNumbers only annotates tracks when every track in the album yields a parsed number,
+// so we can reliably tell that the user most likely wants track numbers to be detected for this album.
+func tryAddingTrackNumbers(tracks []domain.Track) []domain.Track {
+	annotated := make([]domain.Track, 0, len(tracks))
+	for _, t := range tracks {
+		parsed, err := titleparser.Parse(t.Title())
+		if err != nil || parsed.Number() == nil {
+			return tracks
+		}
+		annotated = append(annotated, domain.NewTrackWithNumber(t.Id(), t.FileId(), parsed.Number(), parsed.Title(), t.Duration()))
+	}
+	return annotated
 }
 
 func (b *libraryBuilder) buildThumbnail(file *domain.FilePath, parents []domain.AlbumId) (*domain.Thumbnail, error) {
