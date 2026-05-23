@@ -756,7 +756,7 @@ func mkTrack(t *testing.T, title string) domain.Track {
 	require.NoError(t, err)
 	fileId, err := domain.NewFileId(p)
 	require.NoError(t, err)
-	return domain.NewTrack(id, fileId, nil, tt, d)
+	return domain.NewTrack(id, fileId, tt, d)
 }
 
 func mkThumb(t *testing.T, filename string) domain.Thumbnail {

@@ -24,11 +24,11 @@ func NewTrack(id TrackId, fileId FileId, title TrackTitle, duration TrackDuratio
 	}
 }
 
-func NewTrackWithNumber(id TrackId, fileId FileId, number *TrackNumber, title TrackTitle, duration TrackDuration) Track {
+func NewTrackWithNumber(id TrackId, fileId FileId, number TrackNumber, title TrackTitle, duration TrackDuration) Track {
 	return Track{
 		id:       id,
 		fileId:   fileId,
-		number:   number,
+		number:   &number,
 		title:    title,
 		duration: duration,
 	}

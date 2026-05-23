@@ -217,7 +217,7 @@ func tryAddingTrackNumbers(tracks []domain.Track) []domain.Track {
 		if err != nil || parsed.Number() == nil {
 			return tracks
 		}
-		annotated = append(annotated, domain.NewTrackWithNumber(t.Id(), t.FileId(), parsed.Number(), parsed.Title(), t.Duration()))
+		annotated = append(annotated, domain.NewTrackWithNumber(t.Id(), t.FileId(), *parsed.Number(), parsed.Title(), t.Duration()))
 	}
 	return annotated
 }
