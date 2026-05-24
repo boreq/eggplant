@@ -43,8 +43,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 26
-          cache: yarn
-          cache-dependency-path: frontend/yarn.lock
 
       - name: Enable corepack
         run: corepack enable
@@ -70,8 +68,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 26
-          cache: yarn
-          cache-dependency-path: frontend/yarn.lock
 
       - name: Enable corepack
         run: corepack enable
