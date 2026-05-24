@@ -3,6 +3,9 @@
         <div class="artwork" v-if="showImage">
             <img :src="thumbnailUrl" :class="{ loaded }" @error="onError" @load="onLoad">
             <div class="glare" v-if="tilt" aria-hidden="true"></div>
+            <div class="spinner-container" v-if="!loaded">
+                <spinner></spinner>
+            </div>
         </div>
         <div class="icon" v-else>
             <i class="fas fa-compact-disc"></i>

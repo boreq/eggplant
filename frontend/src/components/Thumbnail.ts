@@ -2,8 +2,13 @@ import { Component, Prop, Ref, Vue } from 'vue-property-decorator';
 import { ApiService } from '@/services/ApiService';
 import { PartialAlbum } from "@/dto/Album";
 
+import Spinner from '@/components/Spinner.vue';
 
-@Component
+@Component({
+    components: {
+        Spinner,
+    },
+})
 export default class Thumbnail extends Vue {
 
     @Prop()
