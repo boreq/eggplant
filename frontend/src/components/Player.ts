@@ -22,6 +22,8 @@ export default class Player extends Vue {
 
     private hls: Hls = null;
 
+    private hlsErrorHandler: (event: unknown, data: { fatal: boolean }) => void = null;
+
     private streamGeneration = 0;
 
     private streamStartOffset = 0;
@@ -116,7 +118,7 @@ export default class Player extends Vue {
     }
 
     private startStream(track: Track, seekSeconds = 0): void {
-        this.tearDownStream();
+        this.streamGeneration++;
         if (!Hls.isSupported()) {
             Notifications.pushError(this, 'Your browser does not support HLS playback.');
             return;
@@ -154,19 +156,31 @@ export default class Player extends Vue {
     }
 
     private loadHls(url: string, recover: () => void): void {
-        this.destroyHls();
+        const errorHandler = (_: unknown, data: { fatal: boolean }) => {
+            console.error('hls.js error', data);
+            if (data.fatal) {
+                recover();
+            }
+        };
+
+        if (this.hls) {
+            if (this.hlsErrorHandler) {
+                this.hls.off(Hls.Events.ERROR, this.hlsErrorHandler);
+            }
+            this.hlsErrorHandler = errorHandler;
+            this.hls.on(Hls.Events.ERROR, errorHandler);
+            this.hls.loadSource(url);
+            return;
+        }
+
         this.hls = new Hls({
             xhrSetup: (xhr) => {
                 xhr.withCredentials = true;
             },
             startPosition: 0,
         });
-        this.hls.on(Hls.Events.ERROR, (_, data) => {
-            console.error('hls.js error', data);
-            if (data.fatal) {
-                recover();
-            }
-        });
+        this.hlsErrorHandler = errorHandler;
+        this.hls.on(Hls.Events.ERROR, errorHandler);
         this.hls.loadSource(url);
         this.hls.attachMedia(this.audioElement);
     }
@@ -175,6 +189,7 @@ export default class Player extends Vue {
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
+            this.hlsErrorHandler = null;
         }
     }
 
