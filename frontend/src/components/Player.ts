@@ -115,40 +115,41 @@ export default class Player extends Vue {
         this.$store.commit(Mutation.Pause);
     }
 
-    private startStream(track: Track, seekSeconds?: number): void {
+    private startStream(track: Track, seekSeconds = 0): void {
         this.tearDownStream();
         if (!Hls.isSupported()) {
             Notifications.pushError(this, 'Your browser does not support HLS playback.');
             return;
         }
-
-        this.streamStartOffset = seekSeconds && seekSeconds > 0 ? seekSeconds : 0;
+        this.streamStartOffset = seekSeconds;
 
         const ws = new WebSocket(this.apiService.streamWebSocketUrl(track, seekSeconds));
         this.streamWs = ws;
+
+        const recoverByRecreatingStreamWs = () => {
+            if (this.streamWs !== ws) {
+                return;
+            }
+            Notifications.pushError(this, `Playback error for "${track.title}", attempting to recover.`);
+            this.startStream(track, this.streamStartOffset + this.audioElement.currentTime);
+        };
 
         ws.onmessage = (event) => {
             if (this.streamWs !== ws) {
                 return;
             }
-            const streamId = typeof event.data === 'string' ? event.data : '';
-            if (!streamId) {
-                Notifications.pushError(this, `Could not start streaming "${track.title}".`);
-                return;
-            }
-            this.loadHls(this.apiService.streamPlaylistUrl(track, streamId));
+            this.loadHls(this.apiService.streamPlaylistUrl(track, event.data), recoverByRecreatingStreamWs);
             this.audioElement.play();
         };
-
-        ws.onerror = () => {
-            if (this.streamWs !== ws) {
-                return;
+        ws.onerror = recoverByRecreatingStreamWs;
+        ws.onclose = (event) => {
+            if (!event.wasClean) {
+                recoverByRecreatingStreamWs();
             }
-            Notifications.pushError(this, `Could not start streaming "${track.title}".`);
         };
     }
 
-    private loadHls(url: string): void {
+    private loadHls(url: string, recoverByRecreatingStreamWs: () => void): void {
         this.destroyHls();
         this.hls = new Hls({
             xhrSetup: (xhr) => {
@@ -158,6 +159,9 @@ export default class Player extends Vue {
         });
         this.hls.on(Hls.Events.ERROR, (_, data) => {
             console.error('hls.js error', data);
+            if (data.fatal) {
+                recoverByRecreatingStreamWs();
+            }
         });
         this.hls.loadSource(url);
         this.hls.attachMedia(this.audioElement);
