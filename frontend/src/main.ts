@@ -16,3 +16,11 @@ new Vue({
     store,
     render: (h) => h(App),
 }).$mount('#app');
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.error('service worker registration failed', err);
+        });
+    });
+}

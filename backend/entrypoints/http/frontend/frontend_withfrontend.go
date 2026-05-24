@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-//go:embed assets/* index.html favicon.ico
+//go:embed assets/* index.html favicon.ico manifest.webmanifest icon-192.png icon-512.png sw.js
 var content embed.FS
 
 type FrontendFileSystem struct {

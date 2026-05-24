@@ -9,7 +9,6 @@ import Notifications from '@/components/Notifications.vue';
 import NowPlaying from '@/components/NowPlaying.vue';
 import MediaSession from '@/components/MediaSession.vue';
 
-
 @Component({
     components: {
         Controls,
@@ -29,12 +28,28 @@ export default class App extends Vue {
 
     created() {
         window.addEventListener('keydown', this.onKeyDown);
+        this.detectPwaLaunch();
         this.redirectToSetupIfNeeded();
         this.loadCurrentUser();
     }
 
     destroyed(): void {
         window.removeEventListener('keydown', this.onKeyDown);
+    }
+
+    get isMobile(): boolean {
+        return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
+
+    get showPwaWarning(): boolean {
+        return this.isMobile && !this.$store.state.pwaLaunched;
+    }
+
+    private detectPwaLaunch(): void {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('source') === 'pwa') {
+            this.$store.commit(Mutation.MarkPwaLaunched);
+        }
     }
 
     onKeyDown(event: KeyboardEvent): void {

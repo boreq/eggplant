@@ -12,6 +12,7 @@ const vuexPersist = new VuexPersistence<State>({
         volume: state.volume,
         muted: state.muted,
         shuffle: state.shuffle,
+        pwaLaunched: state.pwaLaunched,
     }),
 });
 
@@ -29,6 +30,7 @@ export enum Mutation {
     Shuffle = 'shuffle',
     NoShuffle = 'noShuffle',
     SetUser = 'setUser',
+    MarkPwaLaunched = 'markPwaLaunched',
 }
 
 
@@ -40,6 +42,7 @@ export class State {
     muted: boolean;
     shuffle: boolean;
     user: User;
+    pwaLaunched: boolean;
 }
 
 export class ReplaceCommand {
@@ -68,6 +71,7 @@ export default new Vuex.Store<State>({
         muted: false,
         shuffle: false,
         user: undefined,
+        pwaLaunched: false,
     },
     mutations: {
         [Mutation.Replace](state: State, command: ReplaceCommand): void {
@@ -168,6 +172,9 @@ export default new Vuex.Store<State>({
         },
         [Mutation.SetUser](state: State, user: User): void {
             state.user = user;
+        },
+        [Mutation.MarkPwaLaunched](state: State): void {
+            state.pwaLaunched = true;
         },
     },
     getters: {
