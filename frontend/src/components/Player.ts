@@ -57,6 +57,64 @@ export default class Player extends Vue {
         }
     }
 
+    @Watch('paused')
+    onPausedChanged(val: boolean): void {
+        if (val) {
+            this.audio.pause();
+        } else {
+            this.audio.play();
+        }
+    }
+
+    @Watch('volume')
+    onVolumeChanged(volume: number): void {
+        this.audio.volume = volume;
+    }
+
+    created(): void {
+        this.intervalID = window.setInterval(this.emitValues, 100);
+    }
+
+    mounted(): void {
+        this.audio.volume = this.volume;
+        this.$root.$on(seekEvent, (position: number) => {
+            if (!this.nowPlaying) {
+                return;
+            }
+            const trackTarget = this.nowPlaying.track.duration * position;
+            const localTarget = trackTarget - this.streamStartOffset;
+            const loaded = this.audio.duration;
+            if (localTarget >= 0 && isFinite(loaded) && localTarget < loaded) {
+                this.audio.currentTime = localTarget;
+            } else {
+                this.startStream(this.nowPlaying.track, trackTarget);
+            }
+        });
+    }
+
+    destroyed(): void {
+        window.clearInterval(this.intervalID);
+        this.tearDownStream();
+    }
+
+    onEnded(): void {
+        this.currentNowPlaying = null;
+        this.$store.commit(Mutation.Next);
+    }
+
+    onError(): void {
+        Notifications.pushError(this, `Could not play "${this.nowPlaying.track.title}".`);
+        this.$store.commit(Mutation.Next);
+    }
+
+    onPlay(): void {
+        this.$store.commit(Mutation.Play);
+    }
+
+    onPause(): void {
+        this.$store.commit(Mutation.Pause);
+    }
+
     private startStream(track: Track, seekSeconds?: number): void {
         this.tearDownStream();
         if (!Hls.isSupported()) {
@@ -125,64 +183,6 @@ export default class Player extends Vue {
     private tearDownStream(): void {
         this.destroyHls();
         this.closeStreamWs();
-    }
-
-    @Watch('paused')
-    onPausedChanged(val: boolean): void {
-        if (val) {
-            this.audio.pause();
-        } else {
-            this.audio.play();
-        }
-    }
-
-    @Watch('volume')
-    onVolumeChanged(volume: number): void {
-        this.audio.volume = volume;
-    }
-
-    created(): void {
-        this.intervalID = window.setInterval(this.emitValues, 100);
-    }
-
-    mounted(): void {
-        this.audio.volume = this.volume;
-        this.$root.$on(seekEvent, (position: number) => {
-            if (!this.nowPlaying) {
-                return;
-            }
-            const trackTarget = this.nowPlaying.track.duration * position;
-            const localTarget = trackTarget - this.streamStartOffset;
-            const loaded = this.audio.duration;
-            if (localTarget >= 0 && isFinite(loaded) && localTarget < loaded) {
-                this.audio.currentTime = localTarget;
-            } else {
-                this.startStream(this.nowPlaying.track, trackTarget);
-            }
-        });
-    }
-
-    destroyed(): void {
-        window.clearInterval(this.intervalID);
-        this.tearDownStream();
-    }
-
-    onEnded(): void {
-        this.currentNowPlaying = null;
-        this.$store.commit(Mutation.Next);
-    }
-
-    onError(): void {
-        Notifications.pushError(this, `Could not play "${this.nowPlaying.track.title}".`);
-        this.$store.commit(Mutation.Next);
-    }
-
-    onPlay(): void {
-        this.$store.commit(Mutation.Play);
-    }
-
-    onPause(): void {
-        this.$store.commit(Mutation.Pause);
     }
 
     private emitValues(): void {
