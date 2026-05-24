@@ -6,6 +6,10 @@ browser. This is similar to what Jellyfin is except for music and with way fewer
 
 ![Eggplant][screenshot]
 
+## Check it out
+
+A live demo is available at [music.0x46.net][demo].
+
 ## Installation
 
 This project may be annoying to build. I recommend using Docker. 
@@ -59,7 +63,20 @@ location / {
 }
 ```
 
-### I don't want to use Docker
+### I want a prebuilt binary
+
+Prebuilt binaries are available from the [actions page][main-ci-builds]. Simply click on one of the builds and scroll
+down to the "Artifacts" section. You need a config file to run Eggplant. To get started you can generate a default
+config file by running the following command:
+
+    $ ./eggplant-linux-amd64 default_config | tee config.toml
+
+Then you can edit the generated config file and set the path to your music directory, data directory and cache
+directory. After that you can run Eggplant using the following command:
+
+    $ ./eggplant-linux-amd64 run /path/to/config.toml
+
+### I want to build from source
 
 If you prefer to suffer instead and want to build and install everything
 yourself then you need to look at the `Dockerfile` and basically go through the
@@ -177,3 +194,5 @@ dev server (running on a different port) to talk to the backend.
 [anchor-supported-thumbnail-stems]: #supported-thumbnail-stems
 [anchor-thumbnails]: #thumbnails
 [anchor-access-file]: #access-file
+[demo]: https://music.0x46.net
+[main-ci-builds]: https://github.com/boreq/eggplant/actions?query=branch%3Amain
