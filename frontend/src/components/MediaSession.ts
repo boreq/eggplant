@@ -1,11 +1,15 @@
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
+import { PlaybackData } from '@/dto/PlaybackData';
 import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
 
 
 @Component
 export default class MediaSession extends Vue {
+
+    @Prop()
+    playbackData: PlaybackData;
 
     private readonly apiService = new ApiService(this);
 
@@ -60,6 +64,34 @@ export default class MediaSession extends Vue {
         const mediaSession = this.mediaSession;
         if (mediaSession) {
             mediaSession.playbackState = this.paused ? 'paused' : 'playing';
+        }
+    }
+
+    @Watch('playbackData')
+    onPlaybackDataChanged(): void {
+        const mediaSession = this.mediaSession;
+        if (!mediaSession || !mediaSession.setPositionState) {
+            return;
+        }
+        if (!this.playbackData) {
+            return;
+        }
+        const duration = this.playbackData.duration;
+        let position = this.playbackData.currentTime;
+        if (!isFinite(position) || position < 0) {
+            position = 0;
+        }
+        if (position > duration) {
+            position = duration;
+        }
+        try {
+            mediaSession.setPositionState({
+                duration,
+                position,
+                playbackRate: 1,
+            });
+        } catch {
+            // Some browsers throw when values are out of range.
         }
     }
 

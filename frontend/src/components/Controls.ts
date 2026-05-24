@@ -40,15 +40,15 @@ export default class Controls extends Vue {
     }
 
     get duration(): string {
-        if (!this.nowPlaying) {
+        if (!this.playbackData) {
             return null;
         }
-        return this.textService.formatTime(this.nowPlaying.track.duration);
+        return this.textService.formatTime(this.playbackData.duration);
     }
 
     get currentTimePercentage(): number {
-        if (this.nowPlaying && this.playbackData && this.playbackData.currentTime) {
-            return this.playbackData.currentTime / this.nowPlaying.track.duration;
+        if (this.playbackData && this.playbackData.currentTime && this.playbackData.duration) {
+            return this.playbackData.currentTime / this.playbackData.duration;
         }
         return 0;
     }

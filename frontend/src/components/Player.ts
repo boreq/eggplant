@@ -184,11 +184,13 @@ export default class Player extends Vue {
     }
 
     private emitValues(): void {
-        if (this.audioElement) {
-            const playbackData: PlaybackData = {
-                currentTime: this.streamStartOffset + this.audioElement.currentTime,
-            };
-            this.$emit('playback-data', playbackData);
+        if (!this.audioElement || !this.currentNowPlaying) {
+            return;
         }
+        const playbackData: PlaybackData = {
+            currentTime: this.streamStartOffset + this.audioElement.currentTime,
+            duration: this.currentNowPlaying.track.duration,
+        };
+        this.$emit('playback-data', playbackData);
     }
 }

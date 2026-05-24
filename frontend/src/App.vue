@@ -18,7 +18,7 @@
         </div>
         <player @playback-data="onPlaybackData($event)"></player>
         <notifications class="notifications"></notifications>
-        <media-session></media-session>
+        <media-session :playbackData="playbackData"></media-session>
     </div>
 </template>
 
