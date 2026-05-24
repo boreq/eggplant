@@ -69,7 +69,7 @@ Prebuilt binaries are available from the [actions page][main-ci-builds]. Simply 
 down to the "Artifacts" section. You need a config file to run Eggplant. To get started you can generate a default
 config file by running the following command:
 
-    $ ./eggplant-linux-amd64 default_config | tee config.toml
+    $ ./eggplant-linux-amd64 default_config | tee /path/to/config.toml
 
 Then you can edit the generated config file and set the path to your music directory, data directory and cache
 directory. After that you can run Eggplant using the following command:
