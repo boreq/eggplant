@@ -31,28 +31,33 @@ const (
 	readinessFragments   = 5
 	jobAcceptanceTimeout = 30 * time.Second
 
-	maxOpenStreams = 500
+	streamIdleTimeout = 5 * time.Minute
+	cleanupInterval   = 1 * time.Minute
+
+	maxOpenStreams = 1000
 )
 
 var readinessLastFragmentId = domain.MustNewFragmentId(readinessFragments - 1)
 
 type Converter struct {
+	ctx     context.Context
 	dataDir string
 	log     logging.Logger
 
 	mu      sync.Mutex
 	items   map[domain.FileId]music.TrackStoreItem
-	streams map[string]*streamSession
+	streams map[string]*stream
 
 	ffmpegJobs chan ffmpegJob
 }
 
 func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
 	c := &Converter{
+		ctx:        ctx,
 		dataDir:    dataDir,
 		log:        logging.New("tracks.Converter"),
 		items:      make(map[domain.FileId]music.TrackStoreItem),
-		streams:    make(map[string]*streamSession),
+		streams:    make(map[string]*stream),
 		ffmpegJobs: make(chan ffmpegJob),
 	}
 	if err := c.removeLeftoverStreamDirectories(); err != nil {
@@ -61,7 +66,44 @@ func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go c.ffmpegWorker(ctx)
 	}
+	go c.cleanupIdleStreamsLoop(ctx)
 	return c, nil
+}
+
+func (c *Converter) cleanupIdleStreamsLoop(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(cleanupInterval):
+			c.cancelIdleStreams()
+		}
+	}
+}
+
+func (c *Converter) cancelIdleStreams() {
+	for _, id := range c.unregisterIdleStreams() {
+		c.removeStreamDirectory(id)
+	}
+}
+
+func (c *Converter) unregisterIdleStreams() []domain.StreamId {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	now := time.Now()
+
+	var ids []domain.StreamId
+	for key, stream := range c.streams {
+		if now.Sub(stream.lastAccess) <= streamIdleTimeout {
+			continue
+		}
+		stream.log.Debug("cleaning up idle stream")
+		stream.cancel()
+		ids = append(ids, stream.id)
+		delete(c.streams, key)
+	}
+	return ids
 }
 
 func (c *Converter) ffmpegWorker(ctx context.Context) {
@@ -70,21 +112,17 @@ func (c *Converter) ffmpegWorker(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case job := <-c.ffmpegJobs:
-			ffmpegCtx, cancel := mergeContexts(job.ctx, ctx)
-
 			start := time.Now()
-			err := c.runFFmpeg(ffmpegCtx, job.s)
-			cancel()
+			err := c.runFFmpeg(job.s.ctx, job.s)
 			job.s.log.Debug("ffmpeg exited", "duration", time.Since(start), "err", err)
 
 			select {
 			case job.result <- err:
-			case <-job.ctx.Done():
+			case <-job.s.ctx.Done():
 			case <-ctx.Done():
 				return
 			}
 		}
-
 	}
 }
 
@@ -98,31 +136,32 @@ func (c *Converter) SetItems(items []music.TrackStoreItem) {
 	}
 }
 
-func (c *Converter) StartStream(ctx context.Context, fileId domain.FileId, seekPos *domain.SeekPosition) (domain.StreamId, error) {
-	streamSession, err := c.createAndRegisterStream(fileId, seekPos)
+func (c *Converter) StartStream(reqCtx context.Context, fileId domain.FileId, seekPos *domain.SeekPosition) (domain.StreamId, error) {
+	stream, err := c.createAndRegisterStream(fileId, seekPos)
 	if err != nil {
 		return domain.StreamId{}, errors.Wrap(err, "could not register a stream")
 	}
 
-	go c.run(ctx, streamSession)
+	go c.runConversion(stream)
 
 	select {
-	case err := <-streamSession.ready:
+	case err := <-stream.ready:
 		if err != nil {
 			return domain.StreamId{}, errors.Wrap(err, "received an error")
 		}
-		return streamSession.id, nil
-	case <-ctx.Done():
-		return domain.StreamId{}, ctx.Err()
+		return stream.id, nil
+	case <-reqCtx.Done():
+		stream.cancel()
+		return domain.StreamId{}, reqCtx.Err()
 	}
 }
 
-func (c *Converter) createAndRegisterStream(fileId domain.FileId, seekPos *domain.SeekPosition) (*streamSession, error) {
+func (c *Converter) createAndRegisterStream(fileId domain.FileId, seekPos *domain.SeekPosition) (*stream, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if len(c.streams) >= maxOpenStreams {
-		return nil, errors.New("too many open streams")
+		return nil, music.ErrTooManyOpenStreams
 	}
 
 	it, ok := c.items[fileId]
@@ -135,14 +174,17 @@ func (c *Converter) createAndRegisterStream(fileId domain.FileId, seekPos *domai
 		return nil, errors.Wrap(err, "could not create stream id")
 	}
 
-	s := &streamSession{
+	ctx, cancel := context.WithCancel(c.ctx)
+	s := &stream{
 		id:      streamId,
 		item:    it,
 		seekPos: seekPos,
-		dir:     c.streamDir(streamId),
 		ready:   make(chan error),
-		log:     c.log.New("trackId", fileId.String(), "conversionId", streamId.String()),
+		log:     c.log.New("trackId", fileId.String(), "streamId", streamId.String()),
+		ctx:     ctx,
+		cancel:  cancel,
 	}
+	s.lastAccess = time.Now()
 	c.streams[streamId.String()] = s
 	return s, nil
 }
@@ -152,7 +194,7 @@ func (c *Converter) GetPlaylist(fileId domain.FileId, streamId domain.StreamId) 
 	if err != nil {
 		return music.ConvertedFile{}, err
 	}
-	return openFile(c.playlistPathInDir(s.dir))
+	return openFile(c.playlistPathInDir(c.streamDir(s.id)))
 }
 
 func (c *Converter) GetInit(fileId domain.FileId, streamId domain.StreamId) (music.ConvertedFile, error) {
@@ -160,7 +202,7 @@ func (c *Converter) GetInit(fileId domain.FileId, streamId domain.StreamId) (mus
 	if err != nil {
 		return music.ConvertedFile{}, err
 	}
-	return openFile(c.initPathInDir(s.dir))
+	return openFile(c.initPathInDir(c.streamDir(s.id)))
 }
 
 func (c *Converter) GetFragment(fileId domain.FileId, streamId domain.StreamId, fragmentId domain.FragmentId) (music.ConvertedFile, error) {
@@ -168,7 +210,7 @@ func (c *Converter) GetFragment(fileId domain.FileId, streamId domain.StreamId, 
 	if err != nil {
 		return music.ConvertedFile{}, err
 	}
-	return openFile(c.fragmentPathInDir(s.dir, fragmentId))
+	return openFile(c.fragmentPathInDir(c.streamDir(s.id), fragmentId))
 }
 
 func (c *Converter) GetStats() (queries.TrackStats, error) {
@@ -226,42 +268,34 @@ func (c *Converter) streamsStats() (size int64, count int64, err error) {
 	return size, count, nil
 }
 
-func (c *Converter) getStream(streamId domain.StreamId) (*streamSession, error) {
+func (c *Converter) getStreamForFile(streamId domain.StreamId, fileId domain.FileId) (*stream, error) {
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	s, ok := c.streams[streamId.String()]
-	c.mu.Unlock()
 	if !ok {
 		return nil, errors.New("stream does not exist")
-	}
-	return s, nil
-}
-
-func (c *Converter) getStreamForFile(streamId domain.StreamId, fileId domain.FileId) (*streamSession, error) {
-	s, err := c.getStream(streamId)
-	if err != nil {
-		return nil, err
 	}
 	if s.item.FileId() != fileId {
 		return nil, errors.New("stream does not belong to this track")
 	}
+	s.updateLastAccess()
 	return s, nil
 }
 
-func (c *Converter) run(ctx context.Context, s *streamSession) {
-	defer c.unregisterStream(s)
+func (c *Converter) runConversion(s *stream) {
+	defer s.cancel()
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	ctx := s.ctx
 
-	if err := os.MkdirAll(s.dir, 0755); err != nil {
+	if err := os.MkdirAll(c.streamDir(s.id), 0755); err != nil {
 		s.signalReady(ctx, errors.Wrap(err, "could not create the stream directory"))
 		return
 	}
-	defer c.removeStreamDirectory(s)
 
 	ffmpegResult := make(chan error, 1)
 	select {
-	case c.ffmpegJobs <- ffmpegJob{ctx: ctx, s: s, result: ffmpegResult}:
+	case c.ffmpegJobs <- ffmpegJob{s: s, result: ffmpegResult}:
 	case <-time.After(jobAcceptanceTimeout):
 		s.signalReady(ctx, errors.New("timeout waiting for the worker to pick up a job"))
 		return
@@ -287,14 +321,13 @@ func (c *Converter) run(ctx context.Context, s *streamSession) {
 	case <-ctx.Done():
 		return
 	}
-
-	<-ctx.Done()
 }
 
-func (c *Converter) waitForReadiness(ctx context.Context, s *streamSession, ffmpegResult <-chan error) error {
-	playlist := c.playlistPathInDir(s.dir)
-	initSegment := c.initPathInDir(s.dir)
-	lastSegment := c.fragmentPathInDir(s.dir, readinessLastFragmentId)
+func (c *Converter) waitForReadiness(ctx context.Context, s *stream, ffmpegResult <-chan error) error {
+	dir := c.streamDir(s.id)
+	playlist := c.playlistPathInDir(dir)
+	initSegment := c.initPathInDir(dir)
+	lastSegment := c.fragmentPathInDir(dir, readinessLastFragmentId)
 
 	tick := time.NewTicker(readinessPoll)
 	defer tick.Stop()
@@ -319,26 +352,21 @@ func (c *Converter) waitForReadiness(ctx context.Context, s *streamSession, ffmp
 	}
 }
 
-func (c *Converter) unregisterStream(s *streamSession) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	delete(c.streams, s.id.String())
-}
-
-func (c *Converter) removeStreamDirectory(s *streamSession) {
-	if err := os.RemoveAll(s.dir); err != nil {
-		s.log.Error("could not remove stream dir", "err", err, "dir", s.dir)
+func (c *Converter) removeStreamDirectory(id domain.StreamId) {
+	dir := c.streamDir(id)
+	if err := os.RemoveAll(dir); err != nil {
+		c.log.Error("could not remove stream dir", "err", err, "dir", dir)
 	}
 }
 
-func (s *streamSession) signalReady(ctx context.Context, err error) {
+func (s *stream) signalReady(ctx context.Context, err error) {
 	select {
 	case s.ready <- err:
 	case <-ctx.Done():
 	}
 }
 
-func (c *Converter) runFFmpeg(ctx context.Context, s *streamSession) error {
+func (c *Converter) runFFmpeg(ctx context.Context, s *stream) error {
 	args := []string{"-y"}
 	if s.seekPos != nil {
 		args = append(args, "-ss", fmt.Sprintf("%f", s.seekPos.Duration().Seconds()))
@@ -353,9 +381,9 @@ func (c *Converter) runFFmpeg(ctx context.Context, s *streamSession) error {
 		"-hls_playlist_type", "event",
 		"-hls_segment_type", "fmp4",
 		"-hls_fmp4_init_filename", initFilename,
-		"-hls_segment_filename", path.Join(s.dir, segmentTemplate),
+		"-hls_segment_filename", path.Join(c.streamDir(s.id), segmentTemplate),
 		"-hls_base_url", "fragment/",
-		c.playlistPathInDir(s.dir),
+		c.playlistPathInDir(c.streamDir(s.id)),
 	)
 
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
@@ -418,27 +446,24 @@ func fileExists(p string) bool {
 	return err == nil
 }
 
-func mergeContexts(parent, other context.Context) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(parent)
-	stop := context.AfterFunc(other, cancel)
-	return ctx, func() {
-		stop()
-		cancel()
-	}
-}
-
-type streamSession struct {
+type stream struct {
 	id      domain.StreamId
 	item    music.TrackStoreItem
 	seekPos *domain.SeekPosition
-	dir     string
 	log     logging.Logger
+
+	ctx        context.Context
+	cancel     context.CancelFunc
+	lastAccess time.Time
 
 	ready chan error
 }
 
+func (s *stream) updateLastAccess() {
+	s.lastAccess = time.Now()
+}
+
 type ffmpegJob struct {
-	ctx    context.Context
-	s      *streamSession
+	s      *stream
 	result chan<- error
 }

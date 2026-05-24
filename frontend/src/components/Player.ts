@@ -22,7 +22,7 @@ export default class Player extends Vue {
 
     private hls: Hls = null;
 
-    private streamWs: WebSocket = null;
+    private streamGeneration = 0;
 
     private streamStartOffset = 0;
 
@@ -123,56 +123,37 @@ export default class Player extends Vue {
         }
         this.streamStartOffset = seekSeconds;
 
-        const ws = new WebSocket(this.apiService.streamWebSocketUrl(track, seekSeconds));
-        this.streamWs = ws;
+        const generation = ++this.streamGeneration;
 
-        const recoverByRecreatingStreamWs = () => {
-            if (this.streamWs !== ws) {
+        const recover = () => {
+            if (this.streamGeneration !== generation) {
                 return;
             }
             Notifications.pushError(this, `Playback error for "${track.title}", attempting to recover.`);
             window.setTimeout(() => {
-                if (this.streamWs !== ws) {
+                if (this.streamGeneration !== generation) {
                     return;
                 }
                 this.startStream(track, this.streamStartOffset + this.audioElement.currentTime);
             }, 1000);
         };
 
-        ws.onmessage = (event) => {
-            if (this.streamWs !== ws) {
+        this.apiService.startStream(track, seekSeconds).then((response) => {
+            if (this.streamGeneration !== generation) {
                 return;
             }
-            let msg: { type: string; streamId?: string };
-            try {
-                msg = JSON.parse(event.data);
-            } catch (e) {
-                console.error('failed to parse websocket message', e, event.data);
+            this.loadHls(this.apiService.streamPlaylistUrl(track, response.data.streamId), recover);
+            this.audioElement.play();
+        }).catch((err) => {
+            if (this.streamGeneration !== generation) {
                 return;
             }
-            switch (msg.type) {
-                case 'stream':
-                    if (msg.streamId) {
-                        this.loadHls(this.apiService.streamPlaylistUrl(track, msg.streamId), recoverByRecreatingStreamWs);
-                        this.audioElement.play();
-                    }
-                    break;
-                case 'ping':
-                    ws.send(JSON.stringify({ type: 'pong' }));
-                    break;
-            }
-        };
-        ws.onerror = (event) => {
-            console.error('websocket error', event);
-        };
-        ws.onclose = (event) => {
-            if (!event.wasClean) {
-                recoverByRecreatingStreamWs();
-            }
-        };
+            console.error('failed to start stream', err);
+            recover();
+        });
     }
 
-    private loadHls(url: string, recoverByRecreatingStreamWs: () => void): void {
+    private loadHls(url: string, recover: () => void): void {
         this.destroyHls();
         this.hls = new Hls({
             xhrSetup: (xhr) => {
@@ -183,7 +164,7 @@ export default class Player extends Vue {
         this.hls.on(Hls.Events.ERROR, (_, data) => {
             console.error('hls.js error', data);
             if (data.fatal) {
-                recoverByRecreatingStreamWs();
+                recover();
             }
         });
         this.hls.loadSource(url);
@@ -197,19 +178,9 @@ export default class Player extends Vue {
         }
     }
 
-    private closeStreamWs(): void {
-        if (this.streamWs) {
-            this.streamWs.onmessage = null;
-            this.streamWs.onerror = null;
-            this.streamWs.onclose = null;
-            this.streamWs.close();
-            this.streamWs = null;
-        }
-    }
-
     private tearDownStream(): void {
+        this.streamGeneration++;
         this.destroyHls();
-        this.closeStreamWs();
     }
 
     private emitValues(): void {

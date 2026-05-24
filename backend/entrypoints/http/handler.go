@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -16,24 +15,11 @@ import (
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
-	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
 )
 
-var streamWsUpgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
-}
-
-const (
-	streamWsPingInterval = 15 * time.Second
-
-	streamWsMessageTypeStream = "stream"
-	streamWsMessageTypePing   = "ping"
-)
-
-type streamWsMessage struct {
-	Type     string `json:"type"`
-	StreamId string `json:"streamId,omitempty"`
+type startStreamResponse struct {
+	StreamId string `json:"streamId"`
 }
 
 var Version = "unknown"
@@ -68,7 +54,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
-	h.router.GET("/api/track/:trackid/stream", h.trackStreamWS)
+	h.router.HandlerFunc(http.MethodPost, "/api/track/:trackid/stream", rest.Wrap(h.startTrackStream))
 	h.router.GET("/api/track/:trackid/stream/:streamid/playlist", h.streamPlaylist)
 	h.router.GET("/api/track/:trackid/stream/:streamid/init", h.streamInit)
 	h.router.GET("/api/track/:trackid/stream/:streamid/fragment/:number", h.streamFragment)
@@ -173,105 +159,43 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 	)
 }
 
-func (h *Handler) trackStreamWS(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	trackId, err := domain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return rest.ErrBadRequest.WithMessage("Invalid track id.")
 	}
 
 	seekPos, err := parseSeekParam(r.URL.Query().Get("seek"))
 	if err != nil {
 		h.log.Warn("invalid seek param", "err", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return rest.ErrBadRequest.WithMessage("Invalid seek param.")
 	}
 
 	accessCtx, err := h.resolveAccessContext(r)
 	if err != nil {
 		h.log.Error("could not resolve access context", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return rest.ErrInternalServerError
 	}
 
-	conn, err := streamWsUpgrader.Upgrade(w, r, nil)
-	if err != nil {
-		h.log.Warn("websocket upgrade failed", "err", err)
-		return
-	}
-	defer conn.Close()
-
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
-
-	streamId, err := h.app.Music.StartStreaming.Execute(ctx, accessCtx, music.StartStreaming{
+	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx, music.StartStreaming{
 		TrackId:      trackId,
 		SeekPosition: seekPos,
 	})
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
-			_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "track not found"))
-			return
+			return rest.ErrNotFound
+		}
+		if errors.Is(err, music.ErrTooManyOpenStreams) {
+			return rest.ErrServiceUnavailable.WithMessage("Too many open streams.")
 		}
 		h.log.Error("start streaming failed", "err", err)
-		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "start streaming failed"))
-		return
+		return rest.ErrInternalServerError
 	}
 
-	initMsg, err := json.Marshal(streamWsMessage{
-		Type:     streamWsMessageTypeStream,
-		StreamId: streamId.String(),
-	})
-	if err != nil {
-		h.log.Error("could not marshal stream message", "err", err)
-		return
-	}
-	if err := conn.WriteMessage(websocket.TextMessage, initMsg); err != nil {
-		return
-	}
-
-	log := h.log.New("streamId", streamId.String())
-
-	go h.keepWebsocketAlive(ctx, conn, log)
-
-	// Hold the connection open
-	for {
-		_, data, err := conn.ReadMessage()
-		if err != nil {
-			log.Debug("read error, exiting", "err", err)
-			return
-		}
-		var msg streamWsMessage
-		if err := json.Unmarshal(data, &msg); err != nil {
-			log.Debug("received non-json message", "data", string(data))
-			continue
-		}
-		log.Debug("received message", "type", msg.Type)
-	}
-}
-
-func (h *Handler) keepWebsocketAlive(ctx context.Context, conn *websocket.Conn, log logging.Logger) {
-	ticker := time.NewTicker(streamWsPingInterval)
-	defer ticker.Stop()
-
-	pingMsg, err := json.Marshal(streamWsMessage{Type: streamWsMessageTypePing})
-	if err != nil {
-		log.Error("could not marshal ping message", "err", err)
-		return
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := conn.WriteMessage(websocket.TextMessage, pingMsg); err != nil {
-				log.Debug("ping error, exiting", "err", err)
-				return
-			}
-		}
-	}
+	return rest.NewResponse(startStreamResponse{StreamId: streamId.String()})
 }
 
 func parseSeekParam(s string) (*domain.RequestedSeekPosition, error) {

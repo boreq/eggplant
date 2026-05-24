@@ -11,6 +11,7 @@ import { AuthService } from '@/services/AuthService';
 import { User } from '@/dto/User';
 import { Invitation } from '@/dto/Invitation';
 import { RegisterCommand } from '@/dto/RegisterCommand';
+import { StreamStartResponse } from '@/dto/StreamStartResponse';
 
 /*
 declare module 'vue-property-decorator' {
@@ -61,12 +62,12 @@ export class ApiService {
         return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
-    streamWebSocketUrl(track: Track, seekSeconds?: number): string {
-        let url = import.meta.env.VUE_APP_WS_PREFIX + `track/${track.id}/stream`;
+    startStream(track: Track, seekSeconds?: number): Promise<AxiosResponse<StreamStartResponse>> {
+        let url = `track/${track.id}/stream`;
         if (seekSeconds !== undefined && seekSeconds > 0) {
             url += `?seek=${encodeURIComponent(seekSeconds.toString())}`;
         }
-        return url;
+        return this.axios.post<StreamStartResponse>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     streamPlaylistUrl(track: Track, streamId: string): string {

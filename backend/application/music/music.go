@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	ErrForbidden       = errors.New("forbidden")
-	ErrLibraryNotReady = errors.New("library not ready")
+	ErrForbidden          = errors.New("forbidden")
+	ErrLibraryNotReady    = errors.New("library not ready")
+	ErrTooManyOpenStreams = errors.New("too many open streams")
 )
 
 type TrackConverter interface {
