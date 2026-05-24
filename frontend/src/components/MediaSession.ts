@@ -3,6 +3,7 @@ import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { PlaybackData } from '@/dto/PlaybackData';
 import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
+import { seekEvent } from '@/components/Player';
 
 
 @Component
@@ -132,7 +133,18 @@ export default class MediaSession extends Vue {
             mediaSession.setActionHandler('nexttrack',
                 () => this.onNext(),
             );
+
+            mediaSession.setActionHandler('seekto', (details: { seekTime: number }) => {
+                this.onSeekTo(details.seekTime);
+            });
         }
+    }
+
+    private onSeekTo(seconds: number): void {
+        if (!this.playbackData || !this.playbackData.duration) {
+            return;
+        }
+        this.$root.$emit(seekEvent, seconds / this.playbackData.duration);
     }
 
     onPlay(): void {
