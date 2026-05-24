@@ -98,6 +98,9 @@ export default class Player extends Vue {
             },
             startPosition: 0,
         });
+        this.hls.on(Hls.Events.ERROR, (_, data) => {
+            console.error('hls.js error', data);
+        });
         this.hls.loadSource(url);
         this.hls.attachMedia(this.audio);
     }
