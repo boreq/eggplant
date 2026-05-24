@@ -170,6 +170,7 @@ export default class Player extends Vue {
             this.hlsErrorHandler = errorHandler;
             this.hls.on(Hls.Events.ERROR, errorHandler);
             this.hls.loadSource(url);
+            this.audioElement.currentTime = 0;
             return;
         }
 
