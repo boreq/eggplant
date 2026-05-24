@@ -1,3 +1,11 @@
+ci: ci-backend ci-frontend
+
+ci-backend:
+	$(MAKE) -C backend ci
+
+ci-frontend:
+	$(MAKE) -C frontend ci
+
 version:
 	@hash=$$(git rev-parse HEAD 2>/dev/null); \
 	if [ -z "$$hash" ]; then \
@@ -11,4 +19,4 @@ version:
 		fi; \
 	fi
 
-.PHONY: version
+.PHONY: ci ci-backend ci-frontend version

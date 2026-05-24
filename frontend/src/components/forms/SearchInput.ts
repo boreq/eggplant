@@ -10,4 +10,8 @@ export default class SearchInput extends Vue {
         return !!this.value;
     }
 
+    onInput(event: Event): void {
+        this.$emit('input', (event.target as HTMLInputElement).value);
+    }
+
 }

@@ -1,12 +1,13 @@
 import { Location } from 'vue-router';
-import { BasicAlbum } from '@/dto/BasicAlbum';
 
 export class NavigationService {
 
-    getBrowse(album: BasicAlbum): Location {
-        const ids = album.path ? album.path : [];
-        const path = ids.join('/');
-        return { path: `/browse/${path}` };
+    getBrowse(albumId?: string): Location {
+        if (albumId) {
+            return { name: `browse-children`, params: { id: albumId } };
+        } else {
+            return { name: `browse` };
+        }
     }
 
 }

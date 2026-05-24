@@ -1,7 +1,5 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Entry } from '@/dto/Entry';
-import { BasicAlbum } from '@/dto/BasicAlbum';
-import { SearchResult } from '@/dto/Search';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { ApiService } from '@/services/ApiService';
 
 import MainHeader from '@/components/MainHeader.vue';
@@ -13,6 +11,8 @@ import ActionBar from '@/components/ActionBar.vue';
 import Tracks from '@/components/Tracks.vue';
 import Albums from '@/components/Albums.vue';
 import Spinner from '@/components/Spinner.vue';
+import { SearchResults } from "@/dto/Search";
+import { PartialAlbum } from "@/dto/Album";
 
 
 @Component({
@@ -33,7 +33,7 @@ export default class Search extends Vue {
     @Prop()
     query: string;
 
-    result: SearchResult = null;
+    result: SearchResults = null;
 
     private timeoutId: number = null;
     private readonly apiService = new ApiService(this);
@@ -44,7 +44,7 @@ export default class Search extends Vue {
         this.scheduleTimeout();
     }
 
-    get tracks(): Entry[] {
+    get tracks(): TrackWithAlbum[] {
         if (!this.result || !this.result.tracks) {
             return [];
         }
@@ -59,7 +59,7 @@ export default class Search extends Vue {
         );
     }
 
-    get albums(): BasicAlbum[] {
+    get albums(): PartialAlbum[] {
         if (!this.result || !this.result.albums) {
             return [];
         }
@@ -67,7 +67,7 @@ export default class Search extends Vue {
         return this.result.albums;
     }
 
-    selectAlbum(event: BasicAlbum): void {
+    selectAlbum(event: PartialAlbum): void {
         this.$emit('select-album', event);
     }
 

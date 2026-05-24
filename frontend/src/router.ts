@@ -14,7 +14,7 @@ export default new Router({
     base: import.meta.env.BASE_URL,
     routes: [
         {
-            path: '/browse/*',
+            path: '/browse/:id',
             name: 'browse-children',
             component: Browse,
         },

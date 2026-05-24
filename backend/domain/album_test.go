@@ -23,20 +23,20 @@ func TestNewAlbum(t *testing.T) {
 
 	testCases := []struct {
 		name    string
-		parents []domain.ParentAlbum
-		albums  []domain.ChildAlbum
+		parents []domain.PartialAlbum
+		albums  []domain.PartialAlbum
 		tracks  []domain.Track
 		errMsg  string
 	}{
 		{
 			name:    "rejects_parents_containing_self",
-			parents: []domain.ParentAlbum{domain.NewParentAlbum(selfId, selfTitle)},
+			parents: []domain.PartialAlbum{domain.NewPartialAlbum(selfId, selfTitle, nil)},
 			tracks:  tracks,
 			errMsg:  "parents must not contain the album itself",
 		},
 		{
 			name:   "rejects_children_containing_self",
-			albums: []domain.ChildAlbum{domain.NewChildAlbum(selfId, selfTitle, nil)},
+			albums: []domain.PartialAlbum{domain.NewPartialAlbum(selfId, selfTitle, nil)},
 			errMsg: "child albums must not contain the album itself",
 		},
 		{
@@ -49,7 +49,7 @@ func TestNewAlbum(t *testing.T) {
 		},
 		{
 			name:    "accepts_actual_parents",
-			parents: []domain.ParentAlbum{domain.NewParentAlbum(otherId, otherTitle)},
+			parents: []domain.PartialAlbum{domain.NewPartialAlbum(otherId, otherTitle, nil)},
 			tracks:  tracks,
 		},
 	}

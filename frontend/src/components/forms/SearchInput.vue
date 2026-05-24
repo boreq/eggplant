@@ -8,7 +8,7 @@
             </a>
         <input type="text" placeholder="Search"
                maxlength="100" :value="value"
-               @input="$emit('input', $event.target.value)"
+               @input="onInput"
                @keydown.stop>
     </div>
 </template>

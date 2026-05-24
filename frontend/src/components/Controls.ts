@@ -1,6 +1,6 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Mutation } from '@/store';
-import { Entry } from '@/dto/Entry';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { PlaybackData } from '@/dto/PlaybackData';
 import { TextService } from '@/services/TextService';
 import { seekEvent } from '@/components/Player';
@@ -24,7 +24,7 @@ export default class Controls extends Vue {
 
     private textService = new TextService();
 
-    get nowPlaying(): Entry {
+    get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 

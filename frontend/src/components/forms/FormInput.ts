@@ -15,6 +15,10 @@ export default class FormInput extends Vue {
     @Prop()
     icon: string;
 
+    onInput(event: Event): void {
+        this.$emit('input', (event.target as HTMLInputElement).value);
+    }
+
     onKeyDown(event: KeyboardEvent): void {
         if (event.key === 'Enter') {
             this.$emit('submit');

@@ -1,6 +1,6 @@
 import { Component, Vue } from 'vue-property-decorator';
-import { Entry } from '@/dto/Entry';
-import { BasicAlbum } from '@/dto/BasicAlbum';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
+import { PartialAlbum } from '@/dto/Album';
 
 import MainHeader from '@/components/MainHeader.vue';
 import FormInput from '@/components/forms/FormInput.vue';
@@ -22,11 +22,11 @@ import Tracks from '@/components/Tracks.vue';
 })
 export default class Queue extends Vue {
 
-    get nowPlaying(): Entry {
+    get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 
-    get entries(): Entry[] {
+    get entries(): TrackWithAlbum[] {
         return this.$store.state.entries;
     }
 
@@ -34,7 +34,7 @@ export default class Queue extends Vue {
         return !this.entries || this.entries.length === 0;
     }
 
-    onSelectAlbum(album: BasicAlbum): void {
+    onSelectAlbum(album: PartialAlbum): void {
         this.$emit('select-album', album);
     }
 

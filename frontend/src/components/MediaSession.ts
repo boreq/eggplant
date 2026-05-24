@@ -1,5 +1,5 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Entry } from '@/dto/Entry';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
 
@@ -9,7 +9,7 @@ export default class MediaSession extends Vue {
 
     private readonly apiService = new ApiService(this);
 
-    get nowPlaying(): Entry {
+    get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 
@@ -51,7 +51,6 @@ export default class MediaSession extends Vue {
                 ];
             }
 
-            // @ts-expect-error MediaMetadata constructor types differ
             mediaSession.metadata = new MediaMetadata(metadata);
         }
     }

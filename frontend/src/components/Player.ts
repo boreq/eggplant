@@ -3,7 +3,7 @@ import Hls from 'hls.js';
 import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
 import { PlaybackData } from '@/dto/PlaybackData';
-import { Entry } from '@/dto/Entry';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Track } from '@/dto/Track';
 import Notifications from '@/components/Notifications';
 
@@ -18,7 +18,7 @@ export default class Player extends Vue {
 
     private readonly apiService = new ApiService(this);
 
-    private currentNowPlaying: Entry = null;
+    private currentNowPlaying: TrackWithAlbum = null;
 
     private hls: Hls = null;
 
@@ -26,7 +26,7 @@ export default class Player extends Vue {
 
     private streamStartOffset = 0;
 
-    get storeNowPlaying(): Entry {
+    get storeNowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 

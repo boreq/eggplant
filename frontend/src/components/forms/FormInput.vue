@@ -4,7 +4,7 @@
             <i :class="icon"></i>
         </div>
         <input :type="type" :placeholder="placeholder"
-               :value="value" @input="$emit('input', $event.target.value)" @keydown="onKeyDown">
+               :value="value" @input="onInput" @keydown="onKeyDown">
     </div>
 </template>
 <script lang="ts" src="./FormInput.ts"></script>

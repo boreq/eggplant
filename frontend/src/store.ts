@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import VuexPersistence from 'vuex-persist';
-import { Entry } from '@/dto/Entry';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { User } from '@/dto/User';
 
 Vue.use(Vuex);
@@ -33,7 +33,7 @@ export enum Mutation {
 
 
 export class State {
-    entries: Entry[];
+    entries: TrackWithAlbum[];
     playingIndex: number;
     paused: boolean;
     volume: number; // [0, 1]
@@ -43,16 +43,16 @@ export class State {
 }
 
 export class ReplaceCommand {
-    entries: Entry[];
+    entries: TrackWithAlbum[];
     playingIndex: number;
 }
 
 export class AppendCommand {
-    entries: Entry[];
+    entries: TrackWithAlbum[];
 }
 
 export class RemoveCommand {
-    entry: Entry;
+    entry: TrackWithAlbum;
 }
 
 export class SetVolumeCommand {
@@ -171,7 +171,7 @@ export default new Vuex.Store<State>({
         },
     },
     getters: {
-        nowPlaying: (state: State): Entry => {
+        nowPlaying: (state: State): TrackWithAlbum => {
             return nowPlaying(state);
         },
         nowPlayingPaused: (state: State): boolean => {
@@ -187,7 +187,7 @@ export default new Vuex.Store<State>({
     plugins: [vuexPersist.plugin],
 });
 
-function nowPlaying(state: State): Entry {
+function nowPlaying(state: State): TrackWithAlbum {
     if (emptyArray(state.entries)) {
         return null;
     }

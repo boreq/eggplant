@@ -54,9 +54,9 @@ func (l *Library) GetAlbum(accessCtx AccessContext, id domain.AlbumId) (domain.A
 	target := path[len(path)-1]
 
 	ancestors := path[:len(path)-1]
-	parents := make([]domain.ParentAlbum, 0, len(ancestors))
+	parents := make([]domain.PartialAlbum, 0, len(ancestors))
 	for _, a := range ancestors {
-		parents = append(parents, domain.NewParentAlbum(a.id, a.title))
+		parents = append(parents, domain.NewPartialAlbum(a.id, a.title, a.thumbnail))
 	}
 
 	children := buildChildren(target.albums, effective, accessCtx)
@@ -107,23 +107,23 @@ func (l *Library) GetThumbnail(accessCtx AccessContext, id domain.ThumbnailId) (
 	return t, nil
 }
 
-func (l *Library) Search(accessCtx AccessContext, query string) (SearchResult, error) {
-	var result SearchResult
+func (l *Library) Search(accessCtx AccessContext, query string) (SearchResults, error) {
+	var result builtSearchResults
 
 	if accessCtx.CanSee(l.getRootVisibility()) {
-		for _, t := range l.root.tracks {
+		for _, track := range l.root.tracks {
 			if len(result.Tracks) >= maxSearchItems {
 				break
 			}
-			if !containsStringCaseInsensitive(t.Title().String(), query) {
+			if !containsStringCaseInsensitive(track.Title().String(), query) {
 				continue
 			}
-			result.Tracks = append(result.Tracks, SearchTrack{Track: t})
+			result.Tracks = append(result.Tracks, NewRootTrackWithAlbum(track))
 		}
 	}
 
 	searchAlbums(&result, l.root.albums, nil, l.getRootVisibilityToPropagateToChildren(), query, accessCtx)
-	return result, nil
+	return NewSearchResults(result.Albums, result.Tracks), nil
 }
 
 func (l *Library) getRootVisibility() Visibility {
@@ -168,28 +168,50 @@ func findThumbnailInAlbums(albums []Album, id domain.ThumbnailId, parentVis Visi
 	return domain.Thumbnail{}, Visibility{}, false
 }
 
-type SearchAlbum struct {
-	Path      []domain.AlbumId
-	Title     domain.AlbumTitle
-	Thumbnail *domain.Thumbnail
+type SearchResults struct {
+	albums []domain.PartialAlbum
+	tracks []TrackWithAlbum
 }
 
-type SearchResult struct {
-	Albums []SearchAlbum
-	Tracks []SearchTrack
+func NewSearchResults(albums []domain.PartialAlbum, tracks []TrackWithAlbum) SearchResults {
+	return SearchResults{albums: albums, tracks: tracks}
 }
 
-type SearchTrackAlbum struct {
-	Path  []domain.AlbumId
-	Title domain.AlbumTitle
+func (s SearchResults) Albums() []domain.PartialAlbum {
+	return s.albums
 }
 
-type SearchTrack struct {
-	Track domain.Track
-	Album *SearchTrackAlbum
+func (s SearchResults) Tracks() []TrackWithAlbum {
+	return s.tracks
 }
 
-func searchAlbums(result *SearchResult, albums []Album, parentPath []domain.AlbumId, parentVis Visibility, query string, ctx AccessContext) {
+type TrackWithAlbum struct {
+	track domain.Track
+	album *domain.PartialAlbum
+}
+
+func NewRootTrackWithAlbum(track domain.Track) TrackWithAlbum {
+	return TrackWithAlbum{track: track, album: nil}
+}
+
+func NewTrackWithAlbum(track domain.Track, album domain.PartialAlbum) TrackWithAlbum {
+	return TrackWithAlbum{track: track, album: &album}
+}
+
+func (t TrackWithAlbum) Track() domain.Track {
+	return t.track
+}
+
+func (t TrackWithAlbum) Album() *domain.PartialAlbum {
+	return t.album
+}
+
+type builtSearchResults struct {
+	Albums []domain.PartialAlbum
+	Tracks []TrackWithAlbum
+}
+
+func searchAlbums(result *builtSearchResults, albums []Album, parentPath []domain.AlbumId, parentVis Visibility, query string, ctx AccessContext) {
 	for _, a := range albums {
 		effective := parentVis
 		if a.visibility != nil {
@@ -201,19 +223,21 @@ func searchAlbums(result *SearchResult, albums []Album, parentPath []domain.Albu
 		path = append(path, a.id)
 
 		if ctx.CanSee(effective) {
+			album := domain.NewPartialAlbum(a.id, a.title, a.thumbnail)
+
 			if len(result.Albums) < maxSearchItems && containsStringCaseInsensitive(a.title.String(), query) {
-				result.Albums = append(result.Albums, SearchAlbum{Path: path, Title: a.title, Thumbnail: a.thumbnail})
+				result.Albums = append(result.Albums, album)
 			}
 
-			albumRef := &SearchTrackAlbum{Path: path, Title: a.title}
-			for _, t := range a.tracks {
+			for _, track := range a.tracks {
 				if len(result.Tracks) >= maxSearchItems {
 					break
 				}
-				if !containsStringCaseInsensitive(t.Title().String(), query) {
+				if !containsStringCaseInsensitive(track.Title().String(), query) {
 					continue
 				}
-				result.Tracks = append(result.Tracks, SearchTrack{Track: t, Album: albumRef})
+				trackWithAlbum := NewTrackWithAlbum(track, album)
+				result.Tracks = append(result.Tracks, trackWithAlbum)
 			}
 		}
 
@@ -314,8 +338,8 @@ func ifNotSetPublic(v *Visibility) Visibility {
 	return *v
 }
 
-func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []domain.ChildAlbum {
-	var out []domain.ChildAlbum
+func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []domain.PartialAlbum {
+	var out []domain.PartialAlbum
 	for _, a := range albums {
 		vis := parentVis
 		if a.visibility != nil {
@@ -324,7 +348,7 @@ func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []do
 		if !ctx.CanSee(vis) {
 			continue
 		}
-		out = append(out, domain.NewChildAlbum(a.id, a.title, a.thumbnail))
+		out = append(out, domain.NewPartialAlbum(a.id, a.title, a.thumbnail))
 	}
 	sortChildren(out)
 	return out
@@ -350,7 +374,7 @@ func findAlbumPathRec(albums []Album, id domain.AlbumId, path []Album) ([]Album,
 	return nil, false
 }
 
-func sortChildren(albums []domain.ChildAlbum) {
+func sortChildren(albums []domain.PartialAlbum) {
 	sort.Slice(albums, func(i, j int) bool {
 		return albums[i].Title().String() < albums[j].Title().String()
 	})

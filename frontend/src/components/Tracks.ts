@@ -1,6 +1,6 @@
 import { Component, Prop, Vue, Ref } from 'vue-property-decorator';
 import { Track } from '@/dto/Track';
-import { Entry } from '@/dto/Entry';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Mutation, ReplaceCommand, AppendCommand, RemoveCommand } from '@/store';
 import { TextService } from '@/services/TextService';
 import Notifications from '@/components/Notifications';
@@ -22,7 +22,7 @@ import DropdownDivider from '@/components/DropdownDivider.vue';
 export default class Tracks extends Vue {
 
     @Prop()
-    entries: Entry[];
+    entries: TrackWithAlbum[];
 
     @Prop()
     queueMode: boolean;
@@ -36,7 +36,7 @@ export default class Tracks extends Vue {
     private readonly textService = new TextService();
 
     isNowPlaying(index: number, track: Track): boolean {
-        const nowPlaying: Entry = this.$store.getters.nowPlaying;
+        const nowPlaying: TrackWithAlbum = this.$store.getters.nowPlaying;
         if (nowPlaying) {
             if (this.queueMode) {
                 return index === this.$store.state.playingIndex;
@@ -82,7 +82,7 @@ export default class Tracks extends Vue {
         } else {
             // I am very tired but something tells me it may be a good idea to copy
             // this instead of using it directly
-            const entries: Entry[] = this.entries
+            const entries: TrackWithAlbum[] = this.entries
                 .map(v => {
                     return {
                         album: v.album,
@@ -97,7 +97,7 @@ export default class Tracks extends Vue {
         }
     }
 
-    addToQueue(entry: Entry): void {
+    addToQueue(entry: TrackWithAlbum): void {
         const command: AppendCommand = {
             entries: [entry],
         };
@@ -106,7 +106,7 @@ export default class Tracks extends Vue {
         Notifications.pushSuccess(this, 'Song added to queue.');
     }
 
-    removeFromQueue(entry: Entry): void {
+    removeFromQueue(entry: TrackWithAlbum): void {
         const command: RemoveCommand = {
             entry: entry,
         };
@@ -114,7 +114,7 @@ export default class Tracks extends Vue {
         this.closeDropdowns();
     }
 
-    goToAlbum(entry: Entry): void {
+    goToAlbum(entry: TrackWithAlbum): void {
         this.closeDropdowns();
         this.$emit('select-album', entry.album);
     }
@@ -123,7 +123,7 @@ export default class Tracks extends Vue {
         return this.textService.formatTime(track.duration);
     }
 
-    get nowPlaying(): Entry {
+    get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 

@@ -1,7 +1,7 @@
 import { Component, Prop, Ref, Vue } from 'vue-property-decorator';
-import { BasicAlbum } from '@/dto/BasicAlbum';
 import { ApiService } from '@/services/ApiService';
 import Spinner from '@/components/Spinner.vue';
+import { PartialAlbum } from "@/dto/Album";
 
 
 @Component({
@@ -12,7 +12,7 @@ import Spinner from '@/components/Spinner.vue';
 export default class Thumbnail extends Vue {
 
     @Prop()
-    album: BasicAlbum;
+    album: PartialAlbum;
 
     @Prop({ type: Boolean, default: false })
     tilt: boolean;

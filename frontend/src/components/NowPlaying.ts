@@ -1,6 +1,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import Thumbnail from '@/components/Thumbnail.vue';
-import { Entry } from '@/dto/Entry';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { NavigationService } from '@/services/NavigationService';
 
 
@@ -13,7 +13,7 @@ export default class NowPlaying extends Vue {
 
     private readonly navigationService = new NavigationService();
 
-    get nowPlaying(): Entry {
+    get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 
@@ -36,7 +36,7 @@ export default class NowPlaying extends Vue {
     }
 
     goToNowPlayingAlbum(): void {
-        const location = this.navigationService.getBrowse(this.nowPlaying.album);
+        const location = this.navigationService.getBrowse(this.nowPlaying.album.id);
         this.$router.push(location);
     }
 

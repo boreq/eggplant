@@ -159,7 +159,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 	}
 
 	return rest.NewResponse(
-		toSearchResult(result),
+		toSearchResults(result),
 	)
 }
 

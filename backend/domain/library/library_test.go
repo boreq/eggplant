@@ -510,7 +510,7 @@ func TestSearchAccess(t *testing.T) {
 			lib := buildLib(t, baseTree(tc.rootVis))
 			result, err := lib.Search(tc.access, tc.query)
 			require.NoError(t, err)
-			require.ElementsMatch(t, tc.expectTitles, trackTitles(result.Tracks))
+			require.ElementsMatch(t, tc.expectTitles, trackTitles(result.Tracks()))
 		})
 	}
 }
@@ -581,12 +581,9 @@ func TestSearchContent(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
-		require.Len(t, result.Albums, 1)
-		require.Equal(t, "findme", result.Albums[0].Title.String())
-		require.Equal(t, []domain.AlbumId{
-			albumIdFor(t, "parent"),
-			albumIdFor(t, "findme"),
-		}, result.Albums[0].Path)
+		require.Len(t, result.Albums(), 1)
+		require.Equal(t, "findme", result.Albums()[0].Title().String())
+		require.Equal(t, albumIdFor(t, "findme"), result.Albums()[0].Id())
 	})
 
 	t.Run("track_hit_carries_containing_album_ref", func(t *testing.T) {
@@ -598,10 +595,10 @@ func TestSearchContent(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
-		require.Len(t, result.Tracks, 1)
-		require.NotNil(t, result.Tracks[0].Album)
-		require.Equal(t, "parent", result.Tracks[0].Album.Title.String())
-		require.Equal(t, []domain.AlbumId{albumIdFor(t, "parent")}, result.Tracks[0].Album.Path)
+		require.Len(t, result.Tracks(), 1)
+		require.NotNil(t, result.Tracks()[0].Album())
+		require.Equal(t, "parent", result.Tracks()[0].Album().Title().String())
+		require.Equal(t, albumIdFor(t, "parent"), result.Tracks()[0].Album().Id())
 	})
 
 	t.Run("root_track_hit_has_no_album_ref", func(t *testing.T) {
@@ -614,8 +611,8 @@ func TestSearchContent(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
-		require.Len(t, result.Tracks, 1)
-		require.Nil(t, result.Tracks[0].Album)
+		require.Len(t, result.Tracks(), 1)
+		require.Nil(t, result.Tracks()[0].Album())
 	})
 
 	t.Run("no_matches_returns_empty_result", func(t *testing.T) {
@@ -628,8 +625,8 @@ func TestSearchContent(t *testing.T) {
 		})
 		result, err := lib.Search(loggedIn, "zzz")
 		require.NoError(t, err)
-		require.Empty(t, result.Albums)
-		require.Empty(t, result.Tracks)
+		require.Empty(t, result.Albums())
+		require.Empty(t, result.Tracks())
 	})
 }
 
@@ -769,15 +766,15 @@ func mkThumb(t *testing.T, filename string) domain.Thumbnail {
 	return domain.NewThumbnail(id, fileId)
 }
 
-func trackTitles(tracks []library.SearchTrack) []string {
+func trackTitles(tracks []library.TrackWithAlbum) []string {
 	titles := make([]string, 0, len(tracks))
 	for _, t := range tracks {
-		titles = append(titles, t.Track.Title().String())
+		titles = append(titles, t.Track().Title().String())
 	}
 	return titles
 }
 
-func childAlbumTitles(albums []domain.ChildAlbum) []string {
+func childAlbumTitles(albums []domain.PartialAlbum) []string {
 	titles := make([]string, 0, len(albums))
 	for _, a := range albums {
 		titles = append(titles, a.Title().String())

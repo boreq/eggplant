@@ -6,11 +6,11 @@ import (
 
 type RootAlbum struct {
 	thumbnail *Thumbnail
-	albums    []ChildAlbum
+	albums    []PartialAlbum
 	tracks    Tracks
 }
 
-func NewRootAlbum(thumbnail *Thumbnail, albums []ChildAlbum, tracks []Track) (RootAlbum, error) {
+func NewRootAlbum(thumbnail *Thumbnail, albums []PartialAlbum, tracks []Track) (RootAlbum, error) {
 	return RootAlbum{
 		thumbnail: thumbnail,
 		albums:    albums,
@@ -22,7 +22,7 @@ func (r RootAlbum) Thumbnail() *Thumbnail {
 	return r.thumbnail
 }
 
-func (r RootAlbum) Albums() []ChildAlbum {
+func (r RootAlbum) Albums() []PartialAlbum {
 	return r.albums
 }
 
@@ -34,12 +34,12 @@ type Album struct {
 	id        AlbumId
 	title     AlbumTitle
 	thumbnail *Thumbnail
-	parents   []ParentAlbum
-	albums    []ChildAlbum
+	parents   []PartialAlbum
+	albums    []PartialAlbum
 	tracks    Tracks
 }
 
-func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []ParentAlbum, albums []ChildAlbum, tracks []Track) (Album, error) {
+func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []PartialAlbum, albums []PartialAlbum, tracks []Track) (Album, error) {
 	for _, p := range parents {
 		if p.id == id {
 			return Album{}, errors.New("parents must not contain the album itself")
@@ -75,11 +75,11 @@ func (a Album) Thumbnail() *Thumbnail {
 	return a.thumbnail
 }
 
-func (a Album) Parents() []ParentAlbum {
+func (a Album) Parents() []PartialAlbum {
 	return a.parents
 }
 
-func (a Album) Albums() []ChildAlbum {
+func (a Album) Albums() []PartialAlbum {
 	return a.albums
 }
 
@@ -87,50 +87,30 @@ func (a Album) Tracks() Tracks {
 	return a.tracks
 }
 
-type ChildAlbum struct {
+type PartialAlbum struct {
 	id        AlbumId
 	title     AlbumTitle
 	thumbnail *Thumbnail
 }
 
-func NewChildAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail) ChildAlbum {
-	return ChildAlbum{
+func NewPartialAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail) PartialAlbum {
+	return PartialAlbum{
 		id:        id,
 		title:     title,
 		thumbnail: thumbnail,
 	}
 }
 
-func (a ChildAlbum) Id() AlbumId {
+func (a PartialAlbum) Id() AlbumId {
 	return a.id
 }
 
-func (a ChildAlbum) Title() AlbumTitle {
+func (a PartialAlbum) Title() AlbumTitle {
 	return a.title
 }
 
-func (a ChildAlbum) Thumbnail() *Thumbnail {
+func (a PartialAlbum) Thumbnail() *Thumbnail {
 	return a.thumbnail
-}
-
-type ParentAlbum struct {
-	id    AlbumId
-	title AlbumTitle
-}
-
-func NewParentAlbum(id AlbumId, title AlbumTitle) ParentAlbum {
-	return ParentAlbum{
-		id:    id,
-		title: title,
-	}
-}
-
-func (p ParentAlbum) Id() AlbumId {
-	return p.id
-}
-
-func (p ParentAlbum) Title() AlbumTitle {
-	return p.title
 }
 
 type AlbumId struct {

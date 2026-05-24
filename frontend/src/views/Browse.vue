@@ -74,16 +74,15 @@
                     </div>
                 </div>
 
-                <div v-if="album && album.tracks">
+                <div v-if="album && album.tracks && album.tracks.length > 0">
                     <SubHeader text="Tracks"></SubHeader>
                     <Tracks :entries="entries"></Tracks>
                 </div>
 
-                <div v-if="albums">
+                <div v-if="albums && albums.length > 0">
                     <SubHeader text="Albums"></SubHeader>
                     <Albums :albums="albums" @select-album="selectAlbum"></Albums>
                 </div>
-
             </div>
 
             <div class="content queue" v-if="showQueue">

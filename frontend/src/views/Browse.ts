@@ -2,11 +2,11 @@ import { Component, Vue, Ref, Watch } from 'vue-property-decorator';
 import { ApiService } from '@/services/ApiService';
 import { HttpStatus } from '@/services/HttpStatus';
 import { NavigationService } from '@/services/NavigationService';
-import { Album } from '@/dto/Album';
-import { BasicAlbum } from '@/dto/BasicAlbum';
-import { Entry } from '@/dto/Entry';
+import { Album, PartialAlbum } from '@/dto/Album';
+import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Track } from '@/dto/Track';
 import { Mutation, ReplaceCommand, AppendCommand } from '@/store';
+import { Location } from 'vue-router';
 import Notifications from '@/components/Notifications';
 
 import SubHeader from '@/components/SubHeader.vue';
@@ -106,18 +106,13 @@ export default class Browse extends Vue {
         this.clearTimeout();
     }
 
-    parentUrl(album: Album): string {
-        const currentIndex = this.album.parents.indexOf(album);
-        const ids = this.album.parents
-            .filter((_, index) => index <= currentIndex)
-            .map(v => v.id);
-        const path = ids.join('/');
-        return `/browse/${path}`;
+    parentUrl(album: PartialAlbum): Location {
+        return this.navigationService.getBrowse(album.id);
     }
 
-    selectAlbum(album: BasicAlbum): void {
+    selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
-        const location = this.navigationService.getBrowse(album);
+        const location = this.navigationService.getBrowse(album.id);
         this.$router.push(location);
     }
 
@@ -137,7 +132,7 @@ export default class Browse extends Vue {
                 this.$store.commit(Mutation.Pause);
             }
         } else {
-            const entries: Entry[] = this.entries
+            const entries: TrackWithAlbum[] = this.entries
                 .map(v => {
                     return {
                         album: v.album,
@@ -153,7 +148,7 @@ export default class Browse extends Vue {
     }
 
     addAlbumToQueue(): void {
-        const entries: Entry[] = this.entries
+        const entries: TrackWithAlbum[] = this.entries
             .map(v => {
                 return {
                     album: v.album,
@@ -179,9 +174,8 @@ export default class Browse extends Vue {
 
     get showAlbum(): boolean {
         if (this.album) {
-            const ids = this.getIdsFromRoute();
-            if (ids.length === 0) {
-                return !!this.album.thumbnail || !!this.album.tracks;
+            if (!this.getIdFromRoute()) {
+                return !!this.album.thumbnail || (this.album.tracks && this.album.tracks.length > 0);
             }
             return true;
         }
@@ -215,38 +209,28 @@ export default class Browse extends Vue {
         return 0;
     }
 
-    get entries(): Entry[] {
+    get entries(): TrackWithAlbum[] {
         if (this.album && this.album.tracks) {
             return this.album.tracks
-                .map((v: Track): Entry => {
+                .map((v: Track): TrackWithAlbum => {
                     return {
                         track: v,
-                        album: this.toBasicAlbum(this.album),
+                        album: this.toPartialAlbum(this.album),
                     };
                 });
         }
         return [];
     }
 
-    get basicAlbum(): BasicAlbum {
-        return this.toBasicAlbum(this.album);
+    get basicAlbum(): PartialAlbum {
+        return this.toPartialAlbum(this.album);
     }
 
-    get albums(): BasicAlbum[] {
+    get albums(): PartialAlbum[] {
         if (!this.album || !this.album.albums) {
             return null;
         }
-
-        return this.album.albums
-            .map(v => {
-                const basic = this.toBasicAlbum(v);
-                basic.path = this.album.parents ? this.album.parents.map(p => p.id) : [];
-                if (this.album.id) {
-                    basic.path.push(this.album.id);
-                }
-                basic.path.push(v.id);
-                return basic;
-            });
+        return this.album.albums;
     }
 
     get totalDurationMinutes(): number {
@@ -269,7 +253,7 @@ export default class Browse extends Vue {
         return !this.paused();
     }
 
-    get nowPlaying(): Entry {
+    get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
     }
 
@@ -293,9 +277,7 @@ export default class Browse extends Vue {
 
     private load(): void {
         this.clearTimeout();
-        const ids = this.getIdsFromRoute();
-        const id = ids.length > 0 ? ids[ids.length - 1] : undefined;
-        this.apiService.browse(id)
+        this.apiService.browse(this.getIdFromRoute())
             .then(
                 response => {
                     this.album = response.data;
@@ -336,26 +318,18 @@ export default class Browse extends Vue {
         }
     }
 
-    private getIdsFromRoute(): string[] {
-        const params = this.$route.params;
-        if (params.pathMatch) {
-            return params.pathMatch.split('/');
-        }
-        return [];
+    private getIdFromRoute(): string | undefined {
+        return this.$route.params.id;
     }
 
     private scrollContentToTop(): void {
         this.contentDiv.scrollTop = 0;
     }
 
-    private toBasicAlbum(album: Album): BasicAlbum {
-        const path = album.parents ? album.parents.map(v => v.id) : [];
-        if (album.id) {
-            path.push(album.id);
-        }
+    private toPartialAlbum(album: Album): PartialAlbum {
         return {
             title: album.title,
-            path: path,
+            id: album.id,
             thumbnail: album.thumbnail,
         };
     }

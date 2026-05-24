@@ -1,17 +1,12 @@
 import { Track } from '@/dto/Track';
-import { BasicAlbum } from '@/dto/BasicAlbum';
+import {PartialAlbum} from "@/dto/Album";
 
-export class SearchResult {
-    albums: BasicAlbum[];
+export class SearchResults {
+    albums: PartialAlbum[];
     tracks: SearchResultTrack[];
 }
 
 export class SearchResultTrack {
     track: Track;
-    album?: SearchTrackAlbum;
-}
-
-export class SearchTrackAlbum {
-    title: string;
-    path: string[];
+    album?: PartialAlbum;
 }
