@@ -112,6 +112,9 @@ export default class Browse extends Vue {
 
     selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
+        if (this.$route.params.id === album.id) {
+            return;
+        }
         const location = this.navigationService.getBrowse(album.id);
         this.$router.push(location);
     }

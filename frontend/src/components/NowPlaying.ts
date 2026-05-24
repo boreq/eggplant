@@ -36,8 +36,11 @@ export default class NowPlaying extends Vue {
     }
 
     goToNowPlayingAlbum(): void {
-        const location = this.navigationService.getBrowse(this.nowPlaying.album.id);
-        this.$router.push(location);
+        const albumId = this.nowPlaying.album.id;
+        if (this.$route.params.id === albumId) {
+            return;
+        }
+        this.$router.push(this.navigationService.getBrowse(albumId));
     }
 
 }
