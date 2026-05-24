@@ -4,7 +4,7 @@
 
         <div v-if="result">
             <SubHeader text="Tracks"></SubHeader>
-            <Tracks :entries="tracks" :showGoToAlbum="true" @select-album="selectAlbum"></Tracks>
+            <Tracks :entries="tracks" :showGoToAlbum="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
 
             <div class="message" v-if="tracks.length === 0">
                 No tracks found.

@@ -10,7 +10,7 @@
                     <i class="icon fas fa-pause"></i>
                 </a>
 
-                <div class="number">
+                <div class="number" v-if="!hideNumber">
                     <template v-if="entry.track.number != null">{{ entry.track.number }}</template>
                     <i v-else class="icon fas fa-music"></i>
                 </div>
