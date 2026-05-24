@@ -26,68 +26,68 @@ export default class Player extends Vue {
 
     private streamStartOffset = 0;
 
-    get nowPlaying(): Entry {
+    get storeNowPlaying(): Entry {
         return this.$store.getters.nowPlaying;
     }
 
-    get paused(): boolean {
+    get storePaused(): boolean {
         return this.$store.state.paused;
     }
 
-    get audio(): HTMLAudioElement {
-        return this.$refs.audio as HTMLAudioElement;
-    }
-
-    get volume(): number {
+    get storeVolume(): number {
         return this.$store.getters.volume;
     }
 
-    @Watch('nowPlaying')
-    onNowPlayingChanged(): void {
-        if (!this.nowPlaying) {
+    get audioElement(): HTMLAudioElement {
+        return this.$refs.audio as HTMLAudioElement;
+    }
+
+    @Watch('storeNowPlaying')
+    onStoreNowPlayingChanged(): void {
+        if (!this.storeNowPlaying) {
             this.currentNowPlaying = null;
             this.tearDownStream();
-            this.pause();
+            // this.audioElement.pau
             return;
         }
 
-        if (!this.currentNowPlaying || this.currentNowPlaying !== this.nowPlaying) {
-            this.currentNowPlaying = this.nowPlaying;
-            this.startStream(this.nowPlaying.track);
+        if (!this.currentNowPlaying || this.currentNowPlaying !== this.storeNowPlaying) {
+            this.currentNowPlaying = this.storeNowPlaying;
+            this.startStream(this.storeNowPlaying.track);
         }
     }
 
-    @Watch('paused')
+    @Watch('storePaused')
     onPausedChanged(val: boolean): void {
         if (val) {
-            this.audio.pause();
+            this.audioElement.pause();
         } else {
-            this.audio.play();
+            this.audioElement.play();
         }
     }
 
-    @Watch('volume')
-    onVolumeChanged(volume: number): void {
-        this.audio.volume = volume;
+    @Watch('storeVolume')
+    onStoreVolumeChanged(volume: number): void {
+        this.audioElement.volume = volume;
     }
 
     created(): void {
-        this.intervalID = window.setInterval(this.emitValues, 100);
+        this.intervalID = window.setInterval(this.emitValues, 200);
     }
 
     mounted(): void {
-        this.audio.volume = this.volume;
+        this.audioElement.volume = this.storeVolume;
         this.$root.$on(seekEvent, (position: number) => {
-            if (!this.nowPlaying) {
+            if (!this.storeNowPlaying) {
                 return;
             }
-            const trackTarget = this.nowPlaying.track.duration * position;
+            const trackTarget = this.storeNowPlaying.track.duration * position;
             const localTarget = trackTarget - this.streamStartOffset;
-            const loaded = this.audio.duration;
+            const loaded = this.audioElement.duration;
             if (localTarget >= 0 && isFinite(loaded) && localTarget < loaded) {
-                this.audio.currentTime = localTarget;
+                this.audioElement.currentTime = localTarget;
             } else {
-                this.startStream(this.nowPlaying.track, trackTarget);
+                this.startStream(this.storeNowPlaying.track, trackTarget);
             }
         });
     }
@@ -97,21 +97,21 @@ export default class Player extends Vue {
         this.tearDownStream();
     }
 
-    onEnded(): void {
+    onAudioElementEnded(): void {
         this.currentNowPlaying = null;
         this.$store.commit(Mutation.Next);
     }
 
-    onError(): void {
-        Notifications.pushError(this, `Could not play "${this.nowPlaying.track.title}".`);
+    onAudioElementError(): void {
+        Notifications.pushError(this, `Could not play "${this.storeNowPlaying.track.title}".`);
         this.$store.commit(Mutation.Next);
     }
 
-    onPlay(): void {
+    onAudioElementPlay(): void {
         this.$store.commit(Mutation.Play);
     }
 
-    onPause(): void {
+    onAudioElementPause(): void {
         this.$store.commit(Mutation.Pause);
     }
 
@@ -137,7 +137,7 @@ export default class Player extends Vue {
                 return;
             }
             this.loadHls(this.apiService.streamPlaylistUrl(track, streamId));
-            this.play();
+            this.audioElement.play();
         };
 
         ws.onerror = () => {
@@ -160,7 +160,7 @@ export default class Player extends Vue {
             console.error('hls.js error', data);
         });
         this.hls.loadSource(url);
-        this.hls.attachMedia(this.audio);
+        this.hls.attachMedia(this.audioElement);
     }
 
     private destroyHls(): void {
@@ -186,22 +186,11 @@ export default class Player extends Vue {
     }
 
     private emitValues(): void {
-        if (this.audio) {
+        if (this.audioElement) {
             const playbackData: PlaybackData = {
-                currentTime: this.streamStartOffset + this.audio.currentTime,
+                currentTime: this.streamStartOffset + this.audioElement.currentTime,
             };
             this.$emit('playback-data', playbackData);
         }
     }
-
-    private play(): void {
-        this.$store.commit(Mutation.Play);
-        this.audio.play();
-    }
-
-    private pause(): void {
-        this.$store.commit(Mutation.Pause);
-        this.audio.pause();
-    }
-
 }

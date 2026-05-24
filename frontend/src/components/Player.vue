@@ -1,6 +1,6 @@
 <template>
     <div class="player">
-        <audio controls ref="audio" @ended="onEnded" @error="onError" @play="onPlay" @pause="onPause"></audio>
+        <audio controls ref="audio" @ended="onAudioElementEnded" @error="onAudioElementError" @play="onAudioElementPlay" @pause="onAudioElementPause"></audio>
     </div>
 </template>
 <script lang="ts" src="./Player.ts"></script>
