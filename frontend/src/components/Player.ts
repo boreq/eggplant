@@ -131,7 +131,12 @@ export default class Player extends Vue {
                 return;
             }
             Notifications.pushError(this, `Playback error for "${track.title}", attempting to recover.`);
-            this.startStream(track, this.streamStartOffset + this.audioElement.currentTime);
+            window.setTimeout(() => {
+                if (this.streamWs !== ws) {
+                    return;
+                }
+                this.startStream(track, this.streamStartOffset + this.audioElement.currentTime);
+            }, 1000);
         };
 
         ws.onmessage = (event) => {
@@ -157,7 +162,9 @@ export default class Player extends Vue {
                     break;
             }
         };
-        ws.onerror = recoverByRecreatingStreamWs;
+        ws.onerror = (event) => {
+            console.error('websocket error', event);
+        };
         ws.onclose = (event) => {
             if (!event.wasClean) {
                 recoverByRecreatingStreamWs();
