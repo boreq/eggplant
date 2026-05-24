@@ -22,13 +22,14 @@ export default class App extends Vue {
 
     playbackData: PlaybackData = null;
 
+    pwaLaunched = new URLSearchParams(window.location.search).get('source') === 'pwa';
+
     private readonly errCheckSetup = `Could not confirm whether this instance's setup process was completed.`;
     private readonly errCheckUser = `Could not retrieve the current user.`;
     private readonly apiService = new ApiService(this);
 
     created() {
         window.addEventListener('keydown', this.onKeyDown);
-        this.detectPwaLaunch();
         this.redirectToSetupIfNeeded();
         this.loadCurrentUser();
     }
@@ -42,14 +43,7 @@ export default class App extends Vue {
     }
 
     get showPwaWarning(): boolean {
-        return this.isMobile && !this.$store.state.pwaLaunched;
-    }
-
-    private detectPwaLaunch(): void {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('source') === 'pwa') {
-            this.$store.commit(Mutation.MarkPwaLaunched);
-        }
+        return this.isMobile && !this.pwaLaunched;
     }
 
     onKeyDown(event: KeyboardEvent): void {
