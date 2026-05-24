@@ -1,7 +1,7 @@
 <template>
     <div id="app" :class="{csd: isCsd}">
         <div v-if="showPwaWarning" class="pwa-warning">
-            To avoid playback issues on mobile install Eggplant as a PWA using Chrome.
+            To avoid playback issues on mobile install Eggplant as a PWA using Chrome. Once you do you need to disable battery optimizations for the app to work properly.
         </div>
         <div class="content">
             <div class="wrapper">
