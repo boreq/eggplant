@@ -138,8 +138,24 @@ export default class Player extends Vue {
             if (this.streamWs !== ws) {
                 return;
             }
-            this.loadHls(this.apiService.streamPlaylistUrl(track, event.data), recoverByRecreatingStreamWs);
-            this.audioElement.play();
+            let msg: { type: string; streamId?: string };
+            try {
+                msg = JSON.parse(event.data);
+            } catch (e) {
+                console.error('failed to parse websocket message', e, event.data);
+                return;
+            }
+            switch (msg.type) {
+                case 'stream':
+                    if (msg.streamId) {
+                        this.loadHls(this.apiService.streamPlaylistUrl(track, msg.streamId), recoverByRecreatingStreamWs);
+                        this.audioElement.play();
+                    }
+                    break;
+                case 'ping':
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                    break;
+            }
         };
         ws.onerror = recoverByRecreatingStreamWs;
         ws.onclose = (event) => {

@@ -24,7 +24,17 @@ var streamWsUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-const streamWsPingInterval = 15 * time.Second
+const (
+	streamWsPingInterval = 15 * time.Second
+
+	streamWsMessageTypeStream = "stream"
+	streamWsMessageTypePing   = "ping"
+)
+
+type streamWsMessage struct {
+	Type     string `json:"type"`
+	StreamId string `json:"streamId,omitempty"`
+}
 
 var Version = "unknown"
 
@@ -209,33 +219,55 @@ func (h *Handler) trackStreamWS(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(streamId.String())); err != nil {
+	initMsg, err := json.Marshal(streamWsMessage{
+		Type:     streamWsMessageTypeStream,
+		StreamId: streamId.String(),
+	})
+	if err != nil {
+		h.log.Error("could not marshal stream message", "err", err)
+		return
+	}
+	if err := conn.WriteMessage(websocket.TextMessage, initMsg); err != nil {
 		return
 	}
 
-	go h.keepWebsocketAlive(ctx, conn)
+	log := h.log.New("streamId", streamId.String())
+
+	go h.keepWebsocketAlive(ctx, conn, log)
 
 	// Hold the connection open
 	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
-			h.log.Debug("read error, exiting", "err", err)
+		_, data, err := conn.ReadMessage()
+		if err != nil {
+			log.Debug("read error, exiting", "err", err)
 			return
 		}
+		var msg streamWsMessage
+		if err := json.Unmarshal(data, &msg); err != nil {
+			log.Debug("received non-json message", "data", string(data))
+			continue
+		}
+		log.Debug("received message", "type", msg.Type)
 	}
 }
 
-func (h *Handler) keepWebsocketAlive(ctx context.Context, conn *websocket.Conn) {
+func (h *Handler) keepWebsocketAlive(ctx context.Context, conn *websocket.Conn, log logging.Logger) {
 	ticker := time.NewTicker(streamWsPingInterval)
 	defer ticker.Stop()
+
+	pingMsg, err := json.Marshal(streamWsMessage{Type: streamWsMessageTypePing})
+	if err != nil {
+		log.Error("could not marshal ping message", "err", err)
+		return
+	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			deadline := time.Now().Add(streamWsPingInterval)
-			if err := conn.WriteControl(websocket.PingMessage, nil, deadline); err != nil {
-				h.log.Debug("ping error, exiting", "err", err)
+			if err := conn.WriteMessage(websocket.TextMessage, pingMsg); err != nil {
+				log.Debug("ping error, exiting", "err", err)
 				return
 			}
 		}
