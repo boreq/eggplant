@@ -1,14 +1,9 @@
 import { Component, Prop, Ref, Vue } from 'vue-property-decorator';
 import { ApiService } from '@/services/ApiService';
-import Spinner from '@/components/Spinner.vue';
 import { PartialAlbum } from "@/dto/Album";
 
 
-@Component({
-    components: {
-        Spinner,
-    },
-})
+@Component
 export default class Thumbnail extends Vue {
 
     @Prop()
@@ -18,14 +13,10 @@ export default class Thumbnail extends Vue {
     tilt: boolean;
 
     @Ref()
-    image: HTMLImageElement;
-
-    @Ref()
     root: HTMLElement;
 
-    converting = false;
-
-    private timeoutId: number;
+    loaded = false;
+    errored = false;
 
     private readonly apiService = new ApiService(this);
 
@@ -38,17 +29,17 @@ export default class Thumbnail extends Vue {
         return null;
     }
 
-    destroyed(): void {
-        this.clearTimeout();
+    get showImage(): boolean {
+        return !!this.album?.thumbnail && !this.errored;
     }
 
     onError(): void {
-        this.converting = true;
-        this.reload();
+        this.errored = true;
+        this.loaded = false;
     }
 
     onLoad(): void {
-        this.converting = false;
+        this.loaded = true;
     }
 
     onMouseMove(e: MouseEvent): void {
@@ -70,17 +61,6 @@ export default class Thumbnail extends Vue {
         this.root.style.setProperty('--tilt-x', '0deg');
         this.root.style.setProperty('--tilt-y', '0deg');
         this.root.style.setProperty('--glare-opacity', '0');
-    }
-
-    private reload(): void {
-        this.clearTimeout();
-        this.timeoutId = window.setTimeout(() => this.image.src = this.thumbnailUrl, 5000);
-    }
-
-    private clearTimeout(): void {
-        if (this.timeoutId) {
-            window.clearTimeout(this.timeoutId);
-        }
     }
 
 }
