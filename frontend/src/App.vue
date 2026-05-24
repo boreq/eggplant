@@ -1,7 +1,7 @@
 <template>
     <div id="app" :class="{csd: isCsd}">
         <div v-if="showPwaWarning" class="pwa-warning">
-            To avoid issues install Eggplant as PWA via your mobile browser; Chrome is recommended.
+            To avoid issues install Eggplant as a PWA via your mobile browser; Chrome is recommended.
         </div>
         <div class="content">
             <div class="wrapper">
