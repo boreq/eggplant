@@ -56,6 +56,22 @@ export default class MediaSession extends Vue {
             }
 
             mediaSession.metadata = new MediaMetadata(metadata);
+
+            if (mediaSession.setPositionState) {
+                try {
+                    mediaSession.setPositionState({
+                        duration: this.nowPlaying.track.duration,
+                        position: 0,
+                        playbackRate: 1,
+                    });
+                } catch {
+                    // Some browsers throw when values are out of range.
+                }
+            }
+
+            if (!this.$store.state.paused) {
+                mediaSession.playbackState = 'playing';
+            }
         }
     }
 
