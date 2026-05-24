@@ -30,6 +30,9 @@ export default class Tracks extends Vue {
     @Prop()
     showGoToAlbum: boolean;
 
+    @Prop({ default: false })
+    hideNumber: boolean;
+
     @Ref('dropdowns')
     dropdowns: Dropdown[];
 
@@ -66,7 +69,7 @@ export default class Tracks extends Vue {
     }
 
     onTrackRowClicked(index: number): void {
-        if (!window.matchMedia('(hover: none)').matches) {
+        if (!window.matchMedia('(any-pointer: coarse)').matches) {
             return;
         }
         this.onPlayTrackButtonClicked(index);

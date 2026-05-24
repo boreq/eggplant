@@ -74,7 +74,7 @@
         }
     }
 
-    @media (hover: hover) {
+    @media not all and (any-pointer: coarse) {
         .track {
             &:hover {
                 .play {
@@ -108,7 +108,7 @@
         }
     }
 
-    @media (hover: none) {
+    @media (any-pointer: coarse) {
         .track {
             &:hover {
                 .play {
