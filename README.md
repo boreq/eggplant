@@ -185,6 +185,17 @@ dev server (running on a different port) to talk to the backend.
     $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
     $ go run -tags insecurecors cmd/eggplant/main.go run /path/to/config.toml
 
+### Running CI locally
+
+The same checks that run in the pipeline can be run locally:
+
+    $ make ci
+
+You can run them separately as well:
+
+    $ make ci-backend
+    $ make ci-frontend
+
 [ci-badge]:https://github.com/boreq/eggplant/actions/workflows/ci.yml/badge.svg?branch=main
 [ci]:https://github.com/boreq/eggplant/actions/workflows/ci.yml?query=branch%3Amain
 [screenshot]: https://user-images.githubusercontent.com/1935975/108577272-5bb61100-7318-11eb-8aba-5fcc0183b58c.png
