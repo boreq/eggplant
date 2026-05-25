@@ -146,12 +146,7 @@ files inside of them.
 
 ## Development
 
-### Running backend and frontend locally
-
-As an alternative to running the backend and the frontend in separate
-terminals you can start both with a single command.
-
-#### Dependencies
+### Dependencies
 
 Tools you need:
 
@@ -166,7 +161,7 @@ also be using `corepack` which ships with node and runs the right version of
 `yarn` for you. I don't know it all seems to be a bit of a mess.
 
 
-#### Creating a config file
+### Creating a config file
 
 Generate a default config file and edit it to point at your music, data, and
 cache directories:
@@ -174,7 +169,7 @@ cache directories:
     $ cd backend
     $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
 
-#### Running
+### Running frontend & backend locally
 
 From the repository root:
 
