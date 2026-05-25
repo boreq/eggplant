@@ -35,12 +35,20 @@ export default class Search extends Vue {
 
     result: SearchResults = null;
 
+    showAllTracks: boolean = false;
+    showAllAlbums: boolean = false;
+
+    private readonly initialTrackLimit = 5;
+    private readonly initialAlbumLimit = 5;
+
     private timeoutId: number = null;
     private readonly apiService = new ApiService(this);
     private readonly searchDelay = 100;
 
     @Watch('query', { immediate: true })
     onQueryChanged(): void {
+        this.showAllTracks = false;
+        this.showAllAlbums = false;
         this.scheduleTimeout();
     }
 
@@ -65,6 +73,36 @@ export default class Search extends Vue {
         }
 
         return this.result.albums;
+    }
+
+    get hasTracks(): boolean {
+        return this.tracks.length > 0;
+    }
+
+    get hasAlbums(): boolean {
+        return this.albums.length > 0;
+    }
+
+    get displayedTracks(): TrackWithAlbum[] {
+        if (this.hasAlbums && !this.showAllTracks) {
+            return this.tracks.slice(0, this.initialTrackLimit);
+        }
+        return this.tracks;
+    }
+
+    get canToggleTracks(): boolean {
+        return this.hasAlbums && this.tracks.length > this.initialTrackLimit;
+    }
+
+    get displayedAlbums(): PartialAlbum[] {
+        if (this.hasTracks && !this.showAllAlbums) {
+            return this.albums.slice(0, this.initialAlbumLimit);
+        }
+        return this.albums;
+    }
+
+    get canToggleAlbums(): boolean {
+        return this.hasTracks && this.albums.length > this.initialAlbumLimit;
     }
 
     selectAlbum(event: PartialAlbum): void {

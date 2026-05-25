@@ -2,19 +2,33 @@
     <div class="search">
         <spinner v-if="!result"></spinner>
 
-        <div v-if="result">
-            <SubHeader text="Tracks"></SubHeader>
-            <Tracks :entries="tracks" :showGoToAlbum="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
-
-            <div class="message" v-if="tracks.length === 0">
-                No tracks found.
+        <div class="results" v-if="result">
+            <div class="section bleed">
+                <SubHeader text="Tracks">
+                    <template v-slot:action v-if="canToggleTracks">
+                        <a @click="showAllTracks = !showAllTracks">
+                            {{ showAllTracks ? 'Show fewer' : 'View all ' + tracks.length }}
+                        </a>
+                    </template>
+                </SubHeader>
+                <Tracks v-if="hasTracks" :entries="displayedTracks" :showGoToAlbum="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
+                <div class="message" v-else>
+                    No tracks found.
+                </div>
             </div>
 
-            <SubHeader text="Albums"></SubHeader>
-            <Albums :albums="albums" @select-album="selectAlbum"></Albums>
-
-            <div class="message" v-if="albums.length === 0">
-                No albums found.
+            <div class="section">
+                <SubHeader text="Albums">
+                    <template v-slot:action v-if="canToggleAlbums">
+                        <a @click="showAllAlbums = !showAllAlbums">
+                            {{ showAllAlbums ? 'Show fewer' : 'View all ' + albums.length }}
+                        </a>
+                    </template>
+                </SubHeader>
+                <Albums v-if="hasAlbums" :albums="displayedAlbums" @select-album="selectAlbum"></Albums>
+                <div class="message" v-else>
+                    No albums found.
+                </div>
             </div>
         </div>
     </div>

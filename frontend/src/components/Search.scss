@@ -1,15 +1,35 @@
 $padding: 2em;
 
 .search {
-    padding: $padding;
+    padding: $padding 0;
+
+    .subheader {
+        margin: 0;
+    }
+
+    .results {
+        display: flex;
+        flex-direction: column;
+        gap: 2em;
+    }
+
+    .section {
+        padding: 0 $padding;
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+
+        &.bleed {
+            padding: 0;
+
+            > .subheader {
+                padding: 0 $padding;
+            }
+        }
+    }
 
     .message {
         text-align: center;
         padding: 2em 0;
     }
-
-    .tracks {
-        margin: 0 (-($padding));
-    }
-
 }
