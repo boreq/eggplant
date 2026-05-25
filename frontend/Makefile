@@ -7,6 +7,14 @@ ci: install lint type-check build
 install:
 	$(YARN) install --immutable
 
+.PHONY: serve
+serve: install
+	$(YARN) serve --clearScreen false
+
+.PHONY: serve-public
+serve-public: install
+	$(YARN) serve --host 0.0.0.0 --clearScreen false
+
 .PHONY: lint
 lint:
 	$(YARN) lint

@@ -5,6 +5,10 @@ ci: ci-backend ci-frontend
 dev:
 	./tools/dev.sh $(CONFIG)
 
+.PHONY: dev-public
+dev-public:
+	./tools/dev.sh --public $(CONFIG)
+
 .PHONY: ci-backend
 ci-backend:
 	$(MAKE) -C backend ci

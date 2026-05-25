@@ -146,29 +146,43 @@ files inside of them.
 
 ## Development
 
-For local development I recommend opening two terminals and running the
-following commands in them to start the backend and the frontend separately.
-This gives you a familiar experience whether you are a frontend or a backend
-developer.
+### Running backend and frontend locally
 
-### Starting the frontend
+As an alternative to running the backend and the frontend in separate
+terminals you can start both with a single command.
 
-You need Node v26. Why? A better question is "why do Node authors hate us both
-for some reason?". I don't have the answer to that question but I can recommend
-using `nvm`. You should also be using `corepack`.
+#### Dependencies
 
-    $ cd frontend
-    $ yarn install
-    $ yarn serve
+Tools you need:
 
-### Starting the backend
+- Go (version per `backend/go.mod`), the good news is that Go developers understand the phrase "backward compatibility"
+- Node (version per `frontend/.nvmrc`, `nvm` recommended), ships with `corepack` which provides `yarn`, the bad news is that Node developers have never heard the phrase "backward compatibility" in their lives
+- `make`, surely you have that, the good news is that compatibility is not an issue here as make has so many features nobody knows about that it would be impossible to break compatibility without breaking the entire thing
+ 
+The biggest hurdle is that need Node v26. Why that version specifically? A
+better question is "why do Node authors hate us both for some reason?". I don't
+have the answer to that question but I can recommend using `nvm`. You should
+also be using `corepack` which ships with node and runs the right version of
+`yarn` for you. I don't know it all seems to be a bit of a mess.
 
-When developing locally use the `insecurecors` build tag to allow the frontend
-dev server (running on a different port) to talk to the backend.
+
+#### Creating a config file
+
+Generate a default config file and edit it to point at your music, data, and
+cache directories:
 
     $ cd backend
     $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
-    $ go run -tags insecurecors cmd/eggplant/main.go run /path/to/config.toml
+
+#### Running
+
+From the repository root:
+
+    $ make dev CONFIG=/path/to/config.toml
+
+To expose the frontend dev server (e.g. to test from a phone, otherwise it's only accessible locally):
+
+    $ make dev-public CONFIG=/path/to/config.toml
 
 ### Running CI locally
 
@@ -180,6 +194,10 @@ You can run them separately as well:
 
     $ make ci-backend
     $ make ci-frontend
+
+The backend CI target installs Go tools into `$GOPATH/bin` (defaults to `$HOME/go/bin`). Make sure
+that directory is on your `PATH`.
+
 
 [ci-badge]:https://github.com/boreq/eggplant/actions/workflows/ci.yml/badge.svg?branch=main
 [ci]:https://github.com/boreq/eggplant/actions/workflows/ci.yml?query=branch%3Amain

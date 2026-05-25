@@ -1,11 +1,28 @@
 #!/bin/bash
 set -e
 
+public=0
+args=()
+for arg in "$@"; do
+	if [ "$arg" = "--public" ]; then
+		public=1
+	else
+		args+=("$arg")
+	fi
+done
+set -- "${args[@]}"
+
 if [ $# -lt 1 ]; then
-	echo "usage: $0 <config.toml>" >&2
+	echo "usage: $0 [--public] <config.toml>" >&2
 	exit 1
 fi
 config=$(realpath "$1")
+
+if [ "$public" = "1" ]; then
+	target=serve-public
+else
+	target=serve
+fi
 
 repo_root=$(git rev-parse --show-toplevel)
 pids=()
@@ -19,12 +36,10 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
-cd "$repo_root/backend"
-go run -tags insecurecors cmd/eggplant/main.go run --verbosity debug "$config" &
+make -C "$repo_root/backend" run CONFIG="$config" &
 pids+=($!)
 
-cd "$repo_root/frontend"
-corepack yarn serve --host 0.0.0.0 --clearScreen false &
+make -C "$repo_root/frontend" "$target" &
 pids+=($!)
 
 while kill -0 "${pids[@]}" 2>/dev/null; do

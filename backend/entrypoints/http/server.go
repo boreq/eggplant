@@ -22,10 +22,7 @@ func NewServer(handler http.Handler) *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, address string) error {
-	handler := applyCORSMiddleware(s.handler)
-
-	// Add GZIP middleware
-	handler = gziphandler.GzipHandler(handler)
+	handler := gziphandler.GzipHandler(s.handler)
 
 	httpServer := &http.Server{
 		Addr:    address,

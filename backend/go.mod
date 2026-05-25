@@ -14,7 +14,6 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pkg/errors v0.9.1
 	github.com/radovskyb/watcher v1.0.7
-	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.10.0
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/crypto v0.51.0
