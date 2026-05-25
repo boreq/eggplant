@@ -1,11 +1,19 @@
+.PHONY: ci
 ci: ci-backend ci-frontend
 
+.PHONY: dev
+dev:
+	./tools/dev.sh $(CONFIG)
+
+.PHONY: ci-backend
 ci-backend:
 	$(MAKE) -C backend ci
 
+.PHONY: ci-frontend
 ci-frontend:
 	$(MAKE) -C frontend ci
 
+.PHONY: version
 version:
 	@hash=$$(git rev-parse HEAD 2>/dev/null); \
 	if [ -z "$$hash" ]; then \
@@ -18,5 +26,3 @@ version:
 			echo "$$hash-dirty"; \
 		fi; \
 	fi
-
-.PHONY: ci ci-backend ci-frontend version

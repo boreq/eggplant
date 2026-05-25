@@ -17,7 +17,7 @@
             </div>
 
             <div class="content" ref="content">
-                <div class="album" v-if="showAlbum">
+                <div class="album-hero" v-if="showAlbum">
                     <div class="artwork">
                         <thumbnail :album="basicAlbum" tilt></thumbnail>
                     </div>
@@ -74,14 +74,26 @@
                     </div>
                 </div>
 
-                <div v-if="album && album.tracks && album.tracks.length > 0">
-                    <SubHeader text="Tracks"></SubHeader>
-                    <Tracks :entries="entries"></Tracks>
+                <div class="section bleed" v-if="album && album.tracks && album.tracks.length > 0">
+                    <SubHeader text="Tracks">
+                        <template v-slot:action v-if="canToggleTracks">
+                            <a @click="showAllTracks = !showAllTracks">
+                                {{ showAllTracks ? 'Show fewer' : 'View all ' + entries.length }}
+                            </a>
+                        </template>
+                    </SubHeader>
+                    <Tracks :entries="displayedEntries"></Tracks>
                 </div>
 
-                <div v-if="albums && albums.length > 0">
-                    <SubHeader text="Albums"></SubHeader>
-                    <Albums :albums="albums" @select-album="selectAlbum"></Albums>
+                <div class="section" v-if="albums && albums.length > 0">
+                    <SubHeader text="Albums">
+                        <template v-slot:action v-if="canToggleAlbums">
+                            <a @click="showAllAlbums = !showAllAlbums">
+                                {{ showAllAlbums ? 'Show fewer' : 'View all ' + albums.length }}
+                            </a>
+                        </template>
+                    </SubHeader>
+                    <Albums :albums="displayedAlbums" @select-album="selectAlbum"></Albums>
                 </div>
             </div>
 

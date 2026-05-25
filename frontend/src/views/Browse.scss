@@ -77,24 +77,27 @@ $topbar-height: 45px;
         }
 
         .content {
-            padding: $padding;
+            padding: 2em 0;
             overflow-y: auto;
             grid-area: content;
+            display: flex;
+            flex-direction: column;
+            gap: 2em;
 
             &.queue, &.search {
                 z-index: 10;
                 background: $box-normal-background-color;
                 padding: 0;
+                display: block;
 
                 .main-header {
                     margin-top: -($box-normal-border-width);
                 }
             }
 
-            .album {
+            .album-hero {
                 display: flex;
-                margin: -2em -2em 0 -2em;
-                padding: 2em 2em 1em;
+                padding: 0 2em;
 
                 .artwork {
                     width: $artwork-size;
@@ -221,12 +224,19 @@ $topbar-height: 45px;
                 }
             }
 
-            .albums {
-                padding-top: 1em;
-            }
+            .section {
+                padding: 0 $padding;
+                display: flex;
+                flex-direction: column;
+                gap: 1em;
 
-            .tracks {
-                margin: 0 (-($padding));
+                &.bleed {
+                    padding: 0;
+
+                    > .subheader {
+                        padding: 0 $padding;
+                    }
+                }
             }
         }
 
@@ -293,7 +303,7 @@ $topbar-height: 45px;
     @media (max-width: $responsive-threshold-mobile) {
         .wrapper {
             .content {
-                .album {
+                .album-hero {
                     flex-flow: column nowrap;
                     text-align: center;
                     align-items: center;

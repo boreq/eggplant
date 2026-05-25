@@ -65,6 +65,12 @@ export default class Browse extends Vue {
 
     view: View = View.Browse;
 
+    showAllTracks: boolean = false;
+    showAllAlbums: boolean = false;
+
+    private readonly initialTrackLimit = 5;
+    private readonly initialAlbumLimit = 5;
+
     @Ref('dropdown')
     readonly dropdown: Dropdown;
 
@@ -80,6 +86,8 @@ export default class Browse extends Vue {
     onRouteChanged(): void {
         this.album = null;
         this.state = BrowseState.Loading;
+        this.showAllTracks = false;
+        this.showAllAlbums = false;
         this.load();
         this.scrollContentToTop();
         this.switchView(View.Browse);
@@ -234,6 +242,41 @@ export default class Browse extends Vue {
             return null;
         }
         return this.album.albums;
+    }
+
+    get hasAlbums(): boolean {
+        return !!(this.albums && this.albums.length > 0);
+    }
+
+    get hasTracks(): boolean {
+        return !!(this.album && this.album.tracks && this.album.tracks.length > 0);
+    }
+
+    get displayedEntries(): TrackWithAlbum[] {
+        if (this.hasAlbums && !this.showAllTracks) {
+            return this.entries.slice(0, this.initialTrackLimit);
+        }
+        return this.entries;
+    }
+
+    get canToggleTracks(): boolean {
+        return this.hasAlbums && this.entries.length > this.initialTrackLimit;
+    }
+
+    get displayedAlbums(): PartialAlbum[] {
+        if (!this.albums) {
+            return null;
+        }
+        if (this.hasTracks && !this.showAllAlbums) {
+            return this.albums.slice(0, this.initialAlbumLimit);
+        }
+        return this.albums;
+    }
+
+    get canToggleAlbums(): boolean {
+        return this.hasTracks
+            && !!this.albums
+            && this.albums.length > this.initialAlbumLimit;
     }
 
     get totalDurationMinutes(): number {
