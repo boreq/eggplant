@@ -2,38 +2,70 @@ package filesystem
 
 import (
 	"context"
+	"time"
 
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/eggplant/logging"
 )
 
+const retryDelay = 30 * time.Second
+
 type Listener struct {
-	buildLibrary *music.BuildLibraryHandler
-	updates      <-chan scanner.FoundRootAlbum
-	log          logging.Logger
+	loadLibrary *music.LoadLibraryHandler
+	updates     <-chan struct{}
+	log         logging.Logger
 }
 
-func NewListener(buildLibrary *music.BuildLibraryHandler, updates <-chan scanner.FoundRootAlbum) *Listener {
+func NewListener(loadLibrary *music.LoadLibraryHandler, updates <-chan struct{}) *Listener {
 	return &Listener{
-		buildLibrary: buildLibrary,
-		updates:      updates,
-		log:          logging.New("entrypoints/filesystem"),
+		loadLibrary: loadLibrary,
+		updates:     updates,
+		log:         logging.New("entrypoints/filesystem"),
 	}
 }
 
 func (l *Listener) Run(ctx context.Context) error {
+	dirty := false
+
+	for {
+		if !dirty {
+			select {
+			case <-ctx.Done():
+				return nil
+			case _, ok := <-l.updates:
+				if !ok {
+					return nil
+				}
+				dirty = true
+			}
+			continue
+		}
+
+		if err := l.loadLibrary.Execute(ctx); err != nil {
+			l.log.Error("could not load the library, will retry", "err", err, "delay", retryDelay)
+			if !l.waitOrDrain(ctx, retryDelay) {
+				return nil
+			}
+			continue
+		}
+
+		dirty = false
+	}
+}
+
+func (l *Listener) waitOrDrain(ctx context.Context, d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
-		case scan, ok := <-l.updates:
+			return false
+		case _, ok := <-l.updates:
 			if !ok {
-				return nil
+				return false
 			}
-			if err := l.buildLibrary.Execute(ctx, scan); err != nil {
-				l.log.Error("could not process a scanner update", "err", err)
-			}
+		case <-timer.C:
+			return true
 		}
 	}
 }

@@ -7,14 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/boreq/eggplant/adapters/music/scanner/symwalk"
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
-	"github.com/radovskyb/watcher"
 )
 
 type ThumbnailStem struct {
@@ -58,16 +56,12 @@ func NewConfig(trackExtensions []domain.FileExtension, thumbnailStems []Thumbnai
 	}, nil
 }
 
-// Scanner watches a hard drive directory containing audio files and produces
-// updates whenever its contents change.
 type Scanner struct {
 	directory string
 	config    Config
 	logger    logging.Logger
 }
 
-// New creates a new scanner which will watch the specified directory when
-// started.
 func New(directory string, config Config) (*Scanner, error) {
 	l := &Scanner{
 		directory: directory,
@@ -77,58 +71,7 @@ func New(directory string, config Config) (*Scanner, error) {
 	return l, nil
 }
 
-// Start starts the watcher and returns a channel on which the updates are
-// sent whenever available. At least one update will be sent on the channel
-// immediately after calling this method.
-func (s *Scanner) Start() (<-chan scanner.FoundRootAlbum, error) {
-	// fail early since the initial load carries the highest failure
-	// possiblity
-	album, err := s.load()
-	if err != nil {
-		return nil, errors.Wrap(err, "initial load failed")
-	}
-
-	w := watcher.New()
-	w.SetMaxEvents(1)
-
-	if err := w.AddRecursive(s.directory); err != nil {
-		return nil, errors.Wrap(err, "could not add a recursive watcher")
-	}
-
-	go func() {
-		if err := w.Start(time.Second * 10); err != nil {
-			s.logger.Error("error starting the watcher", "err", err)
-		}
-	}()
-
-	ch := make(chan scanner.FoundRootAlbum)
-	go func() {
-		defer close(ch)
-		ch <- *album
-
-		for {
-			select {
-			case _, ok := <-w.Event:
-				if !ok {
-					return
-				}
-				album, err := s.load()
-				if err != nil {
-					s.logger.Error("load error", "err", err)
-					continue
-				}
-				ch <- *album
-			case err := <-w.Error:
-				s.logger.Error("watcher error", "err", err)
-			case <-w.Closed:
-				return
-			}
-		}
-	}()
-	return ch, nil
-}
-
-func (s *Scanner) load() (*scanner.FoundRootAlbum, error) {
+func (s *Scanner) Scan() (scanner.FoundRootAlbum, error) {
 	visited := make(map[string]struct{})
 
 	root := newAlbum()
@@ -185,16 +128,16 @@ func (s *Scanner) load() (*scanner.FoundRootAlbum, error) {
 
 		return nil
 	}); err != nil {
-		return nil, errors.Wrap(err, "walk failed")
+		return scanner.FoundRootAlbum{}, errors.Wrap(err, "walk failed")
 	}
 
 	removeEmptyAlbums(root)
 
 	result, err := toFoundRootAlbum(root)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not build directory scan result")
+		return scanner.FoundRootAlbum{}, errors.Wrap(err, "could not build directory scan result")
 	}
-	return &result, nil
+	return result, nil
 }
 
 func (s *Scanner) addTrack(root *album, file domain.FilePath) error {

@@ -10,7 +10,6 @@ import (
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/domain"
-	scannerdomain "github.com/boreq/eggplant/domain/scanner"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/errors"
 	"github.com/google/wire"
@@ -18,7 +17,8 @@ import (
 
 //lint:ignore U1000 because
 var musicSet = wire.NewSet(
-	newScannerUpdates,
+	newScanner,
+	newDirectoryWatcherUpdates,
 	newTrackStore,
 	newThumbnailStore,
 	newScannerConfig,
@@ -26,6 +26,7 @@ var musicSet = wire.NewSet(
 	library.NewInMemoryRepository,
 	tracks.NewFFProbe,
 
+	wire.Bind(new(music.Scanner), new(*scanner.Scanner)),
 	wire.Bind(new(music.AccessLoader), new(*library.DelimiterAccessLoader)),
 	wire.Bind(new(music.TrackConverter), new(*tracks.Converter)),
 	wire.Bind(new(music.ThumbnailStore), new(*store.ThumbnailStore)),
@@ -35,14 +36,19 @@ var musicSet = wire.NewSet(
 	wire.Bind(new(queries.ThumbnailStore), new(*store.ThumbnailStore)),
 )
 
-func newScannerUpdates(conf *config.Config, scannerConf scanner.Config) (<-chan scannerdomain.FoundRootAlbum, error) {
-	scan, err := scanner.New(conf.MusicDirectory, scannerConf)
+func newScanner(conf *config.Config, scannerConf scanner.Config) (*scanner.Scanner, error) {
+	s, err := scanner.New(conf.MusicDirectory, scannerConf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a scanner")
 	}
-	ch, err := scan.Start()
+	return s, nil
+}
+
+func newDirectoryWatcherUpdates(conf *config.Config) (<-chan struct{}, error) {
+	w := scanner.NewDirectoryWatcher(conf.MusicDirectory)
+	ch, err := w.Start()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not start a scanner")
+		return nil, errors.Wrap(err, "could not start the directory watcher")
 	}
 	return ch, nil
 }

@@ -21,7 +21,7 @@ type Music struct {
 	GetRootAlbum   *music.GetRootAlbumHandler
 	GetAlbum       *music.GetAlbumHandler
 	Search         *music.SearchHandler
-	BuildLibrary   *music.BuildLibraryHandler
+	LoadLibrary    *music.LoadLibraryHandler
 }
 
 type Queries struct {

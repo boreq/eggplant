@@ -241,7 +241,7 @@ func TestScanner(t *testing.T) {
 		},
 		{
 			Name:  "symlinks_loop",
-			Error: errors.New("initial load failed: walk failed: loop detected: 'test_data/symlinks_loop/a' visited multiple times"),
+			Error: errors.New("walk failed: loop detected: 'test_data/symlinks_loop/a' visited multiple times"),
 		},
 	}
 
@@ -250,12 +250,10 @@ func TestScanner(t *testing.T) {
 			s, err := scanner.New(testDirectory(testCase.Name), testConfig(t))
 			require.NoError(t, err)
 
-			c, err := s.Start()
+			album, err := s.Scan()
 
 			if testCase.Error == nil {
 				require.NoError(t, err)
-
-				album := <-c
 				require.Equal(t, buildRootAlbum(t, testCase.Result), album)
 			} else {
 				require.EqualError(t, err, testCase.Error.Error())
@@ -268,8 +266,8 @@ func TestScannerFailsIfDirectoryDoesNotExist(t *testing.T) {
 	s, err := scanner.New("some-completely-made-up-file-name-come-on-surely-this-does-not-exist", testConfig(t))
 	require.NoError(t, err)
 
-	_, err = s.Start()
-	require.EqualError(t, err, "initial load failed: walk failed: received an error: lstat some-completely-made-up-file-name-come-on-surely-this-does-not-exist: no such file or directory")
+	_, err = s.Scan()
+	require.EqualError(t, err, "walk failed: received an error: lstat some-completely-made-up-file-name-come-on-surely-this-does-not-exist: no such file or directory")
 }
 
 func testConfig(t *testing.T) scanner.Config {

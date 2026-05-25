@@ -173,9 +173,17 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
+	scannerConfig, err := newScannerConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+	scanner, err := newScanner(conf, scannerConfig)
+	if err != nil {
+		return nil, err
+	}
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
 	ffProbe := tracks.NewFFProbe()
-	buildLibraryHandler := music.NewBuildLibraryHandler(inMemoryRepository, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
+	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
 	applicationMusic := application.Music{
 		Thumbnail:      thumbnailHandler,
 		StartStreaming: startStreamingHandler,
@@ -185,7 +193,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		GetRootAlbum:   getRootAlbumHandler,
 		GetAlbum:       getAlbumHandler,
 		Search:         searchHandler,
-		BuildLibrary:   buildLibraryHandler,
+		LoadLibrary:    loadLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
@@ -204,15 +212,11 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	server := http.NewServer(handler)
-	scannerConfig, err := newScannerConfig(conf)
+	v, err := newDirectoryWatcherUpdates(conf)
 	if err != nil {
 		return nil, err
 	}
-	v, err := newScannerUpdates(conf, scannerConfig)
-	if err != nil {
-		return nil, err
-	}
-	listener := filesystem.NewListener(buildLibraryHandler, v)
+	listener := filesystem.NewListener(loadLibraryHandler, v)
 	serviceService := service.NewService(server, listener, lastSeenUpdater, conf)
 	return serviceService, nil
 }

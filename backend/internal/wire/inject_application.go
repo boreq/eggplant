@@ -34,7 +34,7 @@ var appSet = wire.NewSet(
 	music.NewGetRootAlbumHandler,
 	music.NewGetAlbumHandler,
 	music.NewSearchHandler,
-	music.NewBuildLibraryHandler,
+	music.NewLoadLibraryHandler,
 
 	wire.Struct(new(application.Queries), "*"),
 	queries.NewStatsHandler,

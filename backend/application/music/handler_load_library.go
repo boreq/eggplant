@@ -13,23 +13,30 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type BuildLibraryHandler struct {
+type Scanner interface {
+	Scan() (scannerdomain.FoundRootAlbum, error)
+}
+
+type LoadLibraryHandler struct {
 	repo           LibraryRepository
+	scanner        Scanner
 	trackStore     TrackConverter
 	thumbnailStore ThumbnailStore
 	accessLoader   AccessLoader
 	durations      TrackDurations
 }
 
-func NewBuildLibraryHandler(
+func NewLoadLibraryHandler(
 	repo LibraryRepository,
+	scanner Scanner,
 	trackStore TrackConverter,
 	thumbnailStore ThumbnailStore,
 	accessLoader AccessLoader,
 	durations TrackDurations,
-) *BuildLibraryHandler {
-	return &BuildLibraryHandler{
+) *LoadLibraryHandler {
+	return &LoadLibraryHandler{
 		repo:           repo,
+		scanner:        scanner,
 		trackStore:     trackStore,
 		thumbnailStore: thumbnailStore,
 		accessLoader:   accessLoader,
@@ -37,7 +44,12 @@ func NewBuildLibraryHandler(
 	}
 }
 
-func (h *BuildLibraryHandler) Execute(ctx context.Context, scan scannerdomain.FoundRootAlbum) error {
+func (h *LoadLibraryHandler) Execute(ctx context.Context) error {
+	scan, err := h.scanner.Scan()
+	if err != nil {
+		return errors.Wrap(err, "scan failed")
+	}
+
 	pathDurations, err := h.probeDurations(ctx, scan)
 	if err != nil {
 		return errors.Wrap(err, "could not probe track durations")
@@ -59,7 +71,7 @@ func (h *BuildLibraryHandler) Execute(ctx context.Context, scan scannerdomain.Fo
 	return nil
 }
 
-func (h *BuildLibraryHandler) probeDurations(ctx context.Context, scan scannerdomain.FoundRootAlbum) (map[string]domain.TrackDuration, error) {
+func (h *LoadLibraryHandler) probeDurations(ctx context.Context, scan scannerdomain.FoundRootAlbum) (map[string]domain.TrackDuration, error) {
 	paths := uniqueTrackPaths(scan)
 	out := make(map[string]domain.TrackDuration, len(paths))
 	var mu sync.Mutex
