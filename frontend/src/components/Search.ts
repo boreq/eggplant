@@ -43,7 +43,7 @@ export default class Search extends Vue {
 
     private timeoutId: number = null;
     private readonly apiService = new ApiService(this);
-    private readonly searchDelay = 100;
+    private readonly searchDelay = 50;
 
     @Watch('query', { immediate: true })
     onQueryChanged(): void {

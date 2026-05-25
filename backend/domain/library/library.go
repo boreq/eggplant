@@ -2,13 +2,10 @@ package library
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/boreq/eggplant/domain"
 	"github.com/boreq/errors"
 )
-
-const maxSearchItems = 10
 
 var (
 	ErrAlbumNotFound     = errors.New("album not found")
@@ -107,25 +104,6 @@ func (l *Library) GetThumbnail(accessCtx AccessContext, id domain.ThumbnailId) (
 	return t, nil
 }
 
-func (l *Library) Search(accessCtx AccessContext, query string) (SearchResults, error) {
-	var result builtSearchResults
-
-	if accessCtx.CanSee(l.getRootVisibility()) {
-		for _, track := range l.root.tracks {
-			if len(result.Tracks) >= maxSearchItems {
-				break
-			}
-			if !containsStringCaseInsensitive(track.Title().String(), query) {
-				continue
-			}
-			result.Tracks = append(result.Tracks, NewRootTrackWithAlbum(track))
-		}
-	}
-
-	searchAlbums(&result, l.root.albums, nil, l.getRootVisibilityToPropagateToChildren(), query, accessCtx)
-	return NewSearchResults(result.Albums, result.Tracks), nil
-}
-
 func (l *Library) getRootVisibility() Visibility {
 	return ifNotSetPublic(l.root.visibility)
 }
@@ -166,83 +144,6 @@ func findThumbnailInAlbums(albums []Album, id domain.ThumbnailId, parentVis Visi
 		}
 	}
 	return domain.Thumbnail{}, Visibility{}, false
-}
-
-type SearchResults struct {
-	albums []domain.PartialAlbum
-	tracks []TrackWithAlbum
-}
-
-func NewSearchResults(albums []domain.PartialAlbum, tracks []TrackWithAlbum) SearchResults {
-	return SearchResults{albums: albums, tracks: tracks}
-}
-
-func (s SearchResults) Albums() []domain.PartialAlbum {
-	return s.albums
-}
-
-func (s SearchResults) Tracks() []TrackWithAlbum {
-	return s.tracks
-}
-
-type TrackWithAlbum struct {
-	track domain.Track
-	album *domain.PartialAlbum
-}
-
-func NewRootTrackWithAlbum(track domain.Track) TrackWithAlbum {
-	return TrackWithAlbum{track: track, album: nil}
-}
-
-func NewTrackWithAlbum(track domain.Track, album domain.PartialAlbum) TrackWithAlbum {
-	return TrackWithAlbum{track: track, album: &album}
-}
-
-func (t TrackWithAlbum) Track() domain.Track {
-	return t.track
-}
-
-func (t TrackWithAlbum) Album() *domain.PartialAlbum {
-	return t.album
-}
-
-type builtSearchResults struct {
-	Albums []domain.PartialAlbum
-	Tracks []TrackWithAlbum
-}
-
-func searchAlbums(result *builtSearchResults, albums []Album, parentPath []domain.AlbumId, parentVis Visibility, query string, ctx AccessContext) {
-	for _, a := range albums {
-		effective := parentVis
-		if a.visibility != nil {
-			effective = *a.visibility
-		}
-
-		path := make([]domain.AlbumId, 0, len(parentPath)+1)
-		path = append(path, parentPath...)
-		path = append(path, a.id)
-
-		if ctx.CanSee(effective) {
-			album := domain.NewPartialAlbum(a.id, a.title, a.thumbnail)
-
-			if len(result.Albums) < maxSearchItems && containsStringCaseInsensitive(a.title.String(), query) {
-				result.Albums = append(result.Albums, album)
-			}
-
-			for _, track := range a.tracks {
-				if len(result.Tracks) >= maxSearchItems {
-					break
-				}
-				if !containsStringCaseInsensitive(track.Title().String(), query) {
-					continue
-				}
-				trackWithAlbum := NewTrackWithAlbum(track, album)
-				result.Tracks = append(result.Tracks, trackWithAlbum)
-			}
-		}
-
-		searchAlbums(result, a.albums, path, effective, query, ctx)
-	}
 }
 
 type RootAlbum struct {
@@ -378,8 +279,4 @@ func sortChildren(albums []domain.PartialAlbum) {
 	sort.Slice(albums, func(i, j int) bool {
 		return albums[i].Title().String() < albums[j].Title().String()
 	})
-}
-
-func containsStringCaseInsensitive(s, substr string) bool {
-	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
