@@ -1,4 +1,4 @@
-package domain
+package music
 
 import (
 	"github.com/boreq/errors"

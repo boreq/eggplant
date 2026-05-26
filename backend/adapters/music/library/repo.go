@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music/library"
 )
 
 type InMemoryRepository struct {

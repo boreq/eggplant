@@ -1,14 +1,14 @@
 package music
 
 import (
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/errors"
 )
 
 type StreamPlaylist struct {
-	TrackId  domain.TrackId
-	StreamId domain.StreamId
+	TrackId  music.TrackId
+	StreamId music.StreamId
 }
 
 type StreamPlaylistHandler struct {

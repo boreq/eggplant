@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/errors"
 )
 

@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music"
+	library2 "github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/logging"
 )
 
@@ -20,7 +20,7 @@ func NewLoggingGetAlbumHandler(inner *GetAlbumHandler, logger logging.Logger) *L
 	return &LoggingGetAlbumHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingGetAlbumHandler) Execute(accessCtx library.AccessContext, cmd GetAlbum) (domain.Album, error) {
+func (h *LoggingGetAlbumHandler) Execute(accessCtx library2.AccessContext, cmd GetAlbum) (music.Album, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -49,7 +49,7 @@ func NewLoggingGetRootAlbumHandler(inner *GetRootAlbumHandler, logger logging.Lo
 	return &LoggingGetRootAlbumHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library.AccessContext) (domain.RootAlbum, error) {
+func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library2.AccessContext) (music.RootAlbum, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx)
 	logFn := h.logger.Debug
@@ -77,7 +77,7 @@ func NewLoggingKeepAliveStreamHandler(inner *KeepAliveStreamHandler, logger logg
 	return &LoggingKeepAliveStreamHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingKeepAliveStreamHandler) Execute(accessCtx library.AccessContext, cmd KeepAliveStream) error {
+func (h *LoggingKeepAliveStreamHandler) Execute(accessCtx library2.AccessContext, cmd KeepAliveStream) error {
 	start := time.Now()
 	ret0 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -131,7 +131,7 @@ func NewLoggingSearchHandler(inner *SearchHandler, logger logging.Logger) *Loggi
 	return &LoggingSearchHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingSearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (library.SearchResults, error) {
+func (h *LoggingSearchHandler) Execute(accessCtx library2.AccessContext, cmd Search) (library2.SearchResults, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -160,7 +160,7 @@ func NewLoggingStartStreamingHandler(inner *StartStreamingHandler, logger loggin
 	return &LoggingStartStreamingHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingStartStreamingHandler) Execute(ctx context.Context, accessCtx library.AccessContext, cmd StartStreaming) (domain.StreamId, error) {
+func (h *LoggingStartStreamingHandler) Execute(ctx context.Context, accessCtx library2.AccessContext, cmd StartStreaming) (music.StreamId, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -189,7 +189,7 @@ func NewLoggingStreamFragmentHandler(inner *StreamFragmentHandler, logger loggin
 	return &LoggingStreamFragmentHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingStreamFragmentHandler) Execute(accessCtx library.AccessContext, cmd StreamFragment) (ConvertedFile, error) {
+func (h *LoggingStreamFragmentHandler) Execute(accessCtx library2.AccessContext, cmd StreamFragment) (ConvertedFile, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -218,7 +218,7 @@ func NewLoggingStreamInitHandler(inner *StreamInitHandler, logger logging.Logger
 	return &LoggingStreamInitHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingStreamInitHandler) Execute(accessCtx library.AccessContext, cmd StreamInit) (ConvertedFile, error) {
+func (h *LoggingStreamInitHandler) Execute(accessCtx library2.AccessContext, cmd StreamInit) (ConvertedFile, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -247,7 +247,7 @@ func NewLoggingStreamPlaylistHandler(inner *StreamPlaylistHandler, logger loggin
 	return &LoggingStreamPlaylistHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingStreamPlaylistHandler) Execute(accessCtx library.AccessContext, cmd StreamPlaylist) (Playlist, error) {
+func (h *LoggingStreamPlaylistHandler) Execute(accessCtx library2.AccessContext, cmd StreamPlaylist) (Playlist, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
@@ -276,7 +276,7 @@ func NewLoggingThumbnailHandler(inner *ThumbnailHandler, logger logging.Logger) 
 	return &LoggingThumbnailHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingThumbnailHandler) Execute(ctx context.Context, accessCtx library.AccessContext, id domain.ThumbnailId) (ConvertedFile, error) {
+func (h *LoggingThumbnailHandler) Execute(ctx context.Context, accessCtx library2.AccessContext, id music.ThumbnailId) (ConvertedFile, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(ctx, accessCtx, id)
 	logFn := h.logger.Debug

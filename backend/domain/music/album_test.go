@@ -1,42 +1,42 @@
-package domain_test
+package music_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/music"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewAlbum(t *testing.T) {
-	selfTitle, err := domain.NewAlbumTitle("self")
+	selfTitle, err := music.NewAlbumTitle("self")
 	require.NoError(t, err)
-	selfId, err := domain.NewAlbumId(nil, selfTitle)
-	require.NoError(t, err)
-
-	otherTitle, err := domain.NewAlbumTitle("other")
-	require.NoError(t, err)
-	otherId, err := domain.NewAlbumId(nil, otherTitle)
+	selfId, err := music.NewAlbumId(nil, selfTitle)
 	require.NoError(t, err)
 
-	tracks := []domain.Track{validTrack(t)}
+	otherTitle, err := music.NewAlbumTitle("other")
+	require.NoError(t, err)
+	otherId, err := music.NewAlbumId(nil, otherTitle)
+	require.NoError(t, err)
+
+	tracks := []music.Track{validTrack(t)}
 
 	testCases := []struct {
 		name    string
-		parents []domain.PartialAlbum
-		albums  []domain.PartialAlbum
-		tracks  []domain.Track
+		parents []music.PartialAlbum
+		albums  []music.PartialAlbum
+		tracks  []music.Track
 		errMsg  string
 	}{
 		{
 			name:    "rejects_parents_containing_self",
-			parents: []domain.PartialAlbum{domain.NewPartialAlbum(selfId, selfTitle, nil)},
+			parents: []music.PartialAlbum{music.NewPartialAlbum(selfId, selfTitle, nil)},
 			tracks:  tracks,
 			errMsg:  "parents must not contain the album itself",
 		},
 		{
 			name:   "rejects_children_containing_self",
-			albums: []domain.PartialAlbum{domain.NewPartialAlbum(selfId, selfTitle, nil)},
+			albums: []music.PartialAlbum{music.NewPartialAlbum(selfId, selfTitle, nil)},
 			errMsg: "child albums must not contain the album itself",
 		},
 		{
@@ -49,14 +49,14 @@ func TestNewAlbum(t *testing.T) {
 		},
 		{
 			name:    "accepts_actual_parents",
-			parents: []domain.PartialAlbum{domain.NewPartialAlbum(otherId, otherTitle, nil)},
+			parents: []music.PartialAlbum{music.NewPartialAlbum(otherId, otherTitle, nil)},
 			tracks:  tracks,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := domain.NewAlbum(selfId, selfTitle, nil, tc.parents, tc.albums, tc.tracks)
+			_, err := music.NewAlbum(selfId, selfTitle, nil, tc.parents, tc.albums, tc.tracks)
 			if tc.errMsg == "" {
 				require.NoError(t, err)
 			} else {
@@ -66,11 +66,11 @@ func TestNewAlbum(t *testing.T) {
 	}
 }
 
-func validTrack(t *testing.T) domain.Track {
+func validTrack(t *testing.T) music.Track {
 	t.Helper()
-	title, err := domain.NewTrackTitle("track")
+	title, err := music.NewTrackTitle("track")
 	require.NoError(t, err)
-	dur, err := domain.NewTrackDuration(time.Second)
+	dur, err := music.NewTrackDuration(time.Second)
 	require.NoError(t, err)
-	return domain.NewTrack(domain.TrackId{}, domain.FileId{}, title, dur)
+	return music.NewTrack(music.TrackId{}, music.FileId{}, title, dur)
 }

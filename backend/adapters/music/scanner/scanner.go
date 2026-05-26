@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/boreq/eggplant/adapters/music/scanner/symwalk"
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/scanner"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/scanner"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 )
@@ -31,12 +31,12 @@ func (t ThumbnailStem) String() string {
 }
 
 type Config struct {
-	trackExtensions     []domain.FileExtension
+	trackExtensions     []music.FileExtension
 	thumbnailStems      []ThumbnailStem
-	thumbnailExtensions []domain.FileExtension
+	thumbnailExtensions []music.FileExtension
 }
 
-func NewConfig(trackExtensions []domain.FileExtension, thumbnailStems []ThumbnailStem, thumbnailExtensions []domain.FileExtension) (Config, error) {
+func NewConfig(trackExtensions []music.FileExtension, thumbnailStems []ThumbnailStem, thumbnailExtensions []music.FileExtension) (Config, error) {
 	if len(trackExtensions) == 0 {
 		return Config{}, errors.New("missing track extensions")
 	}
@@ -100,7 +100,7 @@ func (s *Scanner) Scan() (scanner.FoundRootAlbum, error) {
 			return nil
 		}
 
-		filePath, err := domain.NewFilePath(path)
+		filePath, err := music.NewFilePath(path)
 		if err != nil {
 			return errors.Wrap(err, "could not create file path")
 		}
@@ -140,7 +140,7 @@ func (s *Scanner) Scan() (scanner.FoundRootAlbum, error) {
 	return result, nil
 }
 
-func (s *Scanner) addTrack(root *album, file domain.FilePath) error {
+func (s *Scanner) addTrack(root *album, file music.FilePath) error {
 	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
@@ -149,7 +149,7 @@ func (s *Scanner) addTrack(root *album, file domain.FilePath) error {
 	base := filepath.Base(file.String())
 	stripped := strings.TrimSuffix(base, filepath.Ext(base))
 
-	title, err := domain.NewTrackTitle(stripped)
+	title, err := music.NewTrackTitle(stripped)
 	if err != nil {
 		return errors.Wrap(err, "could not create track title")
 	}
@@ -161,7 +161,7 @@ func (s *Scanner) addTrack(root *album, file domain.FilePath) error {
 	return nil
 }
 
-func (s *Scanner) setThumbnailFile(root *album, file domain.FilePath) error {
+func (s *Scanner) setThumbnailFile(root *album, file music.FilePath) error {
 	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
@@ -173,7 +173,7 @@ func (s *Scanner) setThumbnailFile(root *album, file domain.FilePath) error {
 	return nil
 }
 
-func (s *Scanner) setAccessFile(root *album, file domain.FilePath) error {
+func (s *Scanner) setAccessFile(root *album, file music.FilePath) error {
 	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
@@ -190,7 +190,7 @@ func (s *Scanner) isAccessFile(path string) bool {
 	return filename == "eggplant.access"
 }
 
-func (s *Scanner) isThumbnail(path domain.FilePath) bool {
+func (s *Scanner) isThumbnail(path music.FilePath) bool {
 	for _, thumbnailStem := range s.config.thumbnailStems {
 		for _, thumbnailExt := range s.config.thumbnailExtensions {
 			name := thumbnailStem.String() + thumbnailExt.String()
@@ -202,7 +202,7 @@ func (s *Scanner) isThumbnail(path domain.FilePath) bool {
 	return false
 }
 
-func (s *Scanner) isTrack(path domain.FilePath) bool {
+func (s *Scanner) isTrack(path music.FilePath) bool {
 	for _, trackExt := range s.config.trackExtensions {
 		if path.HasExtension(trackExt) {
 			return true
@@ -211,7 +211,7 @@ func (s *Scanner) isTrack(path domain.FilePath) bool {
 	return false
 }
 
-func (s *Scanner) findAlbum(root *album, file domain.FilePath) (*album, error) {
+func (s *Scanner) findAlbum(root *album, file music.FilePath) (*album, error) {
 	relativePath, err := filepath.Rel(s.directory, file.String())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get a relative filepath")
@@ -226,7 +226,7 @@ func (s *Scanner) findAlbum(root *album, file domain.FilePath) (*album, error) {
 
 	current := root
 	for _, name := range names {
-		title, err := domain.NewAlbumTitle(name)
+		title, err := music.NewAlbumTitle(name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not create album title for '%s'", name)
 		}
@@ -241,21 +241,21 @@ func (s *Scanner) findAlbum(root *album, file domain.FilePath) (*album, error) {
 }
 
 type album struct {
-	thumbnailFile *domain.FilePath
-	accessFile    *domain.FilePath
-	albums        map[domain.AlbumTitle]*album
-	tracks        map[domain.TrackTitle]track
+	thumbnailFile *music.FilePath
+	accessFile    *music.FilePath
+	albums        map[music.AlbumTitle]*album
+	tracks        map[music.TrackTitle]track
 }
 
 func newAlbum() *album {
 	return &album{
-		albums: map[domain.AlbumTitle]*album{},
-		tracks: map[domain.TrackTitle]track{},
+		albums: map[music.AlbumTitle]*album{},
+		tracks: map[music.TrackTitle]track{},
 	}
 }
 
 type track struct {
-	path domain.FilePath
+	path music.FilePath
 }
 
 func removeEmptyAlbums(root *album) {
@@ -276,8 +276,8 @@ func toFoundRootAlbum(root *album) (scanner.FoundRootAlbum, error) {
 	return scanner.NewFoundRootAlbum(root.thumbnailFile, root.accessFile, albums, toFoundTracks(root.tracks)), nil
 }
 
-func toFoundAlbums(src map[domain.AlbumTitle]*album) (map[domain.AlbumTitle]scanner.FoundAlbum, error) {
-	out := make(map[domain.AlbumTitle]scanner.FoundAlbum, len(src))
+func toFoundAlbums(src map[music.AlbumTitle]*album) (map[music.AlbumTitle]scanner.FoundAlbum, error) {
+	out := make(map[music.AlbumTitle]scanner.FoundAlbum, len(src))
 	for title, a := range src {
 		subAlbums, err := toFoundAlbums(a.albums)
 		if err != nil {
@@ -293,8 +293,8 @@ func toFoundAlbums(src map[domain.AlbumTitle]*album) (map[domain.AlbumTitle]scan
 	return out, nil
 }
 
-func toFoundTracks(src map[domain.TrackTitle]track) map[domain.TrackTitle]scanner.FoundTrack {
-	out := make(map[domain.TrackTitle]scanner.FoundTrack, len(src))
+func toFoundTracks(src map[music.TrackTitle]track) map[music.TrackTitle]scanner.FoundTrack {
+	out := make(map[music.TrackTitle]scanner.FoundTrack, len(src))
 	for title, t := range src {
 		out[title] = scanner.NewFoundTrack(t.path)
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boreq/eggplant/domain/hls"
+	hls2 "github.com/boreq/eggplant/domain/music/hls"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,13 +27,13 @@ func TestParseRoundTrip(t *testing.T) {
 		"",
 	}, "\n")
 
-	p, err := hls.Parse(strings.NewReader(input))
+	p, err := hls2.Parse(strings.NewReader(input))
 	require.NoError(t, err)
 
 	require.Equal(t, 7, p.Version().Int())
 	require.Equal(t, 4*time.Second, p.TargetDuration().Duration())
 	require.Equal(t, 0, p.MediaSequence().Int())
-	require.Equal(t, hls.PlaylistTypeEvent, p.PlaylistType())
+	require.Equal(t, hls2.PlaylistTypeEvent, p.PlaylistType())
 	require.Equal(t, "init.mp4", p.MapURI().String())
 	require.True(t, p.Complete())
 
@@ -152,7 +152,7 @@ func TestParseErrors(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := hls.Parse(strings.NewReader(strings.Join(c.input, "\n")))
+			_, err := hls2.Parse(strings.NewReader(strings.Join(c.input, "\n")))
 			require.Error(t, err)
 		})
 	}
@@ -174,9 +174,9 @@ func TestParseSkipsCommentsAndBlankLines(t *testing.T) {
 		"",
 	}, "\n")
 
-	p, err := hls.Parse(strings.NewReader(input))
+	p, err := hls2.Parse(strings.NewReader(input))
 	require.NoError(t, err)
 	require.Len(t, p.Segments(), 1)
 	require.Equal(t, "seg.m4s", p.Segments()[0].URI().String())
-	require.Equal(t, hls.PlaylistTypeVOD, p.PlaylistType())
+	require.Equal(t, hls2.PlaylistTypeVOD, p.PlaylistType())
 }

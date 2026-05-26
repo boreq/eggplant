@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boreq/eggplant/domain/hls"
+	"github.com/boreq/eggplant/domain/music/hls"
 	"github.com/stretchr/testify/require"
 )
 

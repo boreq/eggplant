@@ -1,11 +1,11 @@
-package domain_test
+package music_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/titleparser"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/titleparser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -167,26 +167,26 @@ func TestNewTracks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			input := mkTracks(t, tc.input)
 			expected := mkTracks(t, tc.output)
-			got := domain.NewTracks(input)
+			got := music.NewTracks(input)
 			require.Equal(t, expected, got.Items())
 		})
 	}
 }
 
-func mkTracks(t *testing.T, titles []string) []domain.Track {
+func mkTracks(t *testing.T, titles []string) []music.Track {
 	t.Helper()
-	dur, err := domain.NewTrackDuration(time.Second)
+	dur, err := music.NewTrackDuration(time.Second)
 	require.NoError(t, err)
-	tracks := make([]domain.Track, 0, len(titles))
+	tracks := make([]music.Track, 0, len(titles))
 	for _, s := range titles {
-		title, err := domain.NewTrackTitle(s)
+		title, err := music.NewTrackTitle(s)
 		require.NoError(t, err)
 		parsed, err := titleparser.Parse(title)
 		require.NoError(t, err)
 		if parsed.Number() == nil {
-			tracks = append(tracks, domain.NewTrack(domain.TrackId{}, domain.FileId{}, parsed.Title(), dur))
+			tracks = append(tracks, music.NewTrack(music.TrackId{}, music.FileId{}, parsed.Title(), dur))
 		} else {
-			tracks = append(tracks, domain.NewTrackWithNumber(domain.TrackId{}, domain.FileId{}, *parsed.Number(), parsed.Title(), dur))
+			tracks = append(tracks, music.NewTrackWithNumber(music.TrackId{}, music.FileId{}, *parsed.Number(), parsed.Title(), dur))
 		}
 	}
 	return tracks

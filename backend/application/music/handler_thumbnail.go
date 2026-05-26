@@ -3,8 +3,8 @@ package music
 import (
 	"context"
 
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/errors"
 )
 
@@ -20,7 +20,7 @@ func NewThumbnailHandler(libraryRepository LibraryRepository, thumbnailStore Thu
 	}
 }
 
-func (h *ThumbnailHandler) Execute(ctx context.Context, accessCtx library.AccessContext, id domain.ThumbnailId) (ConvertedFile, error) {
+func (h *ThumbnailHandler) Execute(ctx context.Context, accessCtx library.AccessContext, id music.ThumbnailId) (ConvertedFile, error) {
 	lib, err := h.libraryRepository.Get()
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the library")

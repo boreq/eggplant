@@ -1,15 +1,15 @@
 package music
 
 import (
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/errors"
 )
 
 type StreamFragment struct {
-	TrackId    domain.TrackId
-	StreamId   domain.StreamId
-	FragmentId domain.FragmentId
+	TrackId    music.TrackId
+	StreamId   music.StreamId
+	FragmentId music.FragmentId
 }
 
 type StreamFragmentHandler struct {

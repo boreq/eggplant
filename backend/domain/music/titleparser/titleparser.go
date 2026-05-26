@@ -5,31 +5,31 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/errors"
 )
 
 type NumberAndTitle struct {
-	number *domain.TrackNumber
-	title  domain.TrackTitle
+	number *music.TrackNumber
+	title  music.TrackTitle
 }
 
-func NewNumberAndTitle(number *domain.TrackNumber, title domain.TrackTitle) NumberAndTitle {
+func NewNumberAndTitle(number *music.TrackNumber, title music.TrackTitle) NumberAndTitle {
 	return NumberAndTitle{
 		number: number,
 		title:  title,
 	}
 }
 
-func (p NumberAndTitle) Title() domain.TrackTitle {
+func (p NumberAndTitle) Title() music.TrackTitle {
 	return p.title
 }
 
-func (p NumberAndTitle) Number() *domain.TrackNumber {
+func (p NumberAndTitle) Number() *music.TrackNumber {
 	return p.number
 }
 
-func Parse(t domain.TrackTitle) (NumberAndTitle, error) {
+func Parse(t music.TrackTitle) (NumberAndTitle, error) {
 	numberAndTitle, err := tryParse(t.String())
 	if err != nil {
 		return NewNumberAndTitle(nil, t), nil
@@ -53,20 +53,20 @@ func tryParse(s string) (NumberAndTitle, error) {
 }
 
 func tryCreatingNumberAndTitle(numStr, titleStr string) (NumberAndTitle, error) {
-	var number *domain.TrackNumber
+	var number *music.TrackNumber
 	if numStr != "" {
 		n, err := strconv.Atoi(numStr)
 		if err != nil {
 			return NumberAndTitle{}, errors.Wrap(err, "could not parse number")
 		}
-		num, err := domain.NewTrackNumber(n)
+		num, err := music.NewTrackNumber(n)
 		if err != nil {
 			return NumberAndTitle{}, errors.Wrap(err, "could not create track number")
 		}
 		number = &num
 	}
 
-	title, err := domain.NewTrackTitle(titleStr)
+	title, err := music.NewTrackTitle(titleStr)
 	if err != nil {
 		return NumberAndTitle{}, errors.Wrap(err, "could not create track title")
 	}

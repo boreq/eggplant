@@ -10,8 +10,8 @@ import (
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
+	music2 "github.com/boreq/eggplant/domain/music"
+	library2 "github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/entrypoints/http/frontend"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
@@ -114,7 +114,7 @@ func (h *Handler) browseById(r *http.Request) rest.RestResponse {
 
 	accessCtx := accessContextFor(u)
 
-	albumId, err := domain.NewAlbumIdFromString(rawId)
+	albumId, err := music2.NewAlbumIdFromString(rawId)
 	if err != nil {
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
@@ -128,7 +128,7 @@ func (h *Handler) browseById(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) handleBrowseError(err error) rest.RestResponse {
-	if errors.Is(err, library.ErrAlbumNotFound) {
+	if errors.Is(err, library2.ErrAlbumNotFound) {
 		return rest.ErrNotFound
 	}
 	if errors.Is(err, music.ErrLibraryNotReady) {
@@ -164,7 +164,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 
-	trackId, err := domain.NewTrackIdFromString(ps.ByName("trackid"))
+	trackId, err := music2.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		return rest.ErrBadRequest.WithMessage("Invalid track id.")
@@ -187,7 +187,7 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 		SeekPosition: seekPos,
 	})
 	if err != nil {
-		if errors.Is(err, library.ErrTrackNotFound) {
+		if errors.Is(err, library2.ErrTrackNotFound) {
 			return rest.ErrNotFound
 		}
 		if errors.Is(err, music.ErrTooManyOpenStreams) {
@@ -200,7 +200,7 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(startStreamResponse{StreamId: streamId.String()})
 }
 
-func parseSeekParam(s string) (*domain.RequestedSeekPosition, error) {
+func parseSeekParam(s string) (*music2.RequestedSeekPosition, error) {
 	if s == "" {
 		return nil, nil
 	}
@@ -208,7 +208,7 @@ func parseSeekParam(s string) (*domain.RequestedSeekPosition, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse seek seconds")
 	}
-	sp, err := domain.NewRequestedSeekPosition(time.Duration(secs * float64(time.Second)))
+	sp, err := music2.NewRequestedSeekPosition(time.Duration(secs * float64(time.Second)))
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps http
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fragmentId, err := domain.NewFragmentId(n)
+	fragmentId, err := music2.NewFragmentId(n)
 	if err != nil {
 		h.log.Warn("invalid fragment id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -305,24 +305,24 @@ func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps http
 	h.serveConvertedFile(w, r, p, "video/iso.segment")
 }
 
-func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (domain.TrackId, domain.StreamId, library.AccessContext, bool) {
-	trackId, err := domain.NewTrackIdFromString(ps.ByName("trackid"))
+func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (music2.TrackId, music2.StreamId, library2.AccessContext, bool) {
+	trackId, err := music2.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return domain.TrackId{}, domain.StreamId{}, nil, false
+		return music2.TrackId{}, music2.StreamId{}, nil, false
 	}
-	streamId, err := domain.NewStreamIdFromString(ps.ByName("streamid"))
+	streamId, err := music2.NewStreamIdFromString(ps.ByName("streamid"))
 	if err != nil {
 		h.log.Warn("invalid stream id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return domain.TrackId{}, domain.StreamId{}, nil, false
+		return music2.TrackId{}, music2.StreamId{}, nil, false
 	}
 	accessCtx, err := h.resolveAccessContext(r)
 	if err != nil {
 		h.log.Error("could not resolve access context", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		return domain.TrackId{}, domain.StreamId{}, nil, false
+		return music2.TrackId{}, music2.StreamId{}, nil, false
 	}
 	return trackId, streamId, accessCtx, true
 }
@@ -331,7 +331,7 @@ var streamErrorMapping = []struct {
 	err    error
 	status int
 }{
-	{library.ErrTrackNotFound, http.StatusNotFound},
+	{library2.ErrTrackNotFound, http.StatusNotFound},
 	{music.ErrStreamNotFound, http.StatusNotFound},
 	{music.ErrStreamTrackMismatch, http.StatusNotFound},
 	{music.ErrStreamPlaylistNotFound, http.StatusNotFound},
@@ -351,7 +351,7 @@ func (h *Handler) translateAndWriteStreamError(w http.ResponseWriter, err error)
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, error) {
+func (h *Handler) resolveAccessContext(r *http.Request) (library2.AccessContext, error) {
 	u, err := h.authProvider.Get(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "auth provider get failed")
@@ -366,7 +366,7 @@ func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p m
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := domain.NewThumbnailIdFromString(ps.ByName("id"))
+	id, err := music2.NewThumbnailIdFromString(ps.ByName("id"))
 	if err != nil {
 		h.log.Warn("invalid thumbnail id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -382,7 +382,7 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 
 	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessCtx, id)
 	if err != nil {
-		if errors.Is(err, library.ErrThumbnailNotFound) {
+		if errors.Is(err, library2.ErrThumbnailNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -653,9 +653,9 @@ func (h *Handler) isAdmin(u *AuthenticatedUser) bool {
 	return u != nil && u.User.Administrator
 }
 
-func accessContextFor(u *AuthenticatedUser) library.AccessContext {
+func accessContextFor(u *AuthenticatedUser) library2.AccessContext {
 	if u == nil {
-		return library.NewAnonymousAccessContext()
+		return library2.NewAnonymousAccessContext()
 	}
-	return library.NewLoggedInAccessContext()
+	return library2.NewLoggedInAccessContext()
 }

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/boreq/eggplant/adapters/music/scanner"
-	"github.com/boreq/eggplant/domain"
-	scannerdomain "github.com/boreq/eggplant/domain/scanner"
+	"github.com/boreq/eggplant/domain/music"
+	scannerdomain "github.com/boreq/eggplant/domain/music/scanner"
 	"github.com/boreq/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -273,19 +273,19 @@ func TestScannerFailsIfDirectoryDoesNotExist(t *testing.T) {
 func testConfig(t *testing.T) scanner.Config {
 	t.Helper()
 
-	trackExt, err := domain.NewFileExtension(".mp3")
+	trackExt, err := music.NewFileExtension(".mp3")
 	require.NoError(t, err)
 
 	thumbnailStem, err := scanner.NewThumbnailStem("thumbnail")
 	require.NoError(t, err)
 
-	thumbnailExt, err := domain.NewFileExtension(".jpg")
+	thumbnailExt, err := music.NewFileExtension(".jpg")
 	require.NoError(t, err)
 
 	cfg, err := scanner.NewConfig(
-		[]domain.FileExtension{trackExt},
+		[]music.FileExtension{trackExt},
 		[]scanner.ThumbnailStem{thumbnailStem},
-		[]domain.FileExtension{thumbnailExt},
+		[]music.FileExtension{thumbnailExt},
 	)
 	require.NoError(t, err)
 	return cfg
@@ -305,11 +305,11 @@ func buildRootAlbum(t *testing.T, src *testAlbum) scannerdomain.FoundRootAlbum {
 	)
 }
 
-func buildAlbums(t *testing.T, src []testAlbum) map[domain.AlbumTitle]scannerdomain.FoundAlbum {
+func buildAlbums(t *testing.T, src []testAlbum) map[music.AlbumTitle]scannerdomain.FoundAlbum {
 	t.Helper()
-	out := map[domain.AlbumTitle]scannerdomain.FoundAlbum{}
+	out := map[music.AlbumTitle]scannerdomain.FoundAlbum{}
 	for _, a := range src {
-		title, err := domain.NewAlbumTitle(a.title)
+		title, err := music.NewAlbumTitle(a.title)
 		require.NoError(t, err)
 
 		album, err := scannerdomain.NewFoundAlbum(
@@ -324,14 +324,14 @@ func buildAlbums(t *testing.T, src []testAlbum) map[domain.AlbumTitle]scannerdom
 	return out
 }
 
-func buildTracks(t *testing.T, src []testTrack) map[domain.TrackTitle]scannerdomain.FoundTrack {
+func buildTracks(t *testing.T, src []testTrack) map[music.TrackTitle]scannerdomain.FoundTrack {
 	t.Helper()
-	out := map[domain.TrackTitle]scannerdomain.FoundTrack{}
+	out := map[music.TrackTitle]scannerdomain.FoundTrack{}
 	for _, tr := range src {
-		title, err := domain.NewTrackTitle(tr.title)
+		title, err := music.NewTrackTitle(tr.title)
 		require.NoError(t, err)
 
-		p, err := domain.NewFilePath(tr.path)
+		p, err := music.NewFilePath(tr.path)
 		require.NoError(t, err)
 
 		out[title] = scannerdomain.NewFoundTrack(p)
@@ -339,12 +339,12 @@ func buildTracks(t *testing.T, src []testTrack) map[domain.TrackTitle]scannerdom
 	return out
 }
 
-func optionalFilePath(t *testing.T, raw string) *domain.FilePath {
+func optionalFilePath(t *testing.T, raw string) *music.FilePath {
 	t.Helper()
 	if raw == "" {
 		return nil
 	}
-	p, err := domain.NewFilePath(raw)
+	p, err := music.NewFilePath(raw)
 	require.NoError(t, err)
 	return &p
 }

@@ -1,4 +1,4 @@
-package domain
+package music
 
 import (
 	"crypto/sha256"

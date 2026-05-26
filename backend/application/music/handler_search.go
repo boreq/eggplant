@@ -3,7 +3,7 @@ package music
 import (
 	"fmt"
 
-	"github.com/boreq/eggplant/domain/library"
+	library2 "github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/errors"
 )
 
@@ -55,13 +55,13 @@ func NewSearchHandler(repo LibraryRepository) *SearchHandler {
 	return &SearchHandler{repo: repo}
 }
 
-func (h *SearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (library.SearchResults, error) {
+func (h *SearchHandler) Execute(accessCtx library2.AccessContext, cmd Search) (library2.SearchResults, error) {
 	if cmd.Query.IsZero() {
-		return library.SearchResults{}, errors.New("zero value of query")
+		return library2.SearchResults{}, errors.New("zero value of query")
 	}
 	lib, err := h.repo.Get()
 	if err != nil {
-		return library.SearchResults{}, errors.Wrap(err, "could not get the library")
+		return library2.SearchResults{}, errors.Wrap(err, "could not get the library")
 	}
 	return lib.Search(accessCtx, cmd.Query.String())
 }

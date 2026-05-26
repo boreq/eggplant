@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/stretchr/testify/require"
 )
 

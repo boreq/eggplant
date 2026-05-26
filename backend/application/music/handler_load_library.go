@@ -5,10 +5,10 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
-	scannerdomain "github.com/boreq/eggplant/domain/scanner"
-	"github.com/boreq/eggplant/domain/titleparser"
+	"github.com/boreq/eggplant/domain/music"
+	library2 "github.com/boreq/eggplant/domain/music/library"
+	scannerdomain "github.com/boreq/eggplant/domain/music/scanner"
+	"github.com/boreq/eggplant/domain/music/titleparser"
 	"github.com/boreq/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -67,13 +67,13 @@ func (h *LoadLibraryHandler) Execute(ctx context.Context) error {
 
 	h.trackStore.SetItems(b.trackItems)
 	h.thumbnailStore.SetItems(b.thumbnailItems)
-	h.repo.Save(library.NewLibrary(root))
+	h.repo.Save(library2.NewLibrary(root))
 	return nil
 }
 
-func (h *LoadLibraryHandler) probeDurations(ctx context.Context, scan scannerdomain.FoundRootAlbum) (map[string]domain.TrackDuration, error) {
+func (h *LoadLibraryHandler) probeDurations(ctx context.Context, scan scannerdomain.FoundRootAlbum) (map[string]music.TrackDuration, error) {
 	paths := uniqueTrackPaths(scan)
-	out := make(map[string]domain.TrackDuration, len(paths))
+	out := make(map[string]music.TrackDuration, len(paths))
 	var mu sync.Mutex
 
 	var g errgroup.Group
@@ -98,8 +98,8 @@ func (h *LoadLibraryHandler) probeDurations(ctx context.Context, scan scannerdom
 
 func uniqueTrackPaths(scan scannerdomain.FoundRootAlbum) []string {
 	seen := map[string]struct{}{}
-	var walk func(albums map[domain.AlbumTitle]scannerdomain.FoundAlbum, tracks map[domain.TrackTitle]scannerdomain.FoundTrack)
-	walk = func(albums map[domain.AlbumTitle]scannerdomain.FoundAlbum, tracks map[domain.TrackTitle]scannerdomain.FoundTrack) {
+	var walk func(albums map[music.AlbumTitle]scannerdomain.FoundAlbum, tracks map[music.TrackTitle]scannerdomain.FoundTrack)
+	walk = func(albums map[music.AlbumTitle]scannerdomain.FoundAlbum, tracks map[music.TrackTitle]scannerdomain.FoundTrack) {
 		for _, t := range tracks {
 			seen[t.Path().String()] = struct{}{}
 		}
@@ -118,37 +118,37 @@ func uniqueTrackPaths(scan scannerdomain.FoundRootAlbum) []string {
 
 type libraryBuilder struct {
 	accessLoader   AccessLoader
-	pathDurations  map[string]domain.TrackDuration
+	pathDurations  map[string]music.TrackDuration
 	trackItems     []TrackStoreItem
 	thumbnailItems []ThumbnailStoreItem
 }
 
-func (b *libraryBuilder) buildRoot(scan scannerdomain.FoundRootAlbum) (library.RootAlbum, error) {
+func (b *libraryBuilder) buildRoot(scan scannerdomain.FoundRootAlbum) (library2.RootAlbum, error) {
 	visibility, err := b.loadVisibility(scan.AccessFile())
 	if err != nil {
-		return library.RootAlbum{}, err
+		return library2.RootAlbum{}, err
 	}
 
 	thumbnail, err := b.buildThumbnail(scan.ThumbnailFile(), nil)
 	if err != nil {
-		return library.RootAlbum{}, err
+		return library2.RootAlbum{}, err
 	}
 
 	tracks, err := b.buildTracks(nil, scan.Tracks())
 	if err != nil {
-		return library.RootAlbum{}, err
+		return library2.RootAlbum{}, err
 	}
 
 	albums, err := b.buildAlbums(nil, scan.Albums())
 	if err != nil {
-		return library.RootAlbum{}, err
+		return library2.RootAlbum{}, err
 	}
 
-	return library.NewRootAlbum(thumbnail, visibility, albums, tracks)
+	return library2.NewRootAlbum(thumbnail, visibility, albums, tracks)
 }
 
-func (b *libraryBuilder) buildAlbums(parents []domain.AlbumId, src map[domain.AlbumTitle]scannerdomain.FoundAlbum) ([]library.Album, error) {
-	var out []library.Album
+func (b *libraryBuilder) buildAlbums(parents []music.AlbumId, src map[music.AlbumTitle]scannerdomain.FoundAlbum) ([]library2.Album, error) {
+	var out []library2.Album
 	for title, fa := range src {
 		a, err := b.buildAlbum(parents, title, fa)
 		if err != nil {
@@ -159,43 +159,43 @@ func (b *libraryBuilder) buildAlbums(parents []domain.AlbumId, src map[domain.Al
 	return out, nil
 }
 
-func (b *libraryBuilder) buildAlbum(parents []domain.AlbumId, title domain.AlbumTitle, scan scannerdomain.FoundAlbum) (library.Album, error) {
-	id, err := domain.NewAlbumId(parents, title)
+func (b *libraryBuilder) buildAlbum(parents []music.AlbumId, title music.AlbumTitle, scan scannerdomain.FoundAlbum) (library2.Album, error) {
+	id, err := music.NewAlbumId(parents, title)
 	if err != nil {
-		return library.Album{}, errors.Wrap(err, "could not generate album id")
+		return library2.Album{}, errors.Wrap(err, "could not generate album id")
 	}
 
 	visibility, err := b.loadVisibility(scan.AccessFile())
 	if err != nil {
-		return library.Album{}, err
+		return library2.Album{}, err
 	}
 
-	childParents := append(append([]domain.AlbumId(nil), parents...), id)
+	childParents := append(append([]music.AlbumId(nil), parents...), id)
 
 	thumbnail, err := b.buildThumbnail(scan.ThumbnailFile(), childParents)
 	if err != nil {
-		return library.Album{}, err
+		return library2.Album{}, err
 	}
 
 	tracks, err := b.buildTracks(childParents, scan.Tracks())
 	if err != nil {
-		return library.Album{}, err
+		return library2.Album{}, err
 	}
 
 	albums, err := b.buildAlbums(childParents, scan.Albums())
 	if err != nil {
-		return library.Album{}, err
+		return library2.Album{}, err
 	}
 
-	album, err := library.NewAlbum(id, title, thumbnail, visibility, albums, tracks)
+	album, err := library2.NewAlbum(id, title, thumbnail, visibility, albums, tracks)
 	if err != nil {
-		return library.Album{}, errors.Wrap(err, "could not create album")
+		return library2.Album{}, errors.Wrap(err, "could not create album")
 	}
 	return album, nil
 }
 
-func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.TrackTitle]scannerdomain.FoundTrack) ([]domain.Track, error) {
-	var out []domain.Track
+func (b *libraryBuilder) buildTracks(parents []music.AlbumId, src map[music.TrackTitle]scannerdomain.FoundTrack) ([]music.Track, error) {
+	var out []music.Track
 	for title, ft := range src {
 		path := ft.Path()
 
@@ -204,17 +204,17 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 			return nil, errors.New("missing duration for '" + path.String() + "'")
 		}
 
-		id, err := domain.NewTrackId(parents, title)
+		id, err := music.NewTrackId(parents, title)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not generate track id for '%s'", title)
 		}
 
-		fileId, err := domain.NewFileId(path)
+		fileId, err := music.NewFileId(path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not generate file id for '%s'", path)
 		}
 
-		out = append(out, domain.NewTrack(id, fileId, title, duration))
+		out = append(out, music.NewTrack(id, fileId, title, duration))
 		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path, duration))
 	}
 	return tryAddingTrackNumbers(out), nil
@@ -222,45 +222,45 @@ func (b *libraryBuilder) buildTracks(parents []domain.AlbumId, src map[domain.Tr
 
 // tryAddingTrackNumbers only annotates tracks when every track in the album yields a parsed number,
 // so we can reliably tell that the user most likely wants track numbers to be detected for this album.
-func tryAddingTrackNumbers(tracks []domain.Track) []domain.Track {
-	annotated := make([]domain.Track, 0, len(tracks))
+func tryAddingTrackNumbers(tracks []music.Track) []music.Track {
+	annotated := make([]music.Track, 0, len(tracks))
 	for _, t := range tracks {
 		parsed, err := titleparser.Parse(t.Title())
 		if err != nil || parsed.Number() == nil {
 			return tracks
 		}
-		annotated = append(annotated, domain.NewTrackWithNumber(t.Id(), t.FileId(), *parsed.Number(), parsed.Title(), t.Duration()))
+		annotated = append(annotated, music.NewTrackWithNumber(t.Id(), t.FileId(), *parsed.Number(), parsed.Title(), t.Duration()))
 	}
 	return annotated
 }
 
-func (b *libraryBuilder) buildThumbnail(file *domain.FilePath, parents []domain.AlbumId) (*domain.Thumbnail, error) {
+func (b *libraryBuilder) buildThumbnail(file *music.FilePath, parents []music.AlbumId) (*music.Thumbnail, error) {
 	if file == nil {
 		return nil, nil
 	}
 
-	name, err := domain.NewFileNameFromFilePath(*file)
+	name, err := music.NewFileNameFromFilePath(*file)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not extract thumbnail filename")
 	}
 
-	thumbnailId, err := domain.NewThumbnailId(parents, name)
+	thumbnailId, err := music.NewThumbnailId(parents, name)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not generate thumbnail id")
 	}
 
-	fileId, err := domain.NewFileId(*file)
+	fileId, err := music.NewFileId(*file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate file id for '%s'", *file)
 	}
 
 	b.thumbnailItems = append(b.thumbnailItems, NewThumbnailStoreItem(fileId, *file))
 
-	t := domain.NewThumbnail(thumbnailId, fileId)
+	t := music.NewThumbnail(thumbnailId, fileId)
 	return &t, nil
 }
 
-func (b *libraryBuilder) loadVisibility(file *domain.FilePath) (*library.Visibility, error) {
+func (b *libraryBuilder) loadVisibility(file *music.FilePath) (*library2.Visibility, error) {
 	if file == nil {
 		return nil, nil
 	}

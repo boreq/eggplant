@@ -9,7 +9,7 @@ import (
 	"github.com/boreq/eggplant/adapters/music/tracks"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	"github.com/boreq/eggplant/domain"
+	music2 "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/errors"
 	"github.com/google/wire"
@@ -88,10 +88,10 @@ func newScannerConfig(conf *config.Config) (scanner.Config, error) {
 	return scanner.NewConfig(trackExts, thumbnailStems, thumbnailExts)
 }
 
-func toFileExtensions(values []string) ([]domain.FileExtension, error) {
-	out := make([]domain.FileExtension, 0, len(values))
+func toFileExtensions(values []string) ([]music2.FileExtension, error) {
+	out := make([]music2.FileExtension, 0, len(values))
 	for _, v := range values {
-		ext, err := domain.NewFileExtension(v)
+		ext, err := music2.NewFileExtension(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid extension '%s'", v)
 		}

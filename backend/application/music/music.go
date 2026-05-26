@@ -8,9 +8,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/hls"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/hls"
+	library2 "github.com/boreq/eggplant/domain/music/library"
 )
 
 var (
@@ -25,68 +25,68 @@ var (
 
 type TrackConverter interface {
 	SetItems(items []TrackStoreItem)
-	StartStream(ctx context.Context, fileId domain.FileId, seekPosition *domain.SeekPosition) (domain.StreamId, error)
-	GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (Playlist, error)
-	GetInit(fileId domain.FileId, streamId domain.StreamId) (ConvertedFile, error)
-	GetFragment(fileId domain.FileId, streamId domain.StreamId, fragmentId domain.FragmentId) (ConvertedFile, error)
-	KeepAliveStream(fileId domain.FileId, streamId domain.StreamId) error
+	StartStream(ctx context.Context, fileId music.FileId, seekPosition *music.SeekPosition) (music.StreamId, error)
+	GetPlaylist(fileId music.FileId, streamId music.StreamId) (Playlist, error)
+	GetInit(fileId music.FileId, streamId music.StreamId) (ConvertedFile, error)
+	GetFragment(fileId music.FileId, streamId music.StreamId, fragmentId music.FragmentId) (ConvertedFile, error)
+	KeepAliveStream(fileId music.FileId, streamId music.StreamId) error
 }
 
 type TrackStoreItem struct {
-	fileId   domain.FileId
-	path     domain.FilePath
-	duration domain.TrackDuration
+	fileId   music.FileId
+	path     music.FilePath
+	duration music.TrackDuration
 }
 
-func NewTrackStoreItem(fileId domain.FileId, path domain.FilePath, duration domain.TrackDuration) TrackStoreItem {
+func NewTrackStoreItem(fileId music.FileId, path music.FilePath, duration music.TrackDuration) TrackStoreItem {
 	return TrackStoreItem{fileId: fileId, path: path, duration: duration}
 }
 
-func (t TrackStoreItem) FileId() domain.FileId {
+func (t TrackStoreItem) FileId() music.FileId {
 	return t.fileId
 }
 
-func (t TrackStoreItem) Path() domain.FilePath {
+func (t TrackStoreItem) Path() music.FilePath {
 	return t.path
 }
 
-func (t TrackStoreItem) Duration() domain.TrackDuration {
+func (t TrackStoreItem) Duration() music.TrackDuration {
 	return t.duration
 }
 
 type ThumbnailStore interface {
 	SetItems(items []ThumbnailStoreItem)
-	GetConvertedFile(ctx context.Context, fileId domain.FileId) (ConvertedFile, error)
+	GetConvertedFile(ctx context.Context, fileId music.FileId) (ConvertedFile, error)
 }
 
 type ThumbnailStoreItem struct {
-	fileId domain.FileId
-	path   domain.FilePath
+	fileId music.FileId
+	path   music.FilePath
 }
 
-func NewThumbnailStoreItem(fileId domain.FileId, path domain.FilePath) ThumbnailStoreItem {
+func NewThumbnailStoreItem(fileId music.FileId, path music.FilePath) ThumbnailStoreItem {
 	return ThumbnailStoreItem{fileId: fileId, path: path}
 }
 
-func (t ThumbnailStoreItem) FileId() domain.FileId {
+func (t ThumbnailStoreItem) FileId() music.FileId {
 	return t.fileId
 }
 
-func (t ThumbnailStoreItem) Path() domain.FilePath {
+func (t ThumbnailStoreItem) Path() music.FilePath {
 	return t.path
 }
 
 type TrackDurations interface {
-	GetDuration(ctx context.Context, path string) (domain.TrackDuration, error)
+	GetDuration(ctx context.Context, path string) (music.TrackDuration, error)
 }
 
 type AccessLoader interface {
-	Load(file string) (library.Visibility, error)
+	Load(file string) (library2.Visibility, error)
 }
 
 type LibraryRepository interface {
-	Get() (*library.Library, error)
-	Save(library *library.Library)
+	Get() (*library2.Library, error)
+	Save(library *library2.Library)
 }
 
 type Playlist struct {
@@ -110,9 +110,9 @@ var nonLoggableErrors = []error{
 	ErrStreamPlaylistNotFound,
 	ErrStreamInitNotFound,
 	ErrStreamFragmentNotFound,
-	library.ErrAlbumNotFound,
-	library.ErrTrackNotFound,
-	library.ErrThumbnailNotFound,
+	library2.ErrAlbumNotFound,
+	library2.ErrTrackNotFound,
+	library2.ErrThumbnailNotFound,
 }
 
 func isNonLoggableError(err error) bool {

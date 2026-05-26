@@ -3,7 +3,7 @@ package library
 import (
 	"sort"
 
-	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/errors"
 )
 
@@ -21,20 +21,20 @@ func NewLibrary(root RootAlbum) *Library {
 	return &Library{root: root}
 }
 
-func (l *Library) GetRootAlbum(accessCtx AccessContext) (domain.RootAlbum, error) {
+func (l *Library) GetRootAlbum(accessCtx AccessContext) (music.RootAlbum, error) {
 	if !accessCtx.CanSee(l.getRootVisibility()) {
-		return domain.RootAlbum{}, errors.Wrap(ErrAlbumNotFound, "can't see root")
+		return music.RootAlbum{}, errors.Wrap(ErrAlbumNotFound, "can't see root")
 	}
 
 	children := buildChildren(l.root.albums, l.getRootVisibilityToPropagateToChildren(), accessCtx)
-	tracks := append([]domain.Track(nil), l.root.tracks...)
-	return domain.NewRootAlbum(l.root.thumbnail, children, tracks)
+	tracks := append([]music.Track(nil), l.root.tracks...)
+	return music.NewRootAlbum(l.root.thumbnail, children, tracks)
 }
 
-func (l *Library) GetAlbum(accessCtx AccessContext, id domain.AlbumId) (domain.Album, error) {
+func (l *Library) GetAlbum(accessCtx AccessContext, id music.AlbumId) (music.Album, error) {
 	path, ok := l.findAlbumPath(id)
 	if !ok {
-		return domain.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s'", id)
+		return music.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s'", id)
 	}
 
 	effective := l.getRootVisibilityToPropagateToChildren()
@@ -45,32 +45,32 @@ func (l *Library) GetAlbum(accessCtx AccessContext, id domain.AlbumId) (domain.A
 	}
 
 	if !accessCtx.CanSee(effective) {
-		return domain.Album{}, errors.Wrapf(ErrAlbumNotFound, "can't see album '%s'", id)
+		return music.Album{}, errors.Wrapf(ErrAlbumNotFound, "can't see album '%s'", id)
 	}
 
 	target := path[len(path)-1]
 
 	ancestors := path[:len(path)-1]
-	parents := make([]domain.PartialAlbum, 0, len(ancestors))
+	parents := make([]music.PartialAlbum, 0, len(ancestors))
 	for _, a := range ancestors {
-		parents = append(parents, domain.NewPartialAlbum(a.id, a.title, a.thumbnail))
+		parents = append(parents, music.NewPartialAlbum(a.id, a.title, a.thumbnail))
 	}
 
 	children := buildChildren(target.albums, effective, accessCtx)
-	tracks := append([]domain.Track(nil), target.tracks...)
+	tracks := append([]music.Track(nil), target.tracks...)
 
 	if len(children) == 0 && len(tracks) == 0 {
-		return domain.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s' has no visible content", id)
+		return music.Album{}, errors.Wrapf(ErrAlbumNotFound, "album '%s' has no visible content", id)
 	}
 
-	return domain.NewAlbum(target.id, target.title, target.thumbnail, parents, children, tracks)
+	return music.NewAlbum(target.id, target.title, target.thumbnail, parents, children, tracks)
 }
 
-func (l *Library) GetTrack(accessCtx AccessContext, id domain.TrackId) (domain.Track, error) {
+func (l *Library) GetTrack(accessCtx AccessContext, id music.TrackId) (music.Track, error) {
 	for _, t := range l.root.tracks {
 		if t.Id() == id {
 			if !accessCtx.CanSee(l.getRootVisibility()) {
-				return domain.Track{}, errors.Wrapf(ErrTrackNotFound, "can't see track '%s'", id)
+				return music.Track{}, errors.Wrapf(ErrTrackNotFound, "can't see track '%s'", id)
 			}
 			return t, nil
 		}
@@ -78,28 +78,28 @@ func (l *Library) GetTrack(accessCtx AccessContext, id domain.TrackId) (domain.T
 
 	t, vis, ok := findTrackInAlbums(l.root.albums, id, l.getRootVisibilityToPropagateToChildren())
 	if !ok {
-		return domain.Track{}, errors.Wrapf(ErrTrackNotFound, "track '%s' does not exist", id)
+		return music.Track{}, errors.Wrapf(ErrTrackNotFound, "track '%s' does not exist", id)
 	}
 	if !accessCtx.CanSee(vis) {
-		return domain.Track{}, errors.Wrapf(ErrTrackNotFound, "can't see track '%s'", id)
+		return music.Track{}, errors.Wrapf(ErrTrackNotFound, "can't see track '%s'", id)
 	}
 	return t, nil
 }
 
-func (l *Library) GetThumbnail(accessCtx AccessContext, id domain.ThumbnailId) (domain.Thumbnail, error) {
+func (l *Library) GetThumbnail(accessCtx AccessContext, id music.ThumbnailId) (music.Thumbnail, error) {
 	if t := l.root.thumbnail; t != nil && t.Id() == id {
 		if !accessCtx.CanSee(l.getRootVisibility()) {
-			return domain.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s' not visible", id)
+			return music.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s' not visible", id)
 		}
 		return *t, nil
 	}
 
 	t, vis, ok := findThumbnailInAlbums(l.root.albums, id, l.getRootVisibilityToPropagateToChildren())
 	if !ok {
-		return domain.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s' does not exist", id)
+		return music.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "thumbnail '%s' does not exist", id)
 	}
 	if !accessCtx.CanSee(vis) {
-		return domain.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "can't see thumbnail '%s'", id)
+		return music.Thumbnail{}, errors.Wrapf(ErrThumbnailNotFound, "can't see thumbnail '%s'", id)
 	}
 	return t, nil
 }
@@ -112,7 +112,7 @@ func (l *Library) getRootVisibilityToPropagateToChildren() Visibility {
 	return ifNotSetPrivate(l.root.visibility)
 }
 
-func findTrackInAlbums(albums []Album, id domain.TrackId, parentVis Visibility) (domain.Track, Visibility, bool) {
+func findTrackInAlbums(albums []Album, id music.TrackId, parentVis Visibility) (music.Track, Visibility, bool) {
 	for _, a := range albums {
 		effective := parentVis
 		if a.visibility != nil {
@@ -127,10 +127,10 @@ func findTrackInAlbums(albums []Album, id domain.TrackId, parentVis Visibility) 
 			return t, vis, true
 		}
 	}
-	return domain.Track{}, Visibility{}, false
+	return music.Track{}, Visibility{}, false
 }
 
-func findThumbnailInAlbums(albums []Album, id domain.ThumbnailId, parentVis Visibility) (domain.Thumbnail, Visibility, bool) {
+func findThumbnailInAlbums(albums []Album, id music.ThumbnailId, parentVis Visibility) (music.Thumbnail, Visibility, bool) {
 	for _, a := range albums {
 		effective := parentVis
 		if a.visibility != nil {
@@ -143,17 +143,17 @@ func findThumbnailInAlbums(albums []Album, id domain.ThumbnailId, parentVis Visi
 			return t, vis, true
 		}
 	}
-	return domain.Thumbnail{}, Visibility{}, false
+	return music.Thumbnail{}, Visibility{}, false
 }
 
 type RootAlbum struct {
-	thumbnail  *domain.Thumbnail
+	thumbnail  *music.Thumbnail
 	visibility *Visibility
 	albums     []Album
-	tracks     []domain.Track
+	tracks     []music.Track
 }
 
-func NewRootAlbum(thumbnail *domain.Thumbnail, visibility *Visibility, albums []Album, tracks []domain.Track) (RootAlbum, error) {
+func NewRootAlbum(thumbnail *music.Thumbnail, visibility *Visibility, albums []Album, tracks []music.Track) (RootAlbum, error) {
 	return RootAlbum{
 		thumbnail:  thumbnail,
 		visibility: visibility,
@@ -162,7 +162,7 @@ func NewRootAlbum(thumbnail *domain.Thumbnail, visibility *Visibility, albums []
 	}, nil
 }
 
-func (r RootAlbum) Thumbnail() *domain.Thumbnail {
+func (r RootAlbum) Thumbnail() *music.Thumbnail {
 	return r.thumbnail
 }
 
@@ -174,20 +174,20 @@ func (r RootAlbum) Albums() []Album {
 	return r.albums
 }
 
-func (r RootAlbum) Tracks() []domain.Track {
+func (r RootAlbum) Tracks() []music.Track {
 	return r.tracks
 }
 
 type Album struct {
-	id         domain.AlbumId
-	title      domain.AlbumTitle
-	thumbnail  *domain.Thumbnail
+	id         music.AlbumId
+	title      music.AlbumTitle
+	thumbnail  *music.Thumbnail
 	visibility *Visibility
 	albums     []Album
-	tracks     []domain.Track
+	tracks     []music.Track
 }
 
-func NewAlbum(id domain.AlbumId, title domain.AlbumTitle, thumbnail *domain.Thumbnail, visibility *Visibility, albums []Album, tracks []domain.Track) (Album, error) {
+func NewAlbum(id music.AlbumId, title music.AlbumTitle, thumbnail *music.Thumbnail, visibility *Visibility, albums []Album, tracks []music.Track) (Album, error) {
 	if len(albums) == 0 && len(tracks) == 0 {
 		return Album{}, errors.New("album must have at least one child album or track")
 	}
@@ -201,15 +201,15 @@ func NewAlbum(id domain.AlbumId, title domain.AlbumTitle, thumbnail *domain.Thum
 	}, nil
 }
 
-func (a Album) Id() domain.AlbumId {
+func (a Album) Id() music.AlbumId {
 	return a.id
 }
 
-func (a Album) Title() domain.AlbumTitle {
+func (a Album) Title() music.AlbumTitle {
 	return a.title
 }
 
-func (a Album) Thumbnail() *domain.Thumbnail {
+func (a Album) Thumbnail() *music.Thumbnail {
 	return a.thumbnail
 }
 
@@ -221,7 +221,7 @@ func (a Album) Albums() []Album {
 	return a.albums
 }
 
-func (a Album) Tracks() []domain.Track {
+func (a Album) Tracks() []music.Track {
 	return a.tracks
 }
 
@@ -239,8 +239,8 @@ func ifNotSetPublic(v *Visibility) Visibility {
 	return *v
 }
 
-func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []domain.PartialAlbum {
-	var out []domain.PartialAlbum
+func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []music.PartialAlbum {
+	var out []music.PartialAlbum
 	for _, a := range albums {
 		vis := parentVis
 		if a.visibility != nil {
@@ -249,17 +249,17 @@ func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []do
 		if !ctx.CanSee(vis) {
 			continue
 		}
-		out = append(out, domain.NewPartialAlbum(a.id, a.title, a.thumbnail))
+		out = append(out, music.NewPartialAlbum(a.id, a.title, a.thumbnail))
 	}
 	sortChildren(out)
 	return out
 }
 
-func (l *Library) findAlbumPath(id domain.AlbumId) ([]Album, bool) {
+func (l *Library) findAlbumPath(id music.AlbumId) ([]Album, bool) {
 	return findAlbumPathRec(l.root.albums, id, nil)
 }
 
-func findAlbumPathRec(albums []Album, id domain.AlbumId, path []Album) ([]Album, bool) {
+func findAlbumPathRec(albums []Album, id music.AlbumId, path []Album) ([]Album, bool) {
 	for _, a := range albums {
 		path = append(path, a)
 		if a.id == id {
@@ -275,7 +275,7 @@ func findAlbumPathRec(albums []Album, id domain.AlbumId, path []Album) ([]Album,
 	return nil, false
 }
 
-func sortChildren(albums []domain.PartialAlbum) {
+func sortChildren(albums []music.PartialAlbum) {
 	sort.Slice(albums, func(i, j int) bool {
 		return albums[i].Title().String() < albums[j].Title().String()
 	})

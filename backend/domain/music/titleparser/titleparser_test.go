@@ -3,8 +3,8 @@ package titleparser_test
 import (
 	"testing"
 
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/titleparser"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/titleparser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -133,7 +133,7 @@ func TestParse(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			input, err := domain.NewTrackTitle(tc.input)
+			input, err := music.NewTrackTitle(tc.input)
 			require.NoError(t, err)
 
 			got, err := titleparser.Parse(input)
@@ -147,7 +147,7 @@ func TestParse(t *testing.T) {
 				require.Nil(t, number, "number")
 			}
 
-			expectedTitle, err := domain.NewTrackTitle(tc.title)
+			expectedTitle, err := music.NewTrackTitle(tc.title)
 			require.NoError(t, err)
 			require.Equal(t, expectedTitle, got.Title(), "title")
 		})

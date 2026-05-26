@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/music"
 )
 
 const maxSearchItems = 20
@@ -40,7 +40,7 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 		}
 
 		if ctx.CanSee(effective) {
-			album := domain.NewPartialAlbum(a.id, a.title, a.thumbnail)
+			album := music.NewPartialAlbum(a.id, a.title, a.thumbnail)
 
 			if ownDist != nil {
 				b.addAlbum(album, *ownDist)
@@ -61,15 +61,15 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 }
 
 type SearchResults struct {
-	albums []domain.PartialAlbum
+	albums []music.PartialAlbum
 	tracks []TrackWithAlbum
 }
 
-func NewSearchResults(albums []domain.PartialAlbum, tracks []TrackWithAlbum) SearchResults {
+func NewSearchResults(albums []music.PartialAlbum, tracks []TrackWithAlbum) SearchResults {
 	return SearchResults{albums: albums, tracks: tracks}
 }
 
-func (s SearchResults) Albums() []domain.PartialAlbum {
+func (s SearchResults) Albums() []music.PartialAlbum {
 	return s.albums
 }
 
@@ -78,23 +78,23 @@ func (s SearchResults) Tracks() []TrackWithAlbum {
 }
 
 type TrackWithAlbum struct {
-	track domain.Track
-	album *domain.PartialAlbum
+	track music.Track
+	album *music.PartialAlbum
 }
 
-func NewRootTrackWithAlbum(track domain.Track) TrackWithAlbum {
+func NewRootTrackWithAlbum(track music.Track) TrackWithAlbum {
 	return TrackWithAlbum{track: track, album: nil}
 }
 
-func NewTrackWithAlbum(track domain.Track, album domain.PartialAlbum) TrackWithAlbum {
+func NewTrackWithAlbum(track music.Track, album music.PartialAlbum) TrackWithAlbum {
 	return TrackWithAlbum{track: track, album: &album}
 }
 
-func (t TrackWithAlbum) Track() domain.Track {
+func (t TrackWithAlbum) Track() music.Track {
 	return t.track
 }
 
-func (t TrackWithAlbum) Album() *domain.PartialAlbum {
+func (t TrackWithAlbum) Album() *music.PartialAlbum {
 	return t.album
 }
 
@@ -114,7 +114,7 @@ func containsStringCaseInsensitive(s, substr string) bool {
 }
 
 type albumHit struct {
-	album domain.PartialAlbum
+	album music.PartialAlbum
 	dist  int
 }
 
@@ -135,7 +135,7 @@ func newSearchBuilder() *searchBuilder {
 	}
 }
 
-func (b *searchBuilder) addAlbum(a domain.PartialAlbum, dist int) {
+func (b *searchBuilder) addAlbum(a music.PartialAlbum, dist int) {
 	key := a.Id().String()
 	if existing, ok := b.albums[key]; ok && existing.dist <= dist {
 		return
@@ -181,7 +181,7 @@ func (b *searchBuilder) build() SearchResults {
 		trackHits = trackHits[:maxSearchItems]
 	}
 
-	albums := make([]domain.PartialAlbum, 0, len(albumHits))
+	albums := make([]music.PartialAlbum, 0, len(albumHits))
 	for _, h := range albumHits {
 		albums = append(albums, h.album)
 	}

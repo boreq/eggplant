@@ -1,8 +1,8 @@
 package music
 
 import (
-	"github.com/boreq/eggplant/domain"
-	"github.com/boreq/eggplant/domain/library"
+	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/errors"
 )
 
@@ -14,15 +14,15 @@ func NewGetRootAlbumHandler(repo LibraryRepository) *GetRootAlbumHandler {
 	return &GetRootAlbumHandler{libraryRepository: repo}
 }
 
-func (h *GetRootAlbumHandler) Execute(accessCtx library.AccessContext) (domain.RootAlbum, error) {
+func (h *GetRootAlbumHandler) Execute(accessCtx library.AccessContext) (music.RootAlbum, error) {
 	lib, err := h.libraryRepository.Get()
 	if err != nil {
-		return domain.RootAlbum{}, errors.Wrap(err, "could not get the library")
+		return music.RootAlbum{}, errors.Wrap(err, "could not get the library")
 	}
 
 	album, err := lib.GetRootAlbum(accessCtx)
 	if err != nil {
-		return domain.RootAlbum{}, errors.Wrap(err, "could not get the root album")
+		return music.RootAlbum{}, errors.Wrap(err, "could not get the root album")
 	}
 
 	return album, nil
