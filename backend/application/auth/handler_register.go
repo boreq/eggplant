@@ -3,13 +3,14 @@ package auth
 import (
 	"time"
 
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
 
 type Register struct {
-	Username string
-	Password string
-	Token    InvitationToken
+	Username authdomain.Username
+	Password authdomain.Password
+	Token    authdomain.InvitationToken
 }
 
 type RegisterHandler struct {
@@ -28,22 +29,13 @@ func NewRegisterHandler(
 }
 
 func (h *RegisterHandler) Execute(cmd Register) error {
-	if err := validate(cmd.Username, cmd.Password); err != nil {
-		return errors.Wrap(err, "invalid parameters")
-	}
-
 	passwordHash, err := h.passwordHasher.Hash(cmd.Password)
 	if err != nil {
 		return errors.Wrap(err, "hashing the password failed")
 	}
 
-	u := User{
-		Username:      cmd.Username,
-		Password:      passwordHash,
-		Administrator: false,
-		Created:       time.Now(),
-		LastSeen:      time.Now(),
-	}
+	now := time.Now()
+	u := authdomain.NewUser(cmd.Username, passwordHash, false, now, now, nil)
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		if _, err := r.Invitations.Get(cmd.Token); err != nil {

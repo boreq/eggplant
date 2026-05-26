@@ -5,6 +5,7 @@ import (
 
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
 
@@ -19,8 +20,8 @@ func NewHttpAuthProvider(app *application.Application) *HttpAuthProvider {
 }
 
 func (h *HttpAuthProvider) Get(r *http.Request) (*AuthenticatedUser, error) {
-	token := h.getToken(r)
-	if token == "" {
+	token, ok := h.getToken(r)
+	if !ok {
 		return nil, nil
 	}
 
@@ -44,10 +45,14 @@ func (h *HttpAuthProvider) Get(r *http.Request) (*AuthenticatedUser, error) {
 	return &u, nil
 }
 
-func (h *HttpAuthProvider) getToken(r *http.Request) auth.AccessToken {
+func (h *HttpAuthProvider) getToken(r *http.Request) (authdomain.AccessToken, bool) {
 	c, err := r.Cookie("auth-token")
 	if err != nil {
-		return ""
+		return authdomain.AccessToken{}, false
 	}
-	return auth.AccessToken(c.Value)
+	token, err := authdomain.NewAccessTokenFromString(c.Value)
+	if err != nil {
+		return authdomain.AccessToken{}, false
+	}
+	return token, true
 }

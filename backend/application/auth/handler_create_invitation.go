@@ -3,38 +3,29 @@ package auth
 import (
 	"time"
 
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
 
-const invitationTokenBytes = 256 / 8
-
 type CreateInvitationHandler struct {
-	cryptoStringGenerator CryptoStringGenerator
-	transactionProvider   TransactionProvider
+	transactionProvider TransactionProvider
 }
 
 func NewCreateInvitationHandler(
-	cryptoStringGenerator CryptoStringGenerator,
 	transactionProvider TransactionProvider,
 ) *CreateInvitationHandler {
 	return &CreateInvitationHandler{
-		cryptoStringGenerator: cryptoStringGenerator,
-		transactionProvider:   transactionProvider,
+		transactionProvider: transactionProvider,
 	}
 }
 
-func (h *CreateInvitationHandler) Execute() (InvitationToken, error) {
-	s, err := h.cryptoStringGenerator.Generate(invitationTokenBytes)
+func (h *CreateInvitationHandler) Execute() (authdomain.InvitationToken, error) {
+	token, err := authdomain.NewInvitationToken()
 	if err != nil {
-		return "", errors.Wrap(err, "could not create a token")
+		return authdomain.InvitationToken{}, errors.Wrap(err, "could not create a token")
 	}
 
-	token := InvitationToken(s)
-
-	i := Invitation{
-		Token:   token,
-		Created: time.Now(),
-	}
+	i := authdomain.NewInvitation(token, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		_, err := r.Invitations.Get(token)
@@ -43,7 +34,7 @@ func (h *CreateInvitationHandler) Execute() (InvitationToken, error) {
 		}
 		return r.Invitations.Put(i)
 	}); err != nil {
-		return "", errors.Wrap(err, "transaction failed")
+		return authdomain.InvitationToken{}, errors.Wrap(err, "transaction failed")
 	}
 
 	return token, nil

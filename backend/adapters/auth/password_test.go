@@ -4,12 +4,15 @@ import (
 	"testing"
 
 	"github.com/boreq/eggplant/adapters/auth"
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPasswordHasher(t *testing.T) {
-	const password = "password"
-	const otherPassword = "other-password"
+	password, err := authdomain.NewPasswordFromString("password")
+	require.NoError(t, err)
+	otherPassword, err := authdomain.NewPasswordFromString("other-password")
+	require.NoError(t, err)
 
 	h := auth.NewBcryptPasswordHasher()
 

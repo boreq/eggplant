@@ -8,7 +8,6 @@ import (
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
-	library2 "github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/logging"
 )
 
@@ -132,7 +131,7 @@ func NewLoggingSearchHandler(inner *SearchHandler, logger logging.Logger) *Loggi
 	return &LoggingSearchHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingSearchHandler) Execute(accessCtx library2.AccessContext, cmd Search) (library2.SearchResults, error) {
+func (h *LoggingSearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (library.SearchResults, error) {
 	start := time.Now()
 	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug

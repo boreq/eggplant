@@ -1,28 +1,28 @@
 package auth
 
-import "github.com/pkg/errors"
+import (
+	authdomain "github.com/boreq/eggplant/domain/auth"
+	"github.com/pkg/errors"
+)
 
 type Logout struct {
-	Token AccessToken
+	Token authdomain.AccessToken
 }
 
 type LogoutHandler struct {
-	transactionProvider  TransactionProvider
-	accessTokenGenerator AccessTokenGenerator
+	transactionProvider TransactionProvider
 }
 
 func NewLogoutHandler(
 	transactionProvider TransactionProvider,
-	accessTokenGenerator AccessTokenGenerator,
 ) *LogoutHandler {
 	return &LogoutHandler{
-		transactionProvider:  transactionProvider,
-		accessTokenGenerator: accessTokenGenerator,
+		transactionProvider: transactionProvider,
 	}
 }
 
 func (h *LogoutHandler) Execute(cmd Logout) error {
-	username, err := h.accessTokenGenerator.GetUsername(cmd.Token)
+	username, err := cmd.Token.Username()
 	if err != nil {
 		return errors.Wrap(err, "could not extract the username")
 	}
@@ -33,14 +33,11 @@ func (h *LogoutHandler) Execute(cmd Logout) error {
 			return errors.Wrap(err, "could not get the user")
 		}
 
-		for i := range u.Sessions {
-			if u.Sessions[i].Token == cmd.Token {
-				u.Sessions = append(u.Sessions[:i], u.Sessions[i+1:]...)
-				return r.Users.Put(*u)
-			}
+		if !u.RemoveSession(cmd.Token) {
+			return errors.New("session not found")
 		}
 
-		return errors.New("session not found")
+		return r.Users.Put(*u)
 	}); err != nil {
 		return errors.Wrap(err, "transaction failed")
 	}

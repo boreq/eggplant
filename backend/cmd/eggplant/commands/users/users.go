@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	authAdapters "github.com/boreq/eggplant/adapters/auth"
 	"github.com/boreq/eggplant/application/auth"
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/internal/wire"
 	"github.com/boreq/guinea"
@@ -42,17 +42,17 @@ func runList(c guinea.Context) error {
 	conf := config.Default()
 	conf.DataDirectory = c.Arguments[0]
 
-	auth, err := wire.BuildAuth(conf)
+	a, err := wire.BuildAuth(conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to build the application")
 	}
 
-	users, err := auth.List.Execute()
+	users, err := a.List.Execute()
 	if err != nil {
 		return errors.Wrap(err, "failed to list users")
 	}
 
-	j, err := json.MarshalIndent(users, "", "    ")
+	j, err := json.MarshalIndent(toUserList(users), "", "    ")
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal to json")
 	}
@@ -60,6 +60,22 @@ func runList(c guinea.Context) error {
 	fmt.Println(string(j))
 
 	return nil
+}
+
+type userOutput struct {
+	Username      string `json:"username"`
+	Administrator bool   `json:"administrator"`
+}
+
+func toUserList(users []auth.ReadUser) []userOutput {
+	rv := make([]userOutput, 0, len(users))
+	for _, u := range users {
+		rv = append(rv, userOutput{
+			Username:      u.Username.String(),
+			Administrator: u.Administrator,
+		})
+	}
+	return rv
 }
 
 var resetPasswordCmd = guinea.Command{
@@ -90,23 +106,34 @@ func runResetPassword(c guinea.Context) error {
 		return errors.Wrap(err, "failed to build the application")
 	}
 
-	generator := authAdapters.NewCryptoStringGenerator()
-	s, err := generator.Generate(256 / 8)
+	username, err := authdomain.NewUsernameFromString(c.Arguments[1])
 	if err != nil {
-		return errors.Wrap(err, "failed to generate a secure string")
+		return errors.Wrap(err, "invalid username")
+	}
+
+	rawPassword, err := authdomain.GenerateRandomPassword()
+	if err != nil {
+		return errors.Wrap(err, "failed to generate a password")
 	}
 
 	cmd := auth.SetPassword{
-		Username: c.Arguments[1],
-		Password: s,
+		Username: username,
+		Password: rawPassword,
 	}
 
-	err = a.SetPassword.Execute(cmd)
-	if err != nil {
+	if err := a.SetPassword.Execute(cmd); err != nil {
 		return errors.Wrap(err, "failed to set a password")
 	}
 
-	j, err := json.MarshalIndent(cmd, "", "    ")
+	out := struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{
+		Username: username.String(),
+		Password: rawPassword.String(),
+	}
+
+	j, err := json.MarshalIndent(out, "", "    ")
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal to json")
 	}

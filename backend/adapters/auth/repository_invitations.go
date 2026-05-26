@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/application/auth"
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	bolt "go.etcd.io/bbolt"
@@ -34,8 +35,10 @@ func NewInvitationRepository(tx *bolt.Tx) (*InvitationRepository, error) {
 	}, nil
 }
 
-func (r *InvitationRepository) Put(invitation auth.Invitation) error {
-	j, err := json.Marshal(invitation)
+func (r *InvitationRepository) Put(invitation authdomain.Invitation) error {
+	dto := invitationToDTO(invitation)
+
+	j, err := json.Marshal(dto)
 	if err != nil {
 		return errors.Wrap(err, "marshaling to json failed")
 	}
@@ -49,49 +52,54 @@ func (r *InvitationRepository) Put(invitation auth.Invitation) error {
 		return errors.Wrap(err, "could not remove old invitations")
 	}
 
-	return b.Put([]byte(invitation.Token), j)
+	return b.Put([]byte(dto.Token), j)
 }
 
-func (r *InvitationRepository) Get(token auth.InvitationToken) (*auth.Invitation, error) {
+func (r *InvitationRepository) Get(token authdomain.InvitationToken) (*authdomain.Invitation, error) {
 	b := r.tx.Bucket(r.bucket)
 	if b == nil {
 		return nil, errors.Wrap(auth.ErrNotFound, "bucket does not exist")
 	}
-	j := b.Get([]byte(token))
+	j := b.Get([]byte(token.String()))
 	if j == nil {
 		return nil, auth.ErrNotFound
 	}
 
-	invitation := &auth.Invitation{}
-	if err := json.Unmarshal(j, invitation); err != nil {
+	var dto invitationDTO
+	if err := json.Unmarshal(j, &dto); err != nil {
 		return nil, errors.Wrap(err, "json unmarshal failed")
 	}
 
-	if time.Now().After(invitation.Created.Add(maxInvitationAge)) {
+	if time.Now().After(dto.Created.Add(maxInvitationAge)) {
 		return nil, auth.ErrNotFound
 	}
 
-	return invitation, nil
+	invitation, err := invitationFromDTO(dto)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not build the invitation")
+	}
+
+	return &invitation, nil
 }
 
-func (r *InvitationRepository) Remove(token auth.InvitationToken) error {
+func (r *InvitationRepository) Remove(token authdomain.InvitationToken) error {
 	b := r.tx.Bucket(r.bucket)
 	if b == nil {
 		return errors.New("bucket does not exist")
 	}
-	return b.Delete([]byte(token))
+	return b.Delete([]byte(token.String()))
 }
 
 func (r *InvitationRepository) removeOldInvitations(b *bolt.Bucket) error {
 	var keysToRemove [][]byte
 
 	if err := b.ForEach(func(key, value []byte) error {
-		invitation := &auth.Invitation{}
-		if err := json.Unmarshal(value, invitation); err != nil {
+		var dto invitationDTO
+		if err := json.Unmarshal(value, &dto); err != nil {
 			return errors.Wrap(err, "json unmarshal failed")
 		}
 
-		if time.Now().After(invitation.Created.Add(maxInvitationAge)) {
+		if time.Now().After(dto.Created.Add(maxInvitationAge)) {
 			keysToRemove = append(keysToRemove, nil)
 		}
 
@@ -107,4 +115,24 @@ func (r *InvitationRepository) removeOldInvitations(b *bolt.Bucket) error {
 	}
 
 	return nil
+}
+
+type invitationDTO struct {
+	Token   string    `json:"invitation"`
+	Created time.Time `json:"created"`
+}
+
+func invitationToDTO(i authdomain.Invitation) invitationDTO {
+	return invitationDTO{
+		Token:   i.Token().String(),
+		Created: i.Created(),
+	}
+}
+
+func invitationFromDTO(dto invitationDTO) (authdomain.Invitation, error) {
+	token, err := authdomain.NewInvitationTokenFromString(dto.Token)
+	if err != nil {
+		return authdomain.Invitation{}, errors.Wrap(err, "invalid invitation token")
+	}
+	return authdomain.NewInvitation(token, dto.Created), nil
 }

@@ -3,39 +3,37 @@ package auth
 import (
 	"time"
 
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
 
 type CheckAccessToken struct {
-	Token AccessToken
+	Token authdomain.AccessToken
 }
 
 type CheckAccessTokenHandler struct {
-	transactionProvider  TransactionProvider
-	accessTokenGenerator AccessTokenGenerator
-	lastSeenUpdater      LastSeenUpdater
+	transactionProvider TransactionProvider
+	lastSeenUpdater     LastSeenUpdater
 }
 
 func NewCheckAccessTokenHandler(
 	transactionProvider TransactionProvider,
-	accessTokenGenerator AccessTokenGenerator,
 	lastSeenUpdater LastSeenUpdater,
 ) *CheckAccessTokenHandler {
 	return &CheckAccessTokenHandler{
-		transactionProvider:  transactionProvider,
-		accessTokenGenerator: accessTokenGenerator,
-		lastSeenUpdater:      lastSeenUpdater,
+		transactionProvider: transactionProvider,
+		lastSeenUpdater:     lastSeenUpdater,
 	}
 }
 
 func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, error) {
-	username, err := h.accessTokenGenerator.GetUsername(cmd.Token)
+	username, err := cmd.Token.Username()
 	if err != nil {
 		return nil, errors.Wrap(ErrUnauthorized, "could not get the username")
 	}
 
-	var foundUser *User
-	var foundSession *Session
+	var foundUser *authdomain.User
+	var foundSession *authdomain.Session
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
 		u, err := r.Users.Get(username)
@@ -48,8 +46,8 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, erro
 
 		foundUser = u
 
-		for _, s := range u.Sessions {
-			if s.Token == cmd.Token {
+		for _, s := range u.Sessions() {
+			if s.Token() == cmd.Token {
 				foundSession = &s
 				return nil
 			}
@@ -60,7 +58,7 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, erro
 		return nil, errors.Wrap(err, "transaction failed")
 	}
 
-	h.lastSeenUpdater.Update(foundUser.Username, foundSession.Token, time.Now())
+	h.lastSeenUpdater.Update(foundUser.Username(), foundSession.Token(), time.Now())
 
 	rv := toReadUser(*foundUser)
 	return &rv, nil

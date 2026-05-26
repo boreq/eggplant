@@ -7,10 +7,29 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/application/auth"
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/internal/fixture"
 	"github.com/boreq/eggplant/internal/wire"
 	"github.com/stretchr/testify/require"
 )
+
+func mustUsername(t *testing.T, s string) authdomain.Username {
+	u, err := authdomain.NewUsernameFromString(s)
+	require.NoError(t, err)
+	return u
+}
+
+func mustPassword(t *testing.T, s string) authdomain.Password {
+	p, err := authdomain.NewPasswordFromString(s)
+	require.NoError(t, err)
+	return p
+}
+
+func mustAccessToken(t *testing.T, s string) authdomain.AccessToken {
+	tok, err := authdomain.NewAccessTokenFromString(s)
+	require.NoError(t, err)
+	return tok
+}
 
 func TestRegisterInitial(t *testing.T) {
 	for _, testCase := range registerTestCases {
@@ -18,26 +37,38 @@ func TestRegisterInitial(t *testing.T) {
 			a, cleanup := NewAuth(t)
 			defer cleanup()
 
+			username, usernameErr := authdomain.NewUsernameFromString(testCase.Username)
+			password, passwordErr := authdomain.NewPasswordFromString(testCase.Password)
+
+			if testCase.ExpectedError != nil {
+				if usernameErr != nil {
+					require.EqualError(t, usernameErr, testCase.ExpectedError.Error())
+					return
+				}
+				if passwordErr != nil {
+					require.EqualError(t, passwordErr, testCase.ExpectedError.Error())
+					return
+				}
+			}
+			require.NoError(t, usernameErr)
+			require.NoError(t, passwordErr)
+
 			cmd := auth.RegisterInitial{
-				Username: testCase.Username,
-				Password: testCase.Password,
+				Username: username,
+				Password: password,
 			}
 
 			err := a.RegisterInitial.Execute(cmd)
-			if testCase.ExpectedError == nil {
-				require.NoError(t, err)
+			require.NoError(t, err)
 
-				users, err := a.List.Execute()
-				require.NoError(t, err)
+			users, err := a.List.Execute()
+			require.NoError(t, err)
 
-				require.Equal(t, 1, len(users))
-				require.Equal(t, testCase.Username, users[0].Username)
-				require.Equal(t, true, users[0].Administrator)
-				require.False(t, users[0].Created.IsZero())
-				require.False(t, users[0].LastSeen.IsZero())
-			} else {
-				require.EqualError(t, err, testCase.ExpectedError.Error())
-			}
+			require.Equal(t, 1, len(users))
+			require.Equal(t, username, users[0].Username)
+			require.Equal(t, true, users[0].Administrator)
+			require.False(t, users[0].Created.IsZero())
+			require.False(t, users[0].LastSeen.IsZero())
 		})
 	}
 }
@@ -47,8 +78,8 @@ func TestRegisterInitialCanOnlyBePerformedOnce(t *testing.T) {
 	defer cleanup()
 
 	cmd := auth.RegisterInitial{
-		Username: "username",
-		Password: "password",
+		Username: mustUsername(t, "username"),
+		Password: mustPassword(t, "password"),
 	}
 
 	err := a.RegisterInitial.Execute(cmd)
@@ -59,11 +90,11 @@ func TestRegisterInitialCanOnlyBePerformedOnce(t *testing.T) {
 }
 
 func TestLoginInitialUser(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
 		auth.RegisterInitial{
@@ -80,12 +111,12 @@ func TestLoginInitialUser(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	require.NotEmpty(t, token)
+	require.NotEmpty(t, token.String())
 
 	_, err = a.Login.Execute(
 		auth.Login{
 			Username: username,
-			Password: "other-password",
+			Password: mustPassword(t, "other-password"),
 		},
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
@@ -93,7 +124,7 @@ func TestLoginInitialUser(t *testing.T) {
 
 	_, err = a.Login.Execute(
 		auth.Login{
-			Username: "other-username",
+			Username: mustUsername(t, "other-username"),
 			Password: password,
 		},
 	)
@@ -102,11 +133,11 @@ func TestLoginInitialUser(t *testing.T) {
 }
 
 func TestCheckAccessToken(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(auth.RegisterInitial{
 		Username: username,
@@ -114,7 +145,6 @@ func TestCheckAccessToken(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// checking a real token should work
 	token, err := a.Login.Execute(auth.Login{
 		Username: username,
 		Password: password,
@@ -131,32 +161,31 @@ func TestCheckAccessToken(t *testing.T) {
 	require.False(t, u.Created.IsZero())
 	require.False(t, u.LastSeen.IsZero())
 
-	// checking a made up token should fail
 	_, err = a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: "fake"},
+		auth.CheckAccessToken{Token: mustAccessToken(t, "fake")},
 	)
 	require.EqualError(t, err, "could not get the username: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: "fake-ab"},
+		auth.CheckAccessToken{Token: mustAccessToken(t, "fake-ab")},
 	)
 	require.EqualError(t, err, "transaction failed: user not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: "fake-757365726E616D65"},
+		auth.CheckAccessToken{Token: mustAccessToken(t, "fake-757365726E616D65")},
 	)
 	require.EqualError(t, err, "transaction failed: invalid token: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 }
 
 func TestUpdateLastSeen(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
 		auth.RegisterInitial{
@@ -198,11 +227,11 @@ func TestUpdateLastSeen(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
 		auth.RegisterInitial{
@@ -223,38 +252,22 @@ func TestLogout(t *testing.T) {
 	err = a.Logout.Execute(auth.Logout{Token: token})
 	require.NoError(t, err)
 
-	err = a.Logout.Execute(auth.Logout{Token: "fake"})
+	err = a.Logout.Execute(auth.Logout{Token: mustAccessToken(t, "fake")})
 	require.EqualError(t, err, "could not extract the username: malformed token")
 
-	err = a.Logout.Execute(auth.Logout{Token: "fake-ab"})
+	err = a.Logout.Execute(auth.Logout{Token: mustAccessToken(t, "fake-ab")})
 	require.EqualError(t, err, "transaction failed: could not get the user: not found")
 
-	err = a.Logout.Execute(auth.Logout{Token: "fake-757365726E616D65"})
+	err = a.Logout.Execute(auth.Logout{Token: mustAccessToken(t, "fake-757365726E616D65")})
 	require.EqualError(t, err, "transaction failed: session not found")
 }
 
-//func TestCount(t *testing.T) {
-//	a, cleanup := NewAuth(t)
-//	defer cleanup()
-//
-//	n, err := a.List.Execute()
-//	require.NoError(t, err)
-//	require.Equal(t, 0, n)
-//
-//	err = r.RegisterInitial("username", "password")
-//	require.NoError(t, err)
-//
-//	n, err = r.Count()
-//	require.NoError(t, err)
-//	require.Equal(t, 1, n)
-//}
-
 func TestList(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
 		auth.RegisterInitial{
@@ -279,21 +292,21 @@ func TestCreateInvitation(t *testing.T) {
 
 	token, err := a.CreateInvitation.Execute()
 	require.NoError(t, err)
-	require.NotEmpty(t, token)
+	require.NotEmpty(t, token.String())
 }
 
 func TestRegisterInvalidInvitationToken(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
-	err := a.Register.Execute(
+	invalidToken, err := authdomain.NewInvitationTokenFromString("invalid")
+	require.NoError(t, err)
+
+	err = a.Register.Execute(
 		auth.Register{
-			Username: username,
-			Password: password,
-			Token:    auth.InvitationToken("invalid"),
+			Username: mustUsername(t, "username"),
+			Password: mustPassword(t, "password"),
+			Token:    invalidToken,
 		},
 	)
 	require.Error(t, err)
@@ -308,8 +321,8 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 
 	err = a.Register.Execute(
 		auth.Register{
-			Username: "username",
-			Password: "password",
+			Username: mustUsername(t, "username"),
+			Password: mustPassword(t, "password"),
 			Token:    token,
 		},
 	)
@@ -317,8 +330,8 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 
 	err = a.Register.Execute(
 		auth.Register{
-			Username: "other-username",
-			Password: "other-password",
+			Username: mustUsername(t, "other-username"),
+			Password: mustPassword(t, "other-password"),
 			Token:    token,
 		},
 	)
@@ -327,11 +340,11 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 }
 
 func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	token, err := a.CreateInvitation.Execute()
 	require.NoError(t, err)
@@ -365,39 +378,51 @@ func TestRegisterInvalid(t *testing.T) {
 			a, cleanup := NewAuth(t)
 			defer cleanup()
 
+			username, usernameErr := authdomain.NewUsernameFromString(testCase.Username)
+			password, passwordErr := authdomain.NewPasswordFromString(testCase.Password)
+
+			if testCase.ExpectedError != nil {
+				if usernameErr != nil {
+					require.EqualError(t, usernameErr, testCase.ExpectedError.Error())
+					return
+				}
+				if passwordErr != nil {
+					require.EqualError(t, passwordErr, testCase.ExpectedError.Error())
+					return
+				}
+			}
+			require.NoError(t, usernameErr)
+			require.NoError(t, passwordErr)
+
 			token, err := a.CreateInvitation.Execute()
 			require.NoError(t, err)
 
 			err = a.Register.Execute(
 				auth.Register{
-					Username: testCase.Username,
-					Password: testCase.Password,
+					Username: username,
+					Password: password,
 					Token:    token,
 				},
 			)
-			if testCase.ExpectedError == nil {
-				require.NoError(t, err)
+			require.NoError(t, err)
 
-				users, err := a.List.Execute()
-				require.NoError(t, err)
-				require.Equal(t, 1, len(users))
-				require.Equal(t, testCase.Username, users[0].Username)
-				require.Equal(t, false, users[0].Administrator)
-				require.False(t, users[0].Created.IsZero())
-				require.False(t, users[0].LastSeen.IsZero())
-			} else {
-				require.EqualError(t, err, testCase.ExpectedError.Error())
-			}
+			users, err := a.List.Execute()
+			require.NoError(t, err)
+			require.Equal(t, 1, len(users))
+			require.Equal(t, username, users[0].Username)
+			require.Equal(t, false, users[0].Administrator)
+			require.False(t, users[0].Created.IsZero())
+			require.False(t, users[0].LastSeen.IsZero())
 		})
 	}
 }
 
 func TestLogin(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	invitationToken, err := a.CreateInvitation.Execute()
 	require.NoError(t, err)
@@ -418,19 +443,19 @@ func TestLogin(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	require.NotEmpty(t, accessToken)
+	require.NotEmpty(t, accessToken.String())
 
 	_, err = a.Login.Execute(
 		auth.Login{
 			Username: username,
-			Password: "other-password",
+			Password: mustPassword(t, "other-password"),
 		},
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.Login.Execute(
 		auth.Login{
-			Username: "other-username",
+			Username: mustUsername(t, "other-username"),
 			Password: password,
 		},
 	)
@@ -438,11 +463,11 @@ func TestLogin(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	const username = "username"
-	const password = "password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
 
 	invitationToken, err := a.CreateInvitation.Execute()
 	require.NoError(t, err)
@@ -473,8 +498,6 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveNoUser(t *testing.T) {
-	const username = "username"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
@@ -484,7 +507,7 @@ func TestRemoveNoUser(t *testing.T) {
 
 	err = a.Remove.Execute(
 		auth.Remove{
-			Username: username,
+			Username: mustUsername(t, "username"),
 		},
 	)
 	require.NoError(t, err)
@@ -496,12 +519,12 @@ func TestRemoveNoUser(t *testing.T) {
 }
 
 func TestSetPassword(t *testing.T) {
-	const username = "username"
-	const password = "password"
-	const newPassword = "new-password"
-
 	a, cleanup := NewAuth(t)
 	defer cleanup()
+
+	username := mustUsername(t, "username")
+	password := mustPassword(t, "password")
+	newPassword := mustPassword(t, "new-password")
 
 	invitationToken, err := a.CreateInvitation.Execute()
 	require.NoError(t, err)
@@ -569,24 +592,24 @@ var registerTestCases = []struct {
 		Name:          "empty_username",
 		Username:      "",
 		Password:      "password",
-		ExpectedError: errors.New("invalid parameters: username can't be empty"),
+		ExpectedError: errors.New("username can't be empty"),
 	},
 	{
 		Name:          "empty_password",
 		Username:      "username",
 		Password:      "",
-		ExpectedError: errors.New("invalid parameters: password can't be empty"),
+		ExpectedError: errors.New("password can't be empty"),
 	},
 	{
 		Name:          "username_too_long",
 		Username:      strings.Repeat("a", 101),
 		Password:      "password",
-		ExpectedError: errors.New("invalid parameters: username length can't exceed 100 characters"),
+		ExpectedError: errors.New("username length can't exceed 100 characters"),
 	},
 	{
 		Name:          "password_too_long",
 		Username:      "username",
 		Password:      strings.Repeat("a", 10001),
-		ExpectedError: errors.New("invalid parameters: password length can't exceed 10000 characters"),
+		ExpectedError: errors.New("password length can't exceed 10000 characters"),
 	},
 }

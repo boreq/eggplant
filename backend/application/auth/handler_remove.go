@@ -1,7 +1,11 @@
 package auth
 
+import (
+	authdomain "github.com/boreq/eggplant/domain/auth"
+)
+
 type Remove struct {
-	Username string
+	Username authdomain.Username
 }
 
 type RemoveHandler struct {

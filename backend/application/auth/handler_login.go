@@ -3,38 +3,32 @@ package auth
 import (
 	"time"
 
+	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
 
 type Login struct {
-	Username string
-	Password string
+	Username authdomain.Username
+	Password authdomain.Password
 }
 
 type LoginHandler struct {
-	passwordHasher       PasswordHasher
-	transactionProvider  TransactionProvider
-	accessTokenGenerator AccessTokenGenerator
+	passwordHasher      PasswordHasher
+	transactionProvider TransactionProvider
 }
 
 func NewLoginHandler(
 	passwordHasher PasswordHasher,
 	transactionProvider TransactionProvider,
-	accessTokenGenerator AccessTokenGenerator,
 ) *LoginHandler {
 	return &LoginHandler{
-		passwordHasher:       passwordHasher,
-		transactionProvider:  transactionProvider,
-		accessTokenGenerator: accessTokenGenerator,
+		passwordHasher:      passwordHasher,
+		transactionProvider: transactionProvider,
 	}
 }
 
-func (h *LoginHandler) Execute(cmd Login) (AccessToken, error) {
-	if err := validate(cmd.Username, cmd.Password); err != nil {
-		return "", errors.Wrap(ErrUnauthorized, "invalid parameters")
-	}
-
-	var token AccessToken
+func (h *LoginHandler) Execute(cmd Login) (authdomain.AccessToken, error) {
+	var token authdomain.AccessToken
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		u, err := r.Users.Get(cmd.Username)
@@ -45,26 +39,21 @@ func (h *LoginHandler) Execute(cmd Login) (AccessToken, error) {
 			return errors.Wrap(err, "could not get the user")
 		}
 
-		if err := h.passwordHasher.Compare(u.Password, cmd.Password); err != nil {
+		if err := h.passwordHasher.Compare(u.Password(), cmd.Password); err != nil {
 			return errors.Wrap(ErrUnauthorized, "invalid password")
 		}
 
-		t, err := h.accessTokenGenerator.Generate(cmd.Username)
+		t, err := authdomain.NewAccessToken(cmd.Username)
 		if err != nil {
 			return errors.Wrap(err, "could not create an access token")
 		}
 		token = t
 
-		s := Session{
-			Token:    t,
-			LastSeen: time.Now(),
-		}
-
-		u.Sessions = append(u.Sessions, s)
+		u.AddSession(authdomain.NewSession(t, time.Now()))
 
 		return r.Users.Put(*u)
 	}); err != nil {
-		return "", errors.Wrap(err, "transaction failed")
+		return authdomain.AccessToken{}, errors.Wrap(err, "transaction failed")
 	}
 
 	return token, nil
