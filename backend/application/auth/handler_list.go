@@ -1,6 +1,9 @@
 package auth
 
-import "github.com/boreq/errors"
+import (
+	authdomain "github.com/boreq/eggplant/domain/auth"
+	"github.com/boreq/errors"
+)
 
 type ListHandler struct {
 	transactionProvider TransactionProvider
@@ -13,7 +16,7 @@ func NewListHandler(transactionProvider TransactionProvider) *ListHandler {
 }
 
 func (h *ListHandler) Execute() ([]ReadUser, error) {
-	var users []User
+	var users []authdomain.User
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
 		u, err := r.Users.List()
 		if err != nil {

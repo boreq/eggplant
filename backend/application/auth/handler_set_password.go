@@ -1,10 +1,13 @@
 package auth
 
-import "github.com/boreq/errors"
+import (
+	authdomain "github.com/boreq/eggplant/domain/auth"
+	"github.com/boreq/errors"
+)
 
 type SetPassword struct {
-	Username string
-	Password string
+	Username authdomain.Username
+	Password authdomain.Password
 }
 
 type SetPasswordHandler struct {
@@ -23,10 +26,6 @@ func NewSetPasswordHandler(
 }
 
 func (h *SetPasswordHandler) Execute(cmd SetPassword) error {
-	if err := validate(cmd.Username, cmd.Password); err != nil {
-		return errors.Wrap(err, "invalid parameters")
-	}
-
 	passwordHash, err := h.passwordHasher.Hash(cmd.Password)
 	if err != nil {
 		return errors.Wrap(err, "hashing the password failed")
@@ -38,7 +37,7 @@ func (h *SetPasswordHandler) Execute(cmd SetPassword) error {
 			return errors.Wrap(err, "could not get the user")
 		}
 
-		u.Password = passwordHash
+		u.SetPassword(passwordHash)
 
 		return r.Users.Put(*u)
 	})

@@ -14,7 +14,7 @@ import (
 
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	music2 "github.com/boreq/eggplant/domain/music"
+	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/hls"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
@@ -38,7 +38,7 @@ const (
 	maxOpenStreams = 1000
 )
 
-var readinessLastFragmentId = music2.MustNewFragmentId(readinessFragments - 1)
+var readinessLastFragmentId = musicdomain.MustNewFragmentId(readinessFragments - 1)
 
 type Converter struct {
 	ctx     context.Context
@@ -46,7 +46,7 @@ type Converter struct {
 	log     logging.Logger
 
 	mu      sync.Mutex
-	items   map[music2.FileId]music.TrackStoreItem
+	items   map[musicdomain.FileId]music.TrackStoreItem
 	streams map[string]*stream
 
 	ffmpegJobs chan ffmpegJob
@@ -57,7 +57,7 @@ func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
 		ctx:        ctx,
 		dataDir:    dataDir,
 		log:        logging.New("tracks.Converter"),
-		items:      make(map[music2.FileId]music.TrackStoreItem),
+		items:      make(map[musicdomain.FileId]music.TrackStoreItem),
 		streams:    make(map[string]*stream),
 		ffmpegJobs: make(chan ffmpegJob),
 	}
@@ -88,13 +88,13 @@ func (c *Converter) cancelIdleStreams() {
 	}
 }
 
-func (c *Converter) unregisterIdleStreams() []music2.StreamId {
+func (c *Converter) unregisterIdleStreams() []musicdomain.StreamId {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	now := time.Now()
 
-	var ids []music2.StreamId
+	var ids []musicdomain.StreamId
 	for key, stream := range c.streams {
 		if now.Sub(stream.lastAccess) <= streamIdleTimeout {
 			continue
@@ -131,16 +131,16 @@ func (c *Converter) SetItems(items []music.TrackStoreItem) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.items = make(map[music2.FileId]music.TrackStoreItem)
+	c.items = make(map[musicdomain.FileId]music.TrackStoreItem)
 	for _, it := range items {
 		c.items[it.FileId()] = it
 	}
 }
 
-func (c *Converter) StartStream(reqCtx context.Context, fileId music2.FileId, seekPos *music2.SeekPosition) (music2.StreamId, error) {
+func (c *Converter) StartStream(reqCtx context.Context, fileId musicdomain.FileId, seekPos *musicdomain.SeekPosition) (musicdomain.StreamId, error) {
 	stream, err := c.createAndRegisterStream(fileId, seekPos)
 	if err != nil {
-		return music2.StreamId{}, errors.Wrap(err, "could not register a stream")
+		return musicdomain.StreamId{}, errors.Wrap(err, "could not register a stream")
 	}
 
 	go c.runConversion(stream)
@@ -148,16 +148,16 @@ func (c *Converter) StartStream(reqCtx context.Context, fileId music2.FileId, se
 	select {
 	case err := <-stream.ready:
 		if err != nil {
-			return music2.StreamId{}, errors.Wrap(err, "received an error")
+			return musicdomain.StreamId{}, errors.Wrap(err, "received an error")
 		}
 		return stream.id, nil
 	case <-reqCtx.Done():
 		stream.cancel()
-		return music2.StreamId{}, reqCtx.Err()
+		return musicdomain.StreamId{}, reqCtx.Err()
 	}
 }
 
-func (c *Converter) createAndRegisterStream(fileId music2.FileId, seekPos *music2.SeekPosition) (*stream, error) {
+func (c *Converter) createAndRegisterStream(fileId musicdomain.FileId, seekPos *musicdomain.SeekPosition) (*stream, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -170,7 +170,7 @@ func (c *Converter) createAndRegisterStream(fileId music2.FileId, seekPos *music
 		return nil, errors.New("item does not exist")
 	}
 
-	streamId, err := music2.NewStreamId()
+	streamId, err := musicdomain.NewStreamId()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create stream id")
 	}
@@ -190,12 +190,12 @@ func (c *Converter) createAndRegisterStream(fileId music2.FileId, seekPos *music
 	return s, nil
 }
 
-func (c *Converter) KeepAliveStream(fileId music2.FileId, streamId music2.StreamId) error {
+func (c *Converter) KeepAliveStream(fileId musicdomain.FileId, streamId musicdomain.StreamId) error {
 	_, err := c.getStreamForFile(streamId, fileId)
 	return err
 }
 
-func (c *Converter) GetPlaylist(fileId music2.FileId, streamId music2.StreamId) (music.Playlist, error) {
+func (c *Converter) GetPlaylist(fileId musicdomain.FileId, streamId musicdomain.StreamId) (music.Playlist, error) {
 	s, err := c.getStreamForFile(streamId, fileId)
 	if err != nil {
 		return music.Playlist{}, err
@@ -221,7 +221,7 @@ func (c *Converter) GetPlaylist(fileId music2.FileId, streamId music2.StreamId) 
 	}, nil
 }
 
-func (c *Converter) GetInit(fileId music2.FileId, streamId music2.StreamId) (music.ConvertedFile, error) {
+func (c *Converter) GetInit(fileId musicdomain.FileId, streamId musicdomain.StreamId) (music.ConvertedFile, error) {
 	s, err := c.getStreamForFile(streamId, fileId)
 	if err != nil {
 		return music.ConvertedFile{}, err
@@ -236,7 +236,7 @@ func (c *Converter) GetInit(fileId music2.FileId, streamId music2.StreamId) (mus
 	return cf, nil
 }
 
-func (c *Converter) GetFragment(fileId music2.FileId, streamId music2.StreamId, fragmentId music2.FragmentId) (music.ConvertedFile, error) {
+func (c *Converter) GetFragment(fileId musicdomain.FileId, streamId musicdomain.StreamId, fragmentId musicdomain.FragmentId) (music.ConvertedFile, error) {
 	s, err := c.getStreamForFile(streamId, fileId)
 	if err != nil {
 		return music.ConvertedFile{}, err
@@ -306,7 +306,7 @@ func (c *Converter) streamsStats() (size int64, count int64, err error) {
 	return size, count, nil
 }
 
-func (c *Converter) getStreamForFile(streamId music2.StreamId, fileId music2.FileId) (*stream, error) {
+func (c *Converter) getStreamForFile(streamId musicdomain.StreamId, fileId musicdomain.FileId) (*stream, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -390,7 +390,7 @@ func (c *Converter) waitForReadiness(ctx context.Context, s *stream, ffmpegResul
 	}
 }
 
-func (c *Converter) removeStreamDirectory(id music2.StreamId) {
+func (c *Converter) removeStreamDirectory(id musicdomain.StreamId) {
 	dir := c.streamDir(id)
 	if err := os.RemoveAll(dir); err != nil {
 		c.log.Error("could not remove stream dir", "err", err, "dir", dir)
@@ -439,7 +439,7 @@ func (c *Converter) streamsRoot() string {
 	return path.Join(c.dataDir, streamsDirectory)
 }
 
-func (c *Converter) streamDir(id music2.StreamId) string {
+func (c *Converter) streamDir(id musicdomain.StreamId) string {
 	return path.Join(c.streamsRoot(), id.String())
 }
 
@@ -451,7 +451,7 @@ func (c *Converter) initPathInDir(dir string) string {
 	return path.Join(dir, initFilename)
 }
 
-func (c *Converter) fragmentPathInDir(dir string, n music2.FragmentId) string {
+func (c *Converter) fragmentPathInDir(dir string, n musicdomain.FragmentId) string {
 	return path.Join(dir, fmt.Sprintf(segmentTemplate, n.Int()))
 }
 
@@ -484,9 +484,9 @@ func fileExists(p string) bool {
 }
 
 type stream struct {
-	id      music2.StreamId
+	id      musicdomain.StreamId
 	item    music.TrackStoreItem
-	seekPos *music2.SeekPosition
+	seekPos *musicdomain.SeekPosition
 	log     logging.Logger
 
 	ctx        context.Context

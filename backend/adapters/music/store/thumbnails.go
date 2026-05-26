@@ -11,7 +11,7 @@ import (
 	"path"
 
 	"github.com/boreq/eggplant/application/music"
-	music2 "github.com/boreq/eggplant/domain/music"
+	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 	"github.com/chai2010/webp"
@@ -48,7 +48,7 @@ func (s *ThumbnailStore) SetItems(items []music.ThumbnailStoreItem) {
 	s.Store.SetItems(converted)
 }
 
-func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId music2.FileId) (music.ConvertedFile, error) {
+func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId musicdomain.FileId) (music.ConvertedFile, error) {
 	return s.getConvertedFileForId(ctx, fileId.String())
 }
 

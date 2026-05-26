@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/boreq/eggplant/domain/music"
-	library2 "github.com/boreq/eggplant/domain/music/library"
+	"github.com/boreq/eggplant/domain/music/library"
 	scannerdomain "github.com/boreq/eggplant/domain/music/scanner"
 	"github.com/boreq/eggplant/domain/music/titleparser"
 	"github.com/boreq/errors"
@@ -67,7 +67,7 @@ func (h *LoadLibraryHandler) Execute(ctx context.Context) error {
 
 	h.trackStore.SetItems(b.trackItems)
 	h.thumbnailStore.SetItems(b.thumbnailItems)
-	h.repo.Save(library2.NewLibrary(root))
+	h.repo.Save(library.NewLibrary(root))
 	return nil
 }
 
@@ -123,32 +123,32 @@ type libraryBuilder struct {
 	thumbnailItems []ThumbnailStoreItem
 }
 
-func (b *libraryBuilder) buildRoot(scan scannerdomain.FoundRootAlbum) (library2.RootAlbum, error) {
+func (b *libraryBuilder) buildRoot(scan scannerdomain.FoundRootAlbum) (library.RootAlbum, error) {
 	visibility, err := b.loadVisibility(scan.AccessFile())
 	if err != nil {
-		return library2.RootAlbum{}, err
+		return library.RootAlbum{}, err
 	}
 
 	thumbnail, err := b.buildThumbnail(scan.ThumbnailFile(), nil)
 	if err != nil {
-		return library2.RootAlbum{}, err
+		return library.RootAlbum{}, err
 	}
 
 	tracks, err := b.buildTracks(nil, scan.Tracks())
 	if err != nil {
-		return library2.RootAlbum{}, err
+		return library.RootAlbum{}, err
 	}
 
 	albums, err := b.buildAlbums(nil, scan.Albums())
 	if err != nil {
-		return library2.RootAlbum{}, err
+		return library.RootAlbum{}, err
 	}
 
-	return library2.NewRootAlbum(thumbnail, visibility, albums, tracks)
+	return library.NewRootAlbum(thumbnail, visibility, albums, tracks)
 }
 
-func (b *libraryBuilder) buildAlbums(parents []music.AlbumId, src map[music.AlbumTitle]scannerdomain.FoundAlbum) ([]library2.Album, error) {
-	var out []library2.Album
+func (b *libraryBuilder) buildAlbums(parents []music.AlbumId, src map[music.AlbumTitle]scannerdomain.FoundAlbum) ([]library.Album, error) {
+	var out []library.Album
 	for title, fa := range src {
 		a, err := b.buildAlbum(parents, title, fa)
 		if err != nil {
@@ -159,37 +159,37 @@ func (b *libraryBuilder) buildAlbums(parents []music.AlbumId, src map[music.Albu
 	return out, nil
 }
 
-func (b *libraryBuilder) buildAlbum(parents []music.AlbumId, title music.AlbumTitle, scan scannerdomain.FoundAlbum) (library2.Album, error) {
+func (b *libraryBuilder) buildAlbum(parents []music.AlbumId, title music.AlbumTitle, scan scannerdomain.FoundAlbum) (library.Album, error) {
 	id, err := music.NewAlbumId(parents, title)
 	if err != nil {
-		return library2.Album{}, errors.Wrap(err, "could not generate album id")
+		return library.Album{}, errors.Wrap(err, "could not generate album id")
 	}
 
 	visibility, err := b.loadVisibility(scan.AccessFile())
 	if err != nil {
-		return library2.Album{}, err
+		return library.Album{}, err
 	}
 
 	childParents := append(append([]music.AlbumId(nil), parents...), id)
 
 	thumbnail, err := b.buildThumbnail(scan.ThumbnailFile(), childParents)
 	if err != nil {
-		return library2.Album{}, err
+		return library.Album{}, err
 	}
 
 	tracks, err := b.buildTracks(childParents, scan.Tracks())
 	if err != nil {
-		return library2.Album{}, err
+		return library.Album{}, err
 	}
 
 	albums, err := b.buildAlbums(childParents, scan.Albums())
 	if err != nil {
-		return library2.Album{}, err
+		return library.Album{}, err
 	}
 
-	album, err := library2.NewAlbum(id, title, thumbnail, visibility, albums, tracks)
+	album, err := library.NewAlbum(id, title, thumbnail, visibility, albums, tracks)
 	if err != nil {
-		return library2.Album{}, errors.Wrap(err, "could not create album")
+		return library.Album{}, errors.Wrap(err, "could not create album")
 	}
 	return album, nil
 }
@@ -260,7 +260,7 @@ func (b *libraryBuilder) buildThumbnail(file *music.FilePath, parents []music.Al
 	return &t, nil
 }
 
-func (b *libraryBuilder) loadVisibility(file *music.FilePath) (*library2.Visibility, error) {
+func (b *libraryBuilder) loadVisibility(file *music.FilePath) (*library.Visibility, error) {
 	if file == nil {
 		return nil, nil
 	}

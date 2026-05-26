@@ -10,8 +10,9 @@ import (
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
-	music2 "github.com/boreq/eggplant/domain/music"
-	library2 "github.com/boreq/eggplant/domain/music/library"
+	authdomain "github.com/boreq/eggplant/domain/auth"
+	musicdomain "github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/entrypoints/http/frontend"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
@@ -27,7 +28,7 @@ var Version = "unknown"
 
 type AuthenticatedUser struct {
 	User  auth.ReadUser
-	Token auth.AccessToken
+	Token authdomain.AccessToken
 }
 
 type AuthProvider interface {
@@ -114,7 +115,7 @@ func (h *Handler) browseById(r *http.Request) rest.RestResponse {
 
 	accessCtx := accessContextFor(u)
 
-	albumId, err := music2.NewAlbumIdFromString(rawId)
+	albumId, err := musicdomain.NewAlbumIdFromString(rawId)
 	if err != nil {
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
@@ -128,7 +129,7 @@ func (h *Handler) browseById(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) handleBrowseError(err error) rest.RestResponse {
-	if errors.Is(err, library2.ErrAlbumNotFound) {
+	if errors.Is(err, library.ErrAlbumNotFound) {
 		return rest.ErrNotFound
 	}
 	if errors.Is(err, music.ErrLibraryNotReady) {
@@ -164,7 +165,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 
-	trackId, err := music2.NewTrackIdFromString(ps.ByName("trackid"))
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		return rest.ErrBadRequest.WithMessage("Invalid track id.")
@@ -187,7 +188,7 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 		SeekPosition: seekPos,
 	})
 	if err != nil {
-		if errors.Is(err, library2.ErrTrackNotFound) {
+		if errors.Is(err, library.ErrTrackNotFound) {
 			return rest.ErrNotFound
 		}
 		if errors.Is(err, music.ErrTooManyOpenStreams) {
@@ -200,7 +201,7 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(startStreamResponse{StreamId: streamId.String()})
 }
 
-func parseSeekParam(s string) (*music2.RequestedSeekPosition, error) {
+func parseSeekParam(s string) (*musicdomain.RequestedSeekPosition, error) {
 	if s == "" {
 		return nil, nil
 	}
@@ -208,7 +209,7 @@ func parseSeekParam(s string) (*music2.RequestedSeekPosition, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse seek seconds")
 	}
-	sp, err := music2.NewRequestedSeekPosition(time.Duration(secs * float64(time.Second)))
+	sp, err := musicdomain.NewRequestedSeekPosition(time.Duration(secs * float64(time.Second)))
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +292,7 @@ func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps http
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fragmentId, err := music2.NewFragmentId(n)
+	fragmentId, err := musicdomain.NewFragmentId(n)
 	if err != nil {
 		h.log.Warn("invalid fragment id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -312,24 +313,24 @@ func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps http
 	h.serveConvertedFile(w, r, p, "video/iso.segment")
 }
 
-func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (music2.TrackId, music2.StreamId, library2.AccessContext, bool) {
-	trackId, err := music2.NewTrackIdFromString(ps.ByName("trackid"))
+func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (musicdomain.TrackId, musicdomain.StreamId, library.AccessContext, bool) {
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return music2.TrackId{}, music2.StreamId{}, nil, false
+		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
 	}
-	streamId, err := music2.NewStreamIdFromString(ps.ByName("streamid"))
+	streamId, err := musicdomain.NewStreamIdFromString(ps.ByName("streamid"))
 	if err != nil {
 		h.log.Warn("invalid stream id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return music2.TrackId{}, music2.StreamId{}, nil, false
+		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
 	}
 	accessCtx, err := h.resolveAccessContext(r)
 	if err != nil {
 		h.log.Error("could not resolve access context", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		return music2.TrackId{}, music2.StreamId{}, nil, false
+		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
 	}
 	return trackId, streamId, accessCtx, true
 }
@@ -338,7 +339,7 @@ var streamErrorMapping = []struct {
 	err    error
 	status int
 }{
-	{library2.ErrTrackNotFound, http.StatusNotFound},
+	{library.ErrTrackNotFound, http.StatusNotFound},
 	{music.ErrStreamNotFound, http.StatusNotFound},
 	{music.ErrStreamTrackMismatch, http.StatusNotFound},
 	{music.ErrStreamPlaylistNotFound, http.StatusNotFound},
@@ -358,7 +359,7 @@ func (h *Handler) translateAndWriteStreamError(w http.ResponseWriter, err error)
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func (h *Handler) resolveAccessContext(r *http.Request) (library2.AccessContext, error) {
+func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, error) {
 	u, err := h.authProvider.Get(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "auth provider get failed")
@@ -373,7 +374,7 @@ func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p m
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := music2.NewThumbnailIdFromString(ps.ByName("id"))
+	id, err := musicdomain.NewThumbnailIdFromString(ps.ByName("id"))
 	if err != nil {
 		h.log.Warn("invalid thumbnail id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -389,7 +390,7 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 
 	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessCtx, id)
 	if err != nil {
-		if errors.Is(err, library2.ErrThumbnailNotFound) {
+		if errors.Is(err, library.ErrThumbnailNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -424,9 +425,18 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
 
+	username, err := authdomain.NewUsernameFromString(t.Username)
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid username.")
+	}
+	password, err := authdomain.NewPasswordFromString(t.Password)
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid password.")
+	}
+
 	cmd := auth.RegisterInitial{
-		Username: t.Username,
-		Password: t.Password,
+		Username: username,
+		Password: password,
 	}
 
 	if err := h.app.Auth.RegisterInitial.Execute(cmd); err != nil {
@@ -463,9 +473,18 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
 
+	username, err := authdomain.NewUsernameFromString(t.Username)
+	if err != nil {
+		return rest.ErrForbidden.WithMessage("Invalid credentials.")
+	}
+	password, err := authdomain.NewPasswordFromString(t.Password)
+	if err != nil {
+		return rest.ErrForbidden.WithMessage("Invalid credentials.")
+	}
+
 	cmd := auth.Login{
-		Username: t.Username,
-		Password: t.Password,
+		Username: username,
+		Password: password,
 	}
 
 	token, err := h.app.Auth.Login.Execute(cmd)
@@ -478,7 +497,7 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 	}
 
 	response := loginResponse{
-		Token: string(token),
+		Token: token.String(),
 	}
 
 	return rest.NewResponse(response)
@@ -517,7 +536,7 @@ func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
 		return rest.ErrUnauthorized
 	}
 
-	return rest.NewResponse(u.User)
+	return rest.NewResponse(toReadUserResponse(u.User))
 }
 
 func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
@@ -537,7 +556,7 @@ func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	return rest.NewResponse(users)
+	return rest.NewResponse(toReadUserResponses(users))
 }
 
 type createInvitationResponse struct {
@@ -562,7 +581,7 @@ func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 	}
 
 	response := createInvitationResponse{
-		Token: string(token),
+		Token: token.String(),
 	}
 
 	return rest.NewResponse(response)
@@ -591,10 +610,23 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
 
+	invitationToken, err := authdomain.NewInvitationTokenFromString(t.Token)
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid invitation token.")
+	}
+	username, err := authdomain.NewUsernameFromString(t.Username)
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid username.")
+	}
+	password, err := authdomain.NewPasswordFromString(t.Password)
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid password.")
+	}
+
 	cmd := auth.Register{
-		Username: t.Username,
-		Password: t.Password,
-		Token:    auth.InvitationToken(t.Token),
+		Username: username,
+		Password: password,
+		Token:    invitationToken,
 	}
 
 	if err := h.app.Auth.Register.Execute(cmd); err != nil {
@@ -610,7 +642,10 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 
 func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
-	username := ps.ByName("username")
+	username, err := authdomain.NewUsernameFromString(ps.ByName("username"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid username.")
+	}
 
 	u, err := h.authProvider.Get(r)
 	if err != nil {
@@ -660,9 +695,42 @@ func (h *Handler) isAdmin(u *AuthenticatedUser) bool {
 	return u != nil && u.User.Administrator
 }
 
-func accessContextFor(u *AuthenticatedUser) library2.AccessContext {
+func accessContextFor(u *AuthenticatedUser) library.AccessContext {
 	if u == nil {
-		return library2.NewAnonymousAccessContext()
+		return library.NewAnonymousAccessContext()
 	}
-	return library2.NewLoggedInAccessContext()
+	return library.NewLoggedInAccessContext()
+}
+
+type readSessionResponse struct {
+	LastSeen time.Time `json:"lastSeen"`
+}
+
+type readUserResponse struct {
+	Username      string                `json:"username"`
+	Administrator bool                  `json:"administrator"`
+	Created       time.Time             `json:"created"`
+	LastSeen      time.Time             `json:"lastSeen"`
+	Sessions      []readSessionResponse `json:"sessions"`
+}
+
+func toReadUserResponse(u auth.ReadUser) readUserResponse {
+	rv := readUserResponse{
+		Username:      u.Username.String(),
+		Administrator: u.Administrator,
+		Created:       u.Created,
+		LastSeen:      u.LastSeen,
+	}
+	for _, s := range u.Sessions {
+		rv.Sessions = append(rv.Sessions, readSessionResponse{LastSeen: s.LastSeen})
+	}
+	return rv
+}
+
+func toReadUserResponses(users []auth.ReadUser) []readUserResponse {
+	rv := make([]readUserResponse, 0, len(users))
+	for _, u := range users {
+		rv = append(rv, toReadUserResponse(u))
+	}
+	return rv
 }

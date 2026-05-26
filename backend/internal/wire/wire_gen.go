@@ -58,17 +58,15 @@ func BuildAuthForTest(db *bbolt.DB) (*auth.Auth, error) {
 	authTransactionProvider := auth2.NewAuthTransactionProvider(db, wireAuthRepositoriesProvider)
 	registerInitialHandler := auth.NewRegisterInitialHandler(bcryptPasswordHasher, authTransactionProvider)
 	registerHandler := auth.NewRegisterHandler(bcryptPasswordHasher, authTransactionProvider)
-	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
-	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
-	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider)
+	logoutHandler := auth.NewLogoutHandler(authTransactionProvider)
 	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
 	if err != nil {
 		return nil, err
 	}
-	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator, lastSeenUpdater)
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, lastSeenUpdater)
 	listHandler := auth.NewListHandler(authTransactionProvider)
-	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
-	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
+	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	authAuth := &auth.Auth{
@@ -95,17 +93,15 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	authTransactionProvider := auth2.NewAuthTransactionProvider(db, wireAuthRepositoriesProvider)
 	registerInitialHandler := auth.NewRegisterInitialHandler(bcryptPasswordHasher, authTransactionProvider)
 	registerHandler := auth.NewRegisterHandler(bcryptPasswordHasher, authTransactionProvider)
-	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
-	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
-	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider)
+	logoutHandler := auth.NewLogoutHandler(authTransactionProvider)
 	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
 	if err != nil {
 		return nil, err
 	}
-	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator, lastSeenUpdater)
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, lastSeenUpdater)
 	listHandler := auth.NewListHandler(authTransactionProvider)
-	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
-	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
+	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	authAuth := &auth.Auth{
@@ -132,17 +128,15 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	authTransactionProvider := auth2.NewAuthTransactionProvider(db, wireAuthRepositoriesProvider)
 	registerInitialHandler := auth.NewRegisterInitialHandler(bcryptPasswordHasher, authTransactionProvider)
 	registerHandler := auth.NewRegisterHandler(bcryptPasswordHasher, authTransactionProvider)
-	cryptoAccessTokenGenerator := auth2.NewCryptoAccessTokenGenerator()
-	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider, cryptoAccessTokenGenerator)
-	logoutHandler := auth.NewLogoutHandler(authTransactionProvider, cryptoAccessTokenGenerator)
+	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider)
+	logoutHandler := auth.NewLogoutHandler(authTransactionProvider)
 	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
 	if err != nil {
 		return nil, err
 	}
-	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, cryptoAccessTokenGenerator, lastSeenUpdater)
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, lastSeenUpdater)
 	listHandler := auth.NewListHandler(authTransactionProvider)
-	cryptoStringGenerator := auth2.NewCryptoStringGenerator()
-	createInvitationHandler := auth.NewCreateInvitationHandler(cryptoStringGenerator, authTransactionProvider)
+	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	authAuth := auth.Auth{

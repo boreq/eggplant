@@ -81,12 +81,6 @@ var appSet = wire.NewSet(
 	wire.Bind(new(auth.PasswordHasher), new(*authAdapters.BcryptPasswordHasher)),
 	authAdapters.NewBcryptPasswordHasher,
 
-	wire.Bind(new(auth.AccessTokenGenerator), new(*authAdapters.CryptoAccessTokenGenerator)),
-	authAdapters.NewCryptoAccessTokenGenerator,
-
-	authAdapters.NewCryptoStringGenerator,
-	wire.Bind(new(auth.CryptoStringGenerator), new(*authAdapters.CryptoStringGenerator)),
-
 	authAdapters.NewLastSeenUpdater,
 	wire.Bind(new(auth.LastSeenUpdater), new(*authAdapters.LastSeenUpdater)),
 )

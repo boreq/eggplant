@@ -10,7 +10,7 @@ import (
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/hls"
-	library2 "github.com/boreq/eggplant/domain/music/library"
+	"github.com/boreq/eggplant/domain/music/library"
 )
 
 var (
@@ -81,12 +81,12 @@ type TrackDurations interface {
 }
 
 type AccessLoader interface {
-	Load(file string) (library2.Visibility, error)
+	Load(file string) (library.Visibility, error)
 }
 
 type LibraryRepository interface {
-	Get() (*library2.Library, error)
-	Save(library *library2.Library)
+	Get() (*library.Library, error)
+	Save(library *library.Library)
 }
 
 type Playlist struct {
@@ -110,9 +110,9 @@ var nonLoggableErrors = []error{
 	ErrStreamPlaylistNotFound,
 	ErrStreamInitNotFound,
 	ErrStreamFragmentNotFound,
-	library2.ErrAlbumNotFound,
-	library2.ErrTrackNotFound,
-	library2.ErrThumbnailNotFound,
+	library.ErrAlbumNotFound,
+	library.ErrTrackNotFound,
+	library.ErrThumbnailNotFound,
 }
 
 func isNonLoggableError(err error) bool {
