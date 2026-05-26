@@ -29,15 +29,6 @@ func (p NumberAndTitle) Number() *domain.TrackNumber {
 	return p.number
 }
 
-type state int
-
-const (
-	stateStart state = iota
-	stateNumber
-	stateSeparator
-	stateTitle
-)
-
 func Parse(t domain.TrackTitle) (NumberAndTitle, error) {
 	numberAndTitle, err := tryParse(t.String())
 	if err != nil {
@@ -47,40 +38,18 @@ func Parse(t domain.TrackTitle) (NumberAndTitle, error) {
 }
 
 func tryParse(s string) (NumberAndTitle, error) {
-	st := stateStart
-	var numberBuf, titleBuf strings.Builder
+	acc := &parseAccumulator{}
+	st := parseState(parseStateStart)
 
 	for _, r := range s {
-		switch st {
-		case stateStart:
-			switch {
-			case unicode.IsSpace(r):
-			case unicode.IsDigit(r):
-				numberBuf.WriteRune(r)
-				st = stateNumber
-			default:
-				titleBuf.WriteRune(r)
-				st = stateTitle
-			}
-		case stateNumber:
-			if unicode.IsDigit(r) {
-				numberBuf.WriteRune(r)
-			} else if isSeparator(r) {
-				st = stateSeparator
-			} else {
-				return NumberAndTitle{}, errors.New("digits not followed by separator")
-			}
-		case stateSeparator:
-			if !isSeparator(r) {
-				titleBuf.WriteRune(r)
-				st = stateTitle
-			}
-		case stateTitle:
-			titleBuf.WriteRune(r)
+		next, err := st(acc, r)
+		if err != nil {
+			return NumberAndTitle{}, err
 		}
+		st = next
 	}
 
-	return tryCreatingNumberAndTitle(numberBuf.String(), titleBuf.String())
+	return tryCreatingNumberAndTitle(acc.number.String(), acc.title.String())
 }
 
 func tryCreatingNumberAndTitle(numStr, titleStr string) (NumberAndTitle, error) {
@@ -103,6 +72,51 @@ func tryCreatingNumberAndTitle(numStr, titleStr string) (NumberAndTitle, error) 
 	}
 
 	return NewNumberAndTitle(number, title), nil
+}
+
+type parseAccumulator struct {
+	number strings.Builder
+	title  strings.Builder
+}
+
+type parseState func(acc *parseAccumulator, r rune) (parseState, error)
+
+func parseStateStart(acc *parseAccumulator, r rune) (parseState, error) {
+	switch {
+	case unicode.IsSpace(r):
+		return parseStateStart, nil
+	case unicode.IsDigit(r):
+		acc.number.WriteRune(r)
+		return parseStateNumber, nil
+	default:
+		acc.title.WriteRune(r)
+		return parseStateTitle, nil
+	}
+}
+
+func parseStateNumber(acc *parseAccumulator, r rune) (parseState, error) {
+	switch {
+	case unicode.IsDigit(r):
+		acc.number.WriteRune(r)
+		return parseStateNumber, nil
+	case isSeparator(r):
+		return parseStateSeparator, nil
+	default:
+		return nil, errors.New("digits not followed by separator")
+	}
+}
+
+func parseStateSeparator(acc *parseAccumulator, r rune) (parseState, error) {
+	if isSeparator(r) {
+		return parseStateSeparator, nil
+	}
+	acc.title.WriteRune(r)
+	return parseStateTitle, nil
+}
+
+func parseStateTitle(acc *parseAccumulator, r rune) (parseState, error) {
+	acc.title.WriteRune(r)
+	return parseStateTitle, nil
 }
 
 func isSeparator(r rune) bool {
