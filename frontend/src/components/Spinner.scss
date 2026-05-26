@@ -5,11 +5,17 @@
     > .eggplant {
         display: inline-block;
         transform-origin: center bottom;
-        animation: eggplant-bounce 0.7s infinite;
+        animation: eggplant-bounce 0.9s infinite;
     }
 }
 
 @keyframes eggplant-bounce {
-    0%, 10%, 90%, 100% { transform: translateY(0) scale(1.12, 0.88); animation-timing-function: ease-out; }
-    50%                { transform: translateY(-0.5em) scale(0.95, 1.05); animation-timing-function: ease-in; }
+    0%, 100% {
+        animation-timing-function: ease-out;
+        transform: translate3d(0, 0, 0) scale(1.15, 0.88);
+    }
+    50% {
+        animation-timing-function: ease-in;
+        transform: translate3d(0, -0.5em, 0) scale(0.95, 1.05);
+    }
 }
