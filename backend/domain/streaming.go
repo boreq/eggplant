@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/boreq/errors"
@@ -80,4 +81,8 @@ func MustNewFragmentId(n int) FragmentId {
 
 func (f FragmentId) Int() int {
 	return f.value
+}
+
+func (f FragmentId) String() string {
+	return strconv.Itoa(f.value)
 }
