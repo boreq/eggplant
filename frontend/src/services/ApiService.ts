@@ -70,6 +70,11 @@ export class ApiService {
         return this.axios.post<StreamStartResponse>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
+    keepStreamAlive(track: Track, streamId: string): Promise<void> {
+        const url = this.streamPlaylistUrl(track, streamId);
+        return this.axios.get(url).then(() => {});
+    }
+
     streamPlaylistUrl(track: Track, streamId: string): string {
         const url = `track/${track.id}/stream/${streamId}/playlist`;
         return import.meta.env.VUE_APP_API_PREFIX + url;

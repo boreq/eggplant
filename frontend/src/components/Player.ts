@@ -14,19 +14,17 @@ export const seekEvent = 'seek';
 })
 export default class Player extends Vue {
 
-    private intervalID: number;
-
     private readonly apiService = new ApiService(this);
 
+    private emitPlaybackDataIntervalID: number;
     private currentNowPlaying: TrackWithAlbum = null;
-
     private hls: Hls = null;
-
     private hlsErrorHandler: (event: unknown, data: { fatal: boolean }) => void = null;
-
     private streamGeneration = 0;
 
     private streamStartOffset = 0;
+
+    private keepAliveIntervalID: number = null;
 
     get storeNowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
@@ -49,7 +47,6 @@ export default class Player extends Vue {
         if (!this.storeNowPlaying) {
             this.currentNowPlaying = null;
             this.tearDownStream();
-            // this.audioElement.pau
             return;
         }
 
@@ -74,7 +71,7 @@ export default class Player extends Vue {
     }
 
     created(): void {
-        this.intervalID = window.setInterval(this.emitValues, 200);
+        this.emitPlaybackDataIntervalID = window.setInterval(this.emitPlaybackData, 200);
     }
 
     mounted(): void {
@@ -95,7 +92,7 @@ export default class Player extends Vue {
     }
 
     destroyed(): void {
-        window.clearInterval(this.intervalID);
+        window.clearInterval(this.emitPlaybackDataIntervalID);
         this.tearDownStream();
     }
 
@@ -146,6 +143,14 @@ export default class Player extends Vue {
             }
             this.loadHls(this.apiService.streamPlaylistUrl(track, response.data.streamId), recover);
             this.audioElement.play();
+            const keepAliveIntervalID = window.setInterval(() => {
+                if (this.streamGeneration !== generation) {
+                    window.clearInterval(keepAliveIntervalID);
+                    return;
+                }
+                this.apiService.keepStreamAlive(track, response.data.streamId).catch(() => {});
+            }, 60_000);
+            this.keepAliveIntervalID = keepAliveIntervalID;
         }).catch((err) => {
             if (this.streamGeneration !== generation) {
                 return;
@@ -196,10 +201,11 @@ export default class Player extends Vue {
 
     private tearDownStream(): void {
         this.streamGeneration++;
+        window.clearInterval(this.keepAliveIntervalID);
         this.destroyHls();
     }
 
-    private emitValues(): void {
+    private emitPlaybackData(): void {
         if (!this.audioElement || !this.currentNowPlaying) {
             return;
         }
