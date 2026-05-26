@@ -14,8 +14,13 @@ import (
 )
 
 var (
-	ErrLibraryNotReady    = errors.New("library not ready")
-	ErrTooManyOpenStreams = errors.New("too many open streams")
+	ErrLibraryNotReady        = errors.New("library not ready")
+	ErrTooManyOpenStreams     = errors.New("too many open streams")
+	ErrStreamNotFound         = errors.New("stream not found")
+	ErrStreamTrackMismatch    = errors.New("stream does not belong to this track")
+	ErrStreamPlaylistNotFound = errors.New("stream playlist not found")
+	ErrStreamInitNotFound     = errors.New("stream init not found")
+	ErrStreamFragmentNotFound = errors.New("stream fragment not found")
 )
 
 type TrackConverter interface {
@@ -24,6 +29,7 @@ type TrackConverter interface {
 	GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (Playlist, error)
 	GetInit(fileId domain.FileId, streamId domain.StreamId) (ConvertedFile, error)
 	GetFragment(fileId domain.FileId, streamId domain.StreamId, fragmentId domain.FragmentId) (ConvertedFile, error)
+	KeepAliveStream(fileId domain.FileId, streamId domain.StreamId) error
 }
 
 type TrackStoreItem struct {
@@ -99,6 +105,11 @@ type ConvertedFile struct {
 var nonLoggableErrors = []error{
 	ErrLibraryNotReady,
 	ErrTooManyOpenStreams,
+	ErrStreamNotFound,
+	ErrStreamTrackMismatch,
+	ErrStreamPlaylistNotFound,
+	ErrStreamInitNotFound,
+	ErrStreamFragmentNotFound,
 	library.ErrAlbumNotFound,
 	library.ErrTrackNotFound,
 	library.ErrThumbnailNotFound,

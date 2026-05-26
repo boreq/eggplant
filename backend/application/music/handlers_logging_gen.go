@@ -68,6 +68,34 @@ func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library.AccessContext) (d
 	return ret0, ret1
 }
 
+type LoggingKeepAliveStreamHandler struct {
+	inner  *KeepAliveStreamHandler
+	logger logging.Logger
+}
+
+func NewLoggingKeepAliveStreamHandler(inner *KeepAliveStreamHandler, logger logging.Logger) *LoggingKeepAliveStreamHandler {
+	return &LoggingKeepAliveStreamHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingKeepAliveStreamHandler) Execute(accessCtx library.AccessContext, cmd KeepAliveStream) error {
+	start := time.Now()
+	ret0 := h.inner.Execute(accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret0 != nil && !isNonLoggableError(ret0) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "KeepAliveStream",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"err", ret0,
+		"duration", time.Since(start),
+	)
+	return ret0
+}
+
 type LoggingLoadLibraryHandler struct {
 	inner  *LoadLibraryHandler
 	logger logging.Logger

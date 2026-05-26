@@ -59,6 +59,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.GET("/api/track/:trackid/stream/:streamid/playlist", h.streamPlaylist)
 	h.router.GET("/api/track/:trackid/stream/:streamid/init", h.streamInit)
 	h.router.GET("/api/track/:trackid/stream/:streamid/fragment/:number", h.streamFragment)
+	h.router.POST("/api/track/:trackid/stream/:streamid/keepalive", h.keepAliveStream)
 	h.router.GET("/api/thumbnail/:id", h.thumbnail)
 
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/register-initial", rest.Wrap(h.registerInitial))
@@ -214,6 +215,24 @@ func parseSeekParam(s string) (*domain.RequestedSeekPosition, error) {
 	return &sp, nil
 }
 
+func (h *Handler) keepAliveStream(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+	if !ok {
+		return
+	}
+
+	err := h.app.Music.KeepAliveStream.Execute(accessCtx, music.KeepAliveStream{
+		TrackId:  trackId,
+		StreamId: streamId,
+	})
+	if err != nil {
+		h.translateAndWriteStreamError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
 	if !ok {
@@ -225,7 +244,7 @@ func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps http
 		StreamId: streamId,
 	})
 	if err != nil {
-		h.writeStreamError(w, err)
+		h.translateAndWriteStreamError(w, err)
 		return
 	}
 
@@ -245,7 +264,7 @@ func (h *Handler) streamInit(w http.ResponseWriter, r *http.Request, ps httprout
 		StreamId: streamId,
 	})
 	if err != nil {
-		h.writeStreamError(w, err)
+		h.translateAndWriteStreamError(w, err)
 		return
 	}
 	defer p.Content.Close()
@@ -278,7 +297,7 @@ func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps http
 		FragmentId: fragmentId,
 	})
 	if err != nil {
-		h.writeStreamError(w, err)
+		h.translateAndWriteStreamError(w, err)
 		return
 	}
 	defer p.Content.Close()
@@ -308,9 +327,28 @@ func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps 
 	return trackId, streamId, accessCtx, true
 }
 
-func (h *Handler) writeStreamError(w http.ResponseWriter, err error) {
-	h.log.Warn("stream error", "err", err)
-	w.WriteHeader(http.StatusNotFound)
+var streamErrorMapping = []struct {
+	err    error
+	status int
+}{
+	{library.ErrTrackNotFound, http.StatusNotFound},
+	{music.ErrStreamNotFound, http.StatusNotFound},
+	{music.ErrStreamTrackMismatch, http.StatusNotFound},
+	{music.ErrStreamPlaylistNotFound, http.StatusNotFound},
+	{music.ErrStreamInitNotFound, http.StatusNotFound},
+	{music.ErrStreamFragmentNotFound, http.StatusNotFound},
+	{music.ErrLibraryNotReady, http.StatusServiceUnavailable},
+}
+
+func (h *Handler) translateAndWriteStreamError(w http.ResponseWriter, err error) {
+	for _, m := range streamErrorMapping {
+		if errors.Is(err, m.err) {
+			w.WriteHeader(m.status)
+			return
+		}
+	}
+	h.log.Error("stream error", "err", err)
+	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, error) {

@@ -71,8 +71,8 @@ export class ApiService {
     }
 
     keepStreamAlive(track: Track, streamId: string): Promise<void> {
-        const url = this.streamPlaylistUrl(track, streamId);
-        return this.axios.get(url).then(() => {});
+        const url = `track/${track.id}/stream/${streamId}/keepalive`;
+        return this.axios.post(import.meta.env.VUE_APP_API_PREFIX + url).then(() => {});
     }
 
     streamPlaylistUrl(track: Track, streamId: string): string {

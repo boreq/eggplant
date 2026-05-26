@@ -176,6 +176,8 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	loggingStreamInitHandler := music.NewLoggingStreamInitHandler(streamInitHandler, v)
 	streamFragmentHandler := music.NewStreamFragmentHandler(inMemoryRepository, converter)
 	loggingStreamFragmentHandler := music.NewLoggingStreamFragmentHandler(streamFragmentHandler, v)
+	keepAliveStreamHandler := music.NewKeepAliveStreamHandler(inMemoryRepository, converter)
+	loggingKeepAliveStreamHandler := music.NewLoggingKeepAliveStreamHandler(keepAliveStreamHandler, v)
 	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
 	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
@@ -195,15 +197,16 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
 	loggingLoadLibraryHandler := music.NewLoggingLoadLibraryHandler(loadLibraryHandler, v)
 	applicationMusic := application.Music{
-		Thumbnail:      loggingThumbnailHandler,
-		StartStreaming: loggingStartStreamingHandler,
-		StreamPlaylist: loggingStreamPlaylistHandler,
-		StreamInit:     loggingStreamInitHandler,
-		StreamFragment: loggingStreamFragmentHandler,
-		GetRootAlbum:   loggingGetRootAlbumHandler,
-		GetAlbum:       loggingGetAlbumHandler,
-		Search:         loggingSearchHandler,
-		LoadLibrary:    loggingLoadLibraryHandler,
+		Thumbnail:       loggingThumbnailHandler,
+		StartStreaming:  loggingStartStreamingHandler,
+		StreamPlaylist:  loggingStreamPlaylistHandler,
+		StreamInit:      loggingStreamInitHandler,
+		StreamFragment:  loggingStreamFragmentHandler,
+		KeepAliveStream: loggingKeepAliveStreamHandler,
+		GetRootAlbum:    loggingGetRootAlbumHandler,
+		GetAlbum:        loggingGetAlbumHandler,
+		Search:          loggingSearchHandler,
+		LoadLibrary:     loggingLoadLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)

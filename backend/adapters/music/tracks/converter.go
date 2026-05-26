@@ -190,6 +190,11 @@ func (c *Converter) createAndRegisterStream(fileId domain.FileId, seekPos *domai
 	return s, nil
 }
 
+func (c *Converter) KeepAliveStream(fileId domain.FileId, streamId domain.StreamId) error {
+	_, err := c.getStreamForFile(streamId, fileId)
+	return err
+}
+
 func (c *Converter) GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (music.Playlist, error) {
 	s, err := c.getStreamForFile(streamId, fileId)
 	if err != nil {
@@ -198,6 +203,9 @@ func (c *Converter) GetPlaylist(fileId domain.FileId, streamId domain.StreamId) 
 
 	cf, err := openFile(c.playlistPathInDir(c.streamDir(s.id)))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return music.Playlist{}, music.ErrStreamPlaylistNotFound
+		}
 		return music.Playlist{}, err
 	}
 	defer cf.Content.Close()
@@ -218,7 +226,14 @@ func (c *Converter) GetInit(fileId domain.FileId, streamId domain.StreamId) (mus
 	if err != nil {
 		return music.ConvertedFile{}, err
 	}
-	return openFile(c.initPathInDir(c.streamDir(s.id)))
+	cf, err := openFile(c.initPathInDir(c.streamDir(s.id)))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return music.ConvertedFile{}, music.ErrStreamInitNotFound
+		}
+		return music.ConvertedFile{}, err
+	}
+	return cf, nil
 }
 
 func (c *Converter) GetFragment(fileId domain.FileId, streamId domain.StreamId, fragmentId domain.FragmentId) (music.ConvertedFile, error) {
@@ -226,7 +241,14 @@ func (c *Converter) GetFragment(fileId domain.FileId, streamId domain.StreamId, 
 	if err != nil {
 		return music.ConvertedFile{}, err
 	}
-	return openFile(c.fragmentPathInDir(c.streamDir(s.id), fragmentId))
+	cf, err := openFile(c.fragmentPathInDir(c.streamDir(s.id), fragmentId))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return music.ConvertedFile{}, music.ErrStreamFragmentNotFound
+		}
+		return music.ConvertedFile{}, err
+	}
+	return cf, nil
 }
 
 func (c *Converter) GetStats() (queries.TrackStats, error) {
@@ -290,10 +312,10 @@ func (c *Converter) getStreamForFile(streamId domain.StreamId, fileId domain.Fil
 
 	s, ok := c.streams[streamId.String()]
 	if !ok {
-		return nil, errors.New("stream does not exist")
+		return nil, music.ErrStreamNotFound
 	}
 	if s.item.FileId() != fileId {
-		return nil, errors.New("stream does not belong to this track")
+		return nil, music.ErrStreamTrackMismatch
 	}
 	s.updateLastAccess()
 	return s, nil

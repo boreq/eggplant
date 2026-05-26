@@ -9,6 +9,9 @@ import Notifications from '@/components/Notifications';
 
 export const seekEvent = 'seek';
 
+const streamKeepAliveInterval = 60_000;
+const streamRecoveryDelay = 1_000;
+
 @Component({
     components: {},
 })
@@ -134,7 +137,7 @@ export default class Player extends Vue {
                     return;
                 }
                 this.startStream(track, this.streamStartOffset + this.audioElement.currentTime);
-            }, 1000);
+            }, streamRecoveryDelay);
         };
 
         this.apiService.startStream(track, seekSeconds).then((response) => {
@@ -149,7 +152,7 @@ export default class Player extends Vue {
                     return;
                 }
                 this.apiService.keepStreamAlive(track, response.data.streamId).catch(() => {});
-            }, 60_000);
+            }, streamKeepAliveInterval);
             this.keepAliveIntervalID = keepAliveIntervalID;
         }).catch((err) => {
             if (this.streamGeneration !== generation) {
