@@ -17,14 +17,6 @@ export default class ThumbnailStats extends Vue {
         return this.humanize(this.stats.convertedSize);
     }
 
-    get conversionRatio(): string {
-        if (this.stats.originalSize === 0) {
-            return '100%';
-        }
-        const ratio = this.stats.convertedSize / this.stats.originalSize;
-        return Math.round(ratio * 100) + '%';
-    }
-
     private humanize(bytes: number): string {
         const options = {
             round: 2,

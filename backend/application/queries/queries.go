@@ -22,8 +22,8 @@ type TrackStats struct {
 	NumberOfTracks int64 `json:"numberOfTracks"`
 	SizeOfTracks   int64 `json:"sizeOfTracks"`
 
-	NumberOfStreams       int64 `json:"numberOfStreams"`
-	SizeOfConvertedTracks int64 `json:"sizeOfConvertedTracks"`
+	NumberOfStreams int64 `json:"numberOfStreams"`
+	StreamCacheSize int64 `json:"streamCacheSize"`
 }
 
 type ThumbnailStats struct {

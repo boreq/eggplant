@@ -10,14 +10,6 @@
         </div>
         <div>
             <div class="label">
-                Number of streams
-            </div>
-            <div class="value">
-                {{ stats.numberOfStreams }}
-            </div>
-        </div>
-        <div>
-            <div class="label">
                 Size of tracks
             </div>
             <div class="value">
@@ -26,18 +18,18 @@
         </div>
         <div>
             <div class="label">
-                Size of converted tracks
+                Number of streams
             </div>
             <div class="value">
-                {{ sizeOfConvertedTracks }}
+                {{ stats.numberOfStreams }}
             </div>
         </div>
         <div>
             <div class="label">
-                Conversion ratio
+                Size of stream cache
             </div>
             <div class="value">
-                {{ conversionRatio }}
+                {{ sizeOfConvertedTracks }}
             </div>
         </div>
     </div>

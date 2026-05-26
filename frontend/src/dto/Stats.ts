@@ -8,7 +8,7 @@ export class TrackStats {
     numberOfTracks: number;
     sizeOfTracks: number;
     numberOfStreams: number;
-    sizeOfConvertedTracks: number;
+    streamCacheSize: number;
 }
 
 export class ThumbnailStats {

@@ -10,14 +10,6 @@
         </div>
         <div>
             <div class="label">
-                Number of converted thumbnails
-            </div>
-            <div class="value">
-                {{ stats.convertedItems }}
-            </div>
-        </div>
-        <div>
-            <div class="label">
                 Size of thumbnails
             </div>
             <div class="value">
@@ -26,18 +18,18 @@
         </div>
         <div>
             <div class="label">
-                Size of converted thumbnails
+                Number of converted thumbnails
             </div>
             <div class="value">
-                {{ convertedSize }}
+                {{ stats.convertedItems }}
             </div>
         </div>
         <div>
             <div class="label">
-                Conversion ratio
+                Size of converted thumbnails cache
             </div>
             <div class="value">
-                {{ conversionRatio }}
+                {{ convertedSize }}
             </div>
         </div>
     </div>

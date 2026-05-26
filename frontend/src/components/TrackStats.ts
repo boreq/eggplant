@@ -14,15 +14,7 @@ export default class TrackStats extends Vue {
     }
 
     get sizeOfConvertedTracks(): string {
-        return this.humanize(this.stats.sizeOfConvertedTracks);
-    }
-
-    get conversionRatio(): string {
-        if (this.stats.sizeOfTracks === 0) {
-            return '100%';
-        }
-        const ratio = this.stats.sizeOfConvertedTracks / this.stats.sizeOfTracks;
-        return Math.round(ratio * 100) + '%';
+        return this.humanize(this.stats.streamCacheSize);
     }
 
     private humanize(bytes: number): string {

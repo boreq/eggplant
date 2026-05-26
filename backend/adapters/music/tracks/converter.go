@@ -273,8 +273,8 @@ func (c *Converter) GetStats() (queries.TrackStats, error) {
 		NumberOfTracks: int64(len(c.items)),
 		SizeOfTracks:   originalSize,
 
-		NumberOfStreams:       convertedCount,
-		SizeOfConvertedTracks: convertedSize,
+		NumberOfStreams: convertedCount,
+		StreamCacheSize: convertedSize,
 	}, nil
 }
 
