@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -219,7 +220,7 @@ func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	p, err := h.app.Music.StreamPlaylist.Execute(accessCtx, music.StreamPlaylist{
+	res, err := h.app.Music.StreamPlaylist.Execute(accessCtx, music.StreamPlaylist{
 		TrackId:  trackId,
 		StreamId: streamId,
 	})
@@ -227,9 +228,10 @@ func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps http
 		h.writeStreamError(w, err)
 		return
 	}
-	defer p.Content.Close()
 
-	h.serveConvertedFile(w, r, p, "application/vnd.apple.mpegurl")
+	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+	w.Header().Set("Accept-Ranges", "bytes")
+	http.ServeContent(w, r, "playlist.m3u8", res.Modtime, bytes.NewReader(res.Playlist.Bytes()))
 }
 
 func (h *Handler) streamInit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -322,7 +324,7 @@ func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, 
 func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p music.ConvertedFile, contentType string) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Accept-Ranges", "bytes")
-	http.ServeContent(w, r, p.Name, p.Modtime, p.Content)
+	http.ServeContent(w, r, "", p.Modtime, p.Content)
 }
 
 func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

@@ -1,3 +1,5 @@
+//go:generate go run github.com/boreq/eggplant/internal/cmd/genhandlers -dir .
+
 package music
 
 import (
@@ -7,11 +9,11 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/hls"
 	"github.com/boreq/eggplant/domain/library"
 )
 
 var (
-	ErrForbidden          = errors.New("forbidden")
 	ErrLibraryNotReady    = errors.New("library not ready")
 	ErrTooManyOpenStreams = errors.New("too many open streams")
 )
@@ -19,7 +21,7 @@ var (
 type TrackConverter interface {
 	SetItems(items []TrackStoreItem)
 	StartStream(ctx context.Context, fileId domain.FileId, seekPosition *domain.SeekPosition) (domain.StreamId, error)
-	GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (ConvertedFile, error)
+	GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (Playlist, error)
 	GetInit(fileId domain.FileId, streamId domain.StreamId) (ConvertedFile, error)
 	GetFragment(fileId domain.FileId, streamId domain.StreamId, fragmentId domain.FragmentId) (ConvertedFile, error)
 }
@@ -81,14 +83,32 @@ type LibraryRepository interface {
 	Save(library *library.Library)
 }
 
-type ConvertedFile struct {
-	// Name is just a filename used for mimetype detection. It is here just to
-	// check its extension type basically.
-	Name string
+type Playlist struct {
+	Playlist hls.Playlist
+	Modtime  time.Time
+}
 
+type ConvertedFile struct {
 	// Modtime is used to figure out if the content has changed.
 	Modtime time.Time
 
 	// Content must be closed by the caller.
 	Content io.ReadSeekCloser
+}
+
+var nonLoggableErrors = []error{
+	ErrLibraryNotReady,
+	ErrTooManyOpenStreams,
+	library.ErrAlbumNotFound,
+	library.ErrTrackNotFound,
+	library.ErrThumbnailNotFound,
+}
+
+func isNonLoggableError(err error) bool {
+	for _, target := range nonLoggableErrors {
+		if errors.Is(err, target) {
+			return true
+		}
+	}
+	return false
 }

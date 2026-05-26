@@ -15,6 +15,7 @@ import (
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/domain"
+	"github.com/boreq/eggplant/domain/hls"
 	"github.com/boreq/eggplant/logging"
 	"github.com/boreq/errors"
 )
@@ -189,12 +190,27 @@ func (c *Converter) createAndRegisterStream(fileId domain.FileId, seekPos *domai
 	return s, nil
 }
 
-func (c *Converter) GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (music.ConvertedFile, error) {
+func (c *Converter) GetPlaylist(fileId domain.FileId, streamId domain.StreamId) (music.Playlist, error) {
 	s, err := c.getStreamForFile(streamId, fileId)
 	if err != nil {
-		return music.ConvertedFile{}, err
+		return music.Playlist{}, err
 	}
-	return openFile(c.playlistPathInDir(c.streamDir(s.id)))
+
+	cf, err := openFile(c.playlistPathInDir(c.streamDir(s.id)))
+	if err != nil {
+		return music.Playlist{}, err
+	}
+	defer cf.Content.Close()
+
+	playlist, err := hls.Parse(cf.Content)
+	if err != nil {
+		return music.Playlist{}, errors.Wrap(err, "could not parse the playlist")
+	}
+
+	return music.Playlist{
+		Playlist: playlist,
+		Modtime:  cf.Modtime,
+	}, nil
 }
 
 func (c *Converter) GetInit(fileId domain.FileId, streamId domain.StreamId) (music.ConvertedFile, error) {
@@ -435,7 +451,6 @@ func openFile(p string) (music.ConvertedFile, error) {
 		return music.ConvertedFile{}, errors.Wrap(err, "stat failed")
 	}
 	return music.ConvertedFile{
-		Name:    f.Name(),
 		Modtime: info.ModTime(),
 		Content: f,
 	}, nil

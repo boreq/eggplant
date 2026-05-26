@@ -23,20 +23,21 @@ func NewStreamPlaylistHandler(libraryRepository LibraryRepository, trackConverte
 	}
 }
 
-func (h *StreamPlaylistHandler) Execute(accessCtx library.AccessContext, cmd StreamPlaylist) (ConvertedFile, error) {
+func (h *StreamPlaylistHandler) Execute(accessCtx library.AccessContext, cmd StreamPlaylist) (Playlist, error) {
 	lib, err := h.libraryRepository.Get()
 	if err != nil {
-		return ConvertedFile{}, errors.Wrap(err, "could not get the library")
+		return Playlist{}, errors.Wrap(err, "could not get the library")
 	}
 
 	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
 	if err != nil {
-		return ConvertedFile{}, errors.Wrap(err, "could not get the track")
+		return Playlist{}, errors.Wrap(err, "could not get the track")
 	}
 
-	cf, err := h.trackConverter.GetPlaylist(track.FileId(), cmd.StreamId)
+	playlist, err := h.trackConverter.GetPlaylist(track.FileId(), cmd.StreamId)
 	if err != nil {
-		return ConvertedFile{}, errors.Wrap(err, "could not get the playlist")
+		return Playlist{}, errors.Wrap(err, "could not get the playlist")
 	}
-	return cf, nil
+
+	return playlist, nil
 }

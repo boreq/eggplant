@@ -172,7 +172,6 @@ func (s *Store) getConvertedFile(ctx context.Context, id string) (music.Converte
 	}
 
 	return music.ConvertedFile{
-		Name:    f.Name(),
 		Modtime: fileInfo.ModTime(),
 		Content: f,
 	}, nil

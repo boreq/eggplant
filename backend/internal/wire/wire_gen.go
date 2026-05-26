@@ -162,17 +162,26 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	thumbnailHandler := music.NewThumbnailHandler(inMemoryRepository, thumbnailStore)
+	v := newMusicHandlerLogger()
+	loggingThumbnailHandler := music.NewLoggingThumbnailHandler(thumbnailHandler, v)
 	converter, err := newTrackStore(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 	startStreamingHandler := music.NewStartStreamingHandler(inMemoryRepository, converter)
+	loggingStartStreamingHandler := music.NewLoggingStartStreamingHandler(startStreamingHandler, v)
 	streamPlaylistHandler := music.NewStreamPlaylistHandler(inMemoryRepository, converter)
+	loggingStreamPlaylistHandler := music.NewLoggingStreamPlaylistHandler(streamPlaylistHandler, v)
 	streamInitHandler := music.NewStreamInitHandler(inMemoryRepository, converter)
+	loggingStreamInitHandler := music.NewLoggingStreamInitHandler(streamInitHandler, v)
 	streamFragmentHandler := music.NewStreamFragmentHandler(inMemoryRepository, converter)
+	loggingStreamFragmentHandler := music.NewLoggingStreamFragmentHandler(streamFragmentHandler, v)
 	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
+	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
+	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
+	loggingSearchHandler := music.NewLoggingSearchHandler(searchHandler, v)
 	scannerConfig, err := newScannerConfig(conf)
 	if err != nil {
 		return nil, err
@@ -184,16 +193,17 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
 	ffProbe := tracks.NewFFProbe()
 	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
+	loggingLoadLibraryHandler := music.NewLoggingLoadLibraryHandler(loadLibraryHandler, v)
 	applicationMusic := application.Music{
-		Thumbnail:      thumbnailHandler,
-		StartStreaming: startStreamingHandler,
-		StreamPlaylist: streamPlaylistHandler,
-		StreamInit:     streamInitHandler,
-		StreamFragment: streamFragmentHandler,
-		GetRootAlbum:   getRootAlbumHandler,
-		GetAlbum:       getAlbumHandler,
-		Search:         searchHandler,
-		LoadLibrary:    loadLibraryHandler,
+		Thumbnail:      loggingThumbnailHandler,
+		StartStreaming: loggingStartStreamingHandler,
+		StreamPlaylist: loggingStreamPlaylistHandler,
+		StreamInit:     loggingStreamInitHandler,
+		StreamFragment: loggingStreamFragmentHandler,
+		GetRootAlbum:   loggingGetRootAlbumHandler,
+		GetAlbum:       loggingGetAlbumHandler,
+		Search:         loggingSearchHandler,
+		LoadLibrary:    loggingLoadLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
@@ -212,11 +222,11 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	server := http.NewServer(handler)
-	v, err := newDirectoryWatcherUpdates(conf)
+	v2, err := newDirectoryWatcherUpdates(conf)
 	if err != nil {
 		return nil, err
 	}
-	listener := filesystem.NewListener(loadLibraryHandler, v)
+	listener := filesystem.NewListener(loadLibraryHandler, v2)
 	serviceService := service.NewService(server, listener, lastSeenUpdater, conf)
 	return serviceService, nil
 }

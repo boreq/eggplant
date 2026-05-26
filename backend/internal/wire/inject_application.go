@@ -6,9 +6,14 @@ import (
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
+	"github.com/boreq/eggplant/logging"
 	"github.com/google/wire"
 	bolt "go.etcd.io/bbolt"
 )
+
+func newMusicHandlerLogger() logging.Logger {
+	return logging.New("music.handler")
+}
 
 //lint:ignore U1000 because
 var appSet = wire.NewSet(
@@ -26,6 +31,7 @@ var appSet = wire.NewSet(
 	auth.NewSetPasswordHandler,
 
 	wire.Struct(new(application.Music), "*"),
+	newMusicHandlerLogger,
 	music.NewStartStreamingHandler,
 	music.NewStreamPlaylistHandler,
 	music.NewStreamInitHandler,
@@ -35,6 +41,15 @@ var appSet = wire.NewSet(
 	music.NewGetAlbumHandler,
 	music.NewSearchHandler,
 	music.NewLoadLibraryHandler,
+	music.NewLoggingStartStreamingHandler,
+	music.NewLoggingStreamPlaylistHandler,
+	music.NewLoggingStreamInitHandler,
+	music.NewLoggingStreamFragmentHandler,
+	music.NewLoggingThumbnailHandler,
+	music.NewLoggingGetRootAlbumHandler,
+	music.NewLoggingGetAlbumHandler,
+	music.NewLoggingSearchHandler,
+	music.NewLoggingLoadLibraryHandler,
 
 	wire.Struct(new(application.Queries), "*"),
 	queries.NewStatsHandler,
