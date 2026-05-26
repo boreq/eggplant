@@ -25,23 +25,28 @@
         }
 
         .play {
+            position: relative;
             text-align: right;
 
             .button {
-                display: none;
+                position: absolute;
+                top: 50%;
+                right: 0.5em;
+                transform: translateY(-50%);
+                visibility: hidden;
+
+                &:hover {
+                    color: $primary-color;
+                }
+
+                &:active {
+                    color: $primary-color-dark;
+                }
             }
 
             .number {
                 text-align: right;
                 color: $box-normal-text-dimmed-color;
-            }
-
-            &:hover {
-                color: $primary-color;
-            }
-
-            &:active {
-                color: $primary-color-dark;
             }
         }
 
@@ -78,11 +83,11 @@
             &:hover {
                 .play {
                     .button {
-                        display: block;
+                        visibility: visible;
                     }
 
                     .number {
-                        display: none;
+                        color: transparent;
                     }
                 }
 
@@ -94,12 +99,12 @@
             &.playing {
                 .play {
                     .button {
-                        display: block;
+                        visibility: visible;
                         color: $primary-color;
                     }
 
                     .number {
-                        display: none;
+                        color: transparent;
                     }
                 }
             }
@@ -109,18 +114,6 @@
 
     @media (any-pointer: coarse) {
         .track {
-            &:hover {
-                .play {
-                    .button {
-                        display: none;
-                    }
-
-                    .number {
-                        display: block;
-                    }
-                }
-            }
-
             &.playing {
                 .title {
                     color: $primary-color;
