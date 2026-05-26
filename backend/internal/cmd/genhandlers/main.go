@@ -265,12 +265,23 @@ func render(pkgName, loggerImport, loggerType, loggerKey string, handlers []hand
 	fmt.Fprintln(&src)
 	fmt.Fprintf(&src, "package %s\n\n", pkgName)
 	fmt.Fprintln(&src, "import (")
-	keys := make([]string, 0, len(imports))
+	var stdlib, third []string
 	for k := range imports {
-		keys = append(keys, k)
+		if strings.Contains(strings.SplitN(k, "/", 2)[0], ".") {
+			third = append(third, k)
+		} else {
+			stdlib = append(stdlib, k)
+		}
 	}
-	sort.Strings(keys)
-	for _, k := range keys {
+	sort.Strings(stdlib)
+	sort.Strings(third)
+	for _, k := range stdlib {
+		fmt.Fprintf(&src, "\t%q\n", k)
+	}
+	if len(stdlib) > 0 && len(third) > 0 {
+		fmt.Fprintln(&src)
+	}
+	for _, k := range third {
 		fmt.Fprintf(&src, "\t%q\n", k)
 	}
 	fmt.Fprintln(&src, ")")
@@ -328,6 +339,9 @@ func writeHandler(w *bytes.Buffer, h handler, loggerType, loggerKey string) {
 	var kvs []string
 	kvs = append(kvs, fmt.Sprintf("%q, %q", loggerKey, short))
 	for _, p := range h.params {
+		if p.typ == "context.Context" {
+			continue
+		}
 		kvs = append(kvs, fmt.Sprintf("%q, %s", p.name, p.name))
 	}
 	for i, r := range h.results {

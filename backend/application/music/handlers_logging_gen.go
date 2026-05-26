@@ -88,7 +88,6 @@ func (h *LoggingLoadLibraryHandler) Execute(ctx context.Context) error {
 	}
 	logFn(msg,
 		"handler", "LoadLibrary",
-		"ctx", ctx,
 		"err", ret0,
 		"duration", time.Since(start),
 	)
@@ -144,7 +143,6 @@ func (h *LoggingStartStreamingHandler) Execute(ctx context.Context, accessCtx li
 	}
 	logFn(msg,
 		"handler", "StartStreaming",
-		"ctx", ctx,
 		"accessCtx", accessCtx,
 		"cmd", cmd,
 		"ret0", ret0,
@@ -261,7 +259,6 @@ func (h *LoggingThumbnailHandler) Execute(ctx context.Context, accessCtx library
 	}
 	logFn(msg,
 		"handler", "Thumbnail",
-		"ctx", ctx,
 		"accessCtx", accessCtx,
 		"id", id,
 		"ret0", ret0,
