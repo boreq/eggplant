@@ -13,7 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var adminCtx = auth.NewAdminAccessContext()
+var (
+	adminCtx = auth.NewAdminAccessContext()
+	anonCtx  = auth.NewAnonymousAccessContext()
+)
 
 func userFromCtx(t *testing.T, ctx auth.AccessContext) authdomain.User {
 	ac, ok := ctx.(auth.AuthenticatedAccessContext)
@@ -112,7 +115,7 @@ func TestLoginInitialUser(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token, err := a.Login.Execute(
+	token, err := a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: password,
@@ -121,7 +124,7 @@ func TestLoginInitialUser(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, token.String())
 
-	_, err = a.Login.Execute(
+	_, err = a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: mustPassword(t, "other-password"),
@@ -130,7 +133,7 @@ func TestLoginInitialUser(t *testing.T) {
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 	require.EqualError(t, err, "transaction failed: invalid password: unauthorized")
 
-	_, err = a.Login.Execute(
+	_, err = a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: mustUsername(t, "other-username"),
 			Password: password,
@@ -153,7 +156,7 @@ func TestCheckAccessToken(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	token, err := a.Login.Execute(auth.Login{
+	token, err := a.Login.Execute(anonCtx, auth.Login{
 		Username: username,
 		Password: password,
 	})
@@ -204,7 +207,7 @@ func TestUpdateLastSeen(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token, err := a.Login.Execute(
+	token, err := a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: password,
@@ -252,7 +255,7 @@ func TestLogout(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token, err := a.Login.Execute(
+	token, err := a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: password,
@@ -313,7 +316,7 @@ func TestRegisterInvalidInvitationToken(t *testing.T) {
 	invalidToken, err := authdomain.NewInvitationTokenFromString("invalid")
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: mustUsername(t, "username"),
 			Password: mustPassword(t, "password"),
@@ -330,7 +333,7 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 	token, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: mustUsername(t, "username"),
 			Password: mustPassword(t, "password"),
@@ -339,7 +342,7 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: mustUsername(t, "other-username"),
 			Password: mustPassword(t, "other-password"),
@@ -360,7 +363,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 	token, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: username,
 			Password: password,
@@ -372,7 +375,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 	token, err = a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: username,
 			Password: password,
@@ -408,7 +411,7 @@ func TestRegisterInvalid(t *testing.T) {
 			token, err := a.CreateInvitation.Execute(adminCtx)
 			require.NoError(t, err)
 
-			err = a.Register.Execute(
+			err = a.Register.Execute(anonCtx,
 				auth.Register{
 					Username: username,
 					Password: password,
@@ -438,7 +441,7 @@ func TestLogin(t *testing.T) {
 	invitationToken, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: username,
 			Password: password,
@@ -447,7 +450,7 @@ func TestLogin(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	accessToken, err := a.Login.Execute(
+	accessToken, err := a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: password,
@@ -456,7 +459,7 @@ func TestLogin(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, accessToken.String())
 
-	_, err = a.Login.Execute(
+	_, err = a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: mustPassword(t, "other-password"),
@@ -464,7 +467,7 @@ func TestLogin(t *testing.T) {
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
-	_, err = a.Login.Execute(
+	_, err = a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: mustUsername(t, "other-username"),
 			Password: password,
@@ -483,7 +486,7 @@ func TestRemove(t *testing.T) {
 	invitationToken, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: username,
 			Password: password,
@@ -540,7 +543,7 @@ func TestSetPassword(t *testing.T) {
 	invitationToken, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
-	err = a.Register.Execute(
+	err = a.Register.Execute(anonCtx,
 		auth.Register{
 			Username: username,
 			Password: password,
@@ -549,7 +552,7 @@ func TestSetPassword(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	_, err = a.Login.Execute(
+	_, err = a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: password,
@@ -565,7 +568,7 @@ func TestSetPassword(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	_, err = a.Login.Execute(
+	_, err = a.Login.Execute(anonCtx,
 		auth.Login{
 			Username: username,
 			Password: newPassword,
