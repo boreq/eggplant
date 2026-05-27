@@ -486,16 +486,12 @@ func (h *Handler) logout(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	authedCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
+	authCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
 	}
 
-	cmd := auth.Logout{
-		Token: authedCtx.Token(),
-	}
-
-	if err := h.app.Auth.Logout.Execute(cmd); err != nil {
+	if err := h.app.Auth.Logout.Execute(authCtx); err != nil {
 		h.log.Error("could not logout the user", "err", err)
 		return rest.ErrInternalServerError
 	}
@@ -509,9 +505,15 @@ func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	user, ok := currentUser(accessCtx.Auth())
+	authCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
+	}
+
+	user, err := h.app.Auth.GetCurrentUser.Execute(authCtx)
+	if err != nil {
+		h.log.Error("could not get the current user", "err", err)
+		return rest.ErrInternalServerError
 	}
 
 	return rest.NewResponse(toReadUserResponse(user))
@@ -628,17 +630,21 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	if user, ok := currentUser(accessCtx.Auth()); ok && username == user.Username() {
-		return rest.ErrBadRequest.WithMessage("You can not remove yourself.")
+	authCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
+	if !ok {
+		return rest.ErrUnauthorized
 	}
 
 	cmd := auth.Remove{
 		Username: username,
 	}
 
-	if err := h.app.Auth.Remove.Execute(accessCtx.Auth(), cmd); err != nil {
+	if err := h.app.Auth.Remove.Execute(authCtx, cmd); err != nil {
 		if errors.Is(err, auth.ErrUnauthorized) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
+		}
+		if errors.Is(err, auth.ErrCannotRemoveSelf) {
+			return rest.ErrBadRequest.WithMessage("You can not remove yourself.")
 		}
 		h.log.Error("could not remove a user", "err", err)
 		return rest.ErrInternalServerError
@@ -652,26 +658,7 @@ type getVersionResponse struct {
 }
 
 func (h *Handler) getVersion(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
-	user, ok := currentUser(accessCtx.Auth())
-	if !ok || !user.Administrator() {
-		return rest.ErrForbidden.WithMessage("Only an administrator can view the version.")
-	}
-
 	return rest.NewResponse(getVersionResponse{Version: Version})
-}
-
-func currentUser(accessCtx auth.AccessContext) (authdomain.User, bool) {
-	a, ok := accessCtx.(auth.AuthenticatedAccessContext)
-	if !ok {
-		return authdomain.User{}, false
-	}
-	return a.User(), true
 }
 
 type readSessionResponse struct {

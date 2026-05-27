@@ -12,6 +12,7 @@ var (
 	ErrUsernameTaken        = errors.New("username taken")
 	ErrNotFound             = errors.New("not found")
 	ErrAlreadyAuthenticated = errors.New("already authenticated")
+	ErrCannotRemoveSelf     = errors.New("cannot remove self")
 )
 
 type PasswordHasher interface {
@@ -78,4 +79,5 @@ type Auth struct {
 	CreateInvitation *CreateInvitationHandler
 	Remove           *RemoveHandler
 	SetPassword      *SetPasswordHandler
+	GetCurrentUser   *GetCurrentUserHandler
 }
