@@ -26,7 +26,7 @@ func NewCheckAccessTokenHandler(
 	}
 }
 
-func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, error) {
+func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, error) {
 	username, err := cmd.Token.Username()
 	if err != nil {
 		return nil, errors.Wrap(ErrUnauthorized, "could not get the username")
@@ -60,6 +60,5 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (*ReadUser, erro
 
 	h.lastSeenUpdater.Update(foundUser.Username(), foundSession.Token(), time.Now())
 
-	rv := toReadUser(*foundUser)
-	return &rv, nil
+	return NewUserAccessContext(*foundUser, foundSession.Token()), nil
 }

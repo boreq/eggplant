@@ -213,8 +213,8 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		Music:   applicationMusic,
 		Queries: applicationQueries,
 	}
-	httpAuthProvider := http.NewHttpAuthProvider(applicationApplication)
-	handler, err := http.NewHandler(applicationApplication, httpAuthProvider)
+	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
+	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
 	if err != nil {
 		return nil, err
 	}

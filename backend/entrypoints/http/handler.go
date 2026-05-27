@@ -26,13 +26,8 @@ type startStreamResponse struct {
 
 var Version = "unknown"
 
-type AuthenticatedUser struct {
-	User  auth.ReadUser
-	Token authdomain.AccessToken
-}
-
 type AuthProvider interface {
-	Get(r *http.Request) (*AuthenticatedUser, error)
+	Get(r *http.Request) (AccessContext, error)
 }
 
 type Handler struct {
@@ -88,15 +83,13 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) browse(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	accessCtx := accessContextFor(u)
-
-	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx)
+	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx.Library())
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
@@ -107,25 +100,23 @@ func (h *Handler) browseById(r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 	rawId := ps.ByName("id")
 
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
-
-	accessCtx := accessContextFor(u)
 
 	albumId, err := musicdomain.NewAlbumIdFromString(rawId)
 	if err != nil {
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
 
-	a, err := h.app.Music.GetAlbum.Execute(accessCtx, music.GetAlbum{Id: albumId})
+	album, err := h.app.Music.GetAlbum.Execute(accessCtx.Library(), music.GetAlbum{Id: albumId})
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
 
-	return rest.NewResponse(toAlbum(a))
+	return rest.NewResponse(toAlbum(album))
 }
 
 func (h *Handler) handleBrowseError(err error) rest.RestResponse {
@@ -140,7 +131,7 @@ func (h *Handler) handleBrowseError(err error) rest.RestResponse {
 }
 
 func (h *Handler) search(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
@@ -151,7 +142,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid query.")
 	}
 
-	result, err := h.app.Music.Search.Execute(accessContextFor(u), music.Search{Query: query})
+	result, err := h.app.Music.Search.Execute(accessCtx.Library(), music.Search{Query: query})
 	if err != nil {
 		h.log.Error("search error", "err", err)
 		return rest.ErrInternalServerError
@@ -177,13 +168,13 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid seek param.")
 	}
 
-	accessCtx, err := h.resolveAccessContext(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not resolve access context", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx, music.StartStreaming{
+	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx.Library(), music.StartStreaming{
 		TrackId:      trackId,
 		SeekPosition: seekPos,
 	})
@@ -326,13 +317,13 @@ func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps 
 		w.WriteHeader(http.StatusBadRequest)
 		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
 	}
-	accessCtx, err := h.resolveAccessContext(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not resolve access context", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
 	}
-	return trackId, streamId, accessCtx, true
+	return trackId, streamId, accessCtx.Library(), true
 }
 
 var streamErrorMapping = []struct {
@@ -359,14 +350,6 @@ func (h *Handler) translateAndWriteStreamError(w http.ResponseWriter, err error)
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func (h *Handler) resolveAccessContext(r *http.Request) (library.AccessContext, error) {
-	u, err := h.authProvider.Get(r)
-	if err != nil {
-		return nil, errors.Wrap(err, "auth provider get failed")
-	}
-	return accessContextFor(u), nil
-}
-
 func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p music.ConvertedFile, contentType string) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Accept-Ranges", "bytes")
@@ -381,14 +364,14 @@ func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	accessCtx, err := h.resolveAccessContext(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
-		h.log.Error("could not resolve access context", "err", err)
+		h.log.Error("auth provider get failed", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessCtx, id)
+	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessCtx.Library(), id)
 	if err != nil {
 		if errors.Is(err, library.ErrThumbnailNotFound) {
 			w.WriteHeader(http.StatusNotFound)
@@ -457,13 +440,13 @@ type loginResponse struct {
 }
 
 func (h *Handler) login(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if u != nil {
+	if _, ok := currentUser(accessCtx.Auth()); ok {
 		return rest.ErrBadRequest.WithMessage("You are already signed in.")
 	}
 
@@ -477,6 +460,7 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 	if err != nil {
 		return rest.ErrForbidden.WithMessage("Invalid credentials.")
 	}
+
 	password, err := authdomain.NewPasswordFromString(t.Password)
 	if err != nil {
 		return rest.ErrForbidden.WithMessage("Invalid credentials.")
@@ -504,18 +488,19 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) logout(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if u == nil {
+	authedCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
+	if !ok {
 		return rest.ErrUnauthorized
 	}
 
 	cmd := auth.Logout{
-		Token: u.Token,
+		Token: authedCtx.Token(),
 	}
 
 	if err := h.app.Auth.Logout.Execute(cmd); err != nil {
@@ -526,32 +511,32 @@ func (h *Handler) logout(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if u == nil {
+	user, ok := currentUser(accessCtx.Auth())
+	if !ok {
 		return rest.ErrUnauthorized
 	}
 
-	return rest.NewResponse(toReadUserResponse(u.User))
+	return rest.NewResponse(toReadUserResponse(user))
 }
 
 func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if !h.isAdmin(u) {
-		return rest.ErrForbidden.WithMessage("Only an administrator can list users.")
-	}
-
-	users, err := h.app.Auth.List.Execute()
+	users, err := h.app.Auth.List.Execute(accessCtx.Auth())
 	if err != nil {
+		if errors.Is(err, auth.ErrUnauthorized) {
+			return rest.ErrForbidden.WithMessage("Only an administrator can list users.")
+		}
 		h.log.Error("could not list", "err", err)
 		return rest.ErrInternalServerError
 	}
@@ -564,18 +549,17 @@ type createInvitationResponse struct {
 }
 
 func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if !h.isAdmin(u) {
-		return rest.ErrForbidden.WithMessage("Only an administrator can create invites.")
-	}
-
-	token, err := h.app.Auth.CreateInvitation.Execute()
+	token, err := h.app.Auth.CreateInvitation.Execute(accessCtx.Auth())
 	if err != nil {
+		if errors.Is(err, auth.ErrUnauthorized) {
+			return rest.ErrForbidden.WithMessage("Only an administrator can create invites.")
+		}
 		h.log.Error("could not create an invitation", "err", err)
 		return rest.ErrInternalServerError
 	}
@@ -594,13 +578,13 @@ type registerInput struct {
 }
 
 func (h *Handler) register(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if u != nil {
+	if _, ok := currentUser(accessCtx.Auth()); ok {
 		return rest.ErrBadRequest.WithMessage("You are signed in.")
 	}
 
@@ -647,17 +631,13 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid username.")
 	}
 
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if !h.isAdmin(u) {
-		return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
-	}
-
-	if username == u.User.Username {
+	if user, ok := currentUser(accessCtx.Auth()); ok && username == user.Username() {
 		return rest.ErrBadRequest.WithMessage("You can not remove yourself.")
 	}
 
@@ -665,7 +645,10 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 		Username: username,
 	}
 
-	if err := h.app.Auth.Remove.Execute(cmd); err != nil {
+	if err := h.app.Auth.Remove.Execute(accessCtx.Auth(), cmd); err != nil {
+		if errors.Is(err, auth.ErrUnauthorized) {
+			return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
+		}
 		h.log.Error("could not remove a user", "err", err)
 		return rest.ErrInternalServerError
 	}
@@ -678,28 +661,26 @@ type getVersionResponse struct {
 }
 
 func (h *Handler) getVersion(r *http.Request) rest.RestResponse {
-	u, err := h.authProvider.Get(r)
+	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
 		h.log.Error("auth provider get failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	if !h.isAdmin(u) {
+	user, ok := currentUser(accessCtx.Auth())
+	if !ok || !user.Administrator() {
 		return rest.ErrForbidden.WithMessage("Only an administrator can view the version.")
 	}
 
 	return rest.NewResponse(getVersionResponse{Version: Version})
 }
 
-func (h *Handler) isAdmin(u *AuthenticatedUser) bool {
-	return u != nil && u.User.Administrator
-}
-
-func accessContextFor(u *AuthenticatedUser) library.AccessContext {
-	if u == nil {
-		return library.NewAnonymousAccessContext()
+func currentUser(accessCtx auth.AccessContext) (authdomain.User, bool) {
+	a, ok := accessCtx.(auth.AuthenticatedAccessContext)
+	if !ok {
+		return authdomain.User{}, false
 	}
-	return library.NewLoggedInAccessContext()
+	return a.User(), true
 }
 
 type readSessionResponse struct {
@@ -714,20 +695,20 @@ type readUserResponse struct {
 	Sessions      []readSessionResponse `json:"sessions"`
 }
 
-func toReadUserResponse(u auth.ReadUser) readUserResponse {
+func toReadUserResponse(u authdomain.User) readUserResponse {
 	rv := readUserResponse{
-		Username:      u.Username.String(),
-		Administrator: u.Administrator,
-		Created:       u.Created,
-		LastSeen:      u.LastSeen,
+		Username:      u.Username().String(),
+		Administrator: u.Administrator(),
+		Created:       u.Created(),
+		LastSeen:      u.LastSeen(),
 	}
-	for _, s := range u.Sessions {
-		rv.Sessions = append(rv.Sessions, readSessionResponse{LastSeen: s.LastSeen})
+	for _, s := range u.Sessions() {
+		rv.Sessions = append(rv.Sessions, readSessionResponse{LastSeen: s.LastSeen()})
 	}
 	return rv
 }
 
-func toReadUserResponses(users []auth.ReadUser) []readUserResponse {
+func toReadUserResponses(users []authdomain.User) []readUserResponse {
 	rv := make([]readUserResponse, 0, len(users))
 	for _, u := range users {
 		rv = append(rv, toReadUserResponse(u))
