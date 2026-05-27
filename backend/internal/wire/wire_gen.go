@@ -69,6 +69,7 @@ func BuildAuthForTest(db *bbolt.DB) (*auth.Auth, error) {
 	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
+	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
 	authAuth := &auth.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Register:         registerHandler,
@@ -79,6 +80,7 @@ func BuildAuthForTest(db *bbolt.DB) (*auth.Auth, error) {
 		CreateInvitation: createInvitationHandler,
 		Remove:           removeHandler,
 		SetPassword:      setPasswordHandler,
+		GetCurrentUser:   getCurrentUserHandler,
 	}
 	return authAuth, nil
 }
@@ -104,6 +106,7 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
+	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
 	authAuth := &auth.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Register:         registerHandler,
@@ -114,6 +117,7 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 		CreateInvitation: createInvitationHandler,
 		Remove:           removeHandler,
 		SetPassword:      setPasswordHandler,
+		GetCurrentUser:   getCurrentUserHandler,
 	}
 	return authAuth, nil
 }
@@ -139,6 +143,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
+	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
 	authAuth := auth.Auth{
 		RegisterInitial:  registerInitialHandler,
 		Register:         registerHandler,
@@ -149,6 +154,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		CreateInvitation: createInvitationHandler,
 		Remove:           removeHandler,
 		SetPassword:      setPasswordHandler,
+		GetCurrentUser:   getCurrentUserHandler,
 	}
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)

@@ -18,10 +18,33 @@ var (
 	anonCtx  = auth.NewAnonymousAccessContext()
 )
 
-func userFromCtx(t *testing.T, ctx auth.AccessContext) authdomain.User {
+func userFromCtx(t *testing.T, a *auth.Auth, ctx auth.AccessContext) authdomain.User {
 	ac, ok := ctx.(auth.AuthenticatedAccessContext)
 	require.True(t, ok)
-	return ac.User()
+	u, err := a.GetCurrentUser.Execute(ac)
+	require.NoError(t, err)
+	return u
+}
+
+func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, password authdomain.Password) auth.AuthenticatedAccessContext {
+	err := a.RegisterInitial.Execute(auth.RegisterInitial{
+		Username: username,
+		Password: password,
+	})
+	require.NoError(t, err)
+
+	token, err := a.Login.Execute(anonCtx, auth.Login{
+		Username: username,
+		Password: password,
+	})
+	require.NoError(t, err)
+
+	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
+	require.NoError(t, err)
+
+	authCtx, ok := ctx.(auth.AuthenticatedAccessContext)
+	require.True(t, ok)
+	return authCtx
 }
 
 func mustUsername(t *testing.T, s string) authdomain.Username {
@@ -167,7 +190,7 @@ func TestCheckAccessToken(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	u := userFromCtx(t, ctx)
+	u := userFromCtx(t, a, ctx)
 	require.Equal(t, username, u.Username())
 	require.Equal(t, true, u.Administrator())
 	require.False(t, u.Created().IsZero())
@@ -231,8 +254,8 @@ func TestUpdateLastSeen(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	u1 := userFromCtx(t, ctx1)
-	u2 := userFromCtx(t, ctx2)
+	u1 := userFromCtx(t, a, ctx1)
+	u2 := userFromCtx(t, a, ctx2)
 	require.False(t, u1.Created().IsZero())
 	require.False(t, u1.LastSeen().IsZero())
 	require.False(t, u2.Created().IsZero())
@@ -263,17 +286,14 @@ func TestLogout(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = a.Logout.Execute(auth.Logout{Token: token})
+	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
 	require.NoError(t, err)
 
-	err = a.Logout.Execute(auth.Logout{Token: mustAccessToken(t, "fake")})
-	require.EqualError(t, err, "could not extract the username: malformed token")
+	authCtx, ok := ctx.(auth.AuthenticatedAccessContext)
+	require.True(t, ok)
 
-	err = a.Logout.Execute(auth.Logout{Token: mustAccessToken(t, "fake-ab")})
-	require.EqualError(t, err, "transaction failed: could not get the user: not found")
-
-	err = a.Logout.Execute(auth.Logout{Token: mustAccessToken(t, "fake-757365726E616D65")})
-	require.EqualError(t, err, "transaction failed: session not found")
+	err = a.Logout.Execute(authCtx)
+	require.NoError(t, err)
 }
 
 func TestList(t *testing.T) {
@@ -480,6 +500,8 @@ func TestRemove(t *testing.T) {
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
+	adminAuthCtx := newAdminAuthCtx(t, a, mustUsername(t, "admin"), mustPassword(t, "password"))
+
 	username := mustUsername(t, "username")
 	password := mustPassword(t, "password")
 
@@ -497,9 +519,9 @@ func TestRemove(t *testing.T) {
 
 	users, err := a.List.Execute(adminCtx)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(users))
+	require.Equal(t, 2, len(users))
 
-	err = a.Remove.Execute(adminCtx,
+	err = a.Remove.Execute(adminAuthCtx,
 		auth.Remove{
 			Username: username,
 		},
@@ -508,18 +530,20 @@ func TestRemove(t *testing.T) {
 
 	users, err = a.List.Execute(adminCtx)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(users))
+	require.Equal(t, 1, len(users))
 }
 
 func TestRemoveNoUser(t *testing.T) {
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
+	adminAuthCtx := newAdminAuthCtx(t, a, mustUsername(t, "admin"), mustPassword(t, "password"))
+
 	users, err := a.List.Execute(adminCtx)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(users))
+	require.Equal(t, 1, len(users))
 
-	err = a.Remove.Execute(adminCtx,
+	err = a.Remove.Execute(adminAuthCtx,
 		auth.Remove{
 			Username: mustUsername(t, "username"),
 		},
@@ -529,7 +553,7 @@ func TestRemoveNoUser(t *testing.T) {
 	users, err = a.List.Execute(adminCtx)
 	require.NoError(t, err)
 
-	require.Equal(t, 0, len(users))
+	require.Equal(t, 1, len(users))
 }
 
 func TestSetPassword(t *testing.T) {

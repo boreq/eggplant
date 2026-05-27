@@ -21,25 +21,30 @@ type AccessContext interface {
 
 type AuthenticatedAccessContext interface {
 	AccessContext
-	User() authdomain.User
+	Username() authdomain.Username
 	Token() authdomain.AccessToken
 }
 
 type UserAccessContext struct {
-	user  authdomain.User
-	token authdomain.AccessToken
+	username      authdomain.Username
+	administrator bool
+	token         authdomain.AccessToken
 }
 
 func NewUserAccessContext(u authdomain.User, t authdomain.AccessToken) UserAccessContext {
-	return UserAccessContext{user: u, token: t}
+	return UserAccessContext{
+		username:      u.Username(),
+		administrator: u.Administrator(),
+		token:         t,
+	}
 }
 
 func (c UserAccessContext) Can(Permission) bool {
-	return c.user.Administrator()
+	return c.administrator
 }
 
-func (c UserAccessContext) User() authdomain.User {
-	return c.user
+func (c UserAccessContext) Username() authdomain.Username {
+	return c.username
 }
 
 func (c UserAccessContext) Token() authdomain.AccessToken {

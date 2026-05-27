@@ -1,13 +1,8 @@
 package auth
 
 import (
-	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/pkg/errors"
 )
-
-type Logout struct {
-	Token authdomain.AccessToken
-}
 
 type LogoutHandler struct {
 	transactionProvider TransactionProvider
@@ -21,8 +16,9 @@ func NewLogoutHandler(
 	}
 }
 
-func (h *LogoutHandler) Execute(cmd Logout) error {
-	username, err := cmd.Token.Username()
+func (h *LogoutHandler) Execute(accessCtx AuthenticatedAccessContext) error {
+	token := accessCtx.Token()
+	username, err := token.Username()
 	if err != nil {
 		return errors.Wrap(err, "could not extract the username")
 	}
@@ -33,7 +29,7 @@ func (h *LogoutHandler) Execute(cmd Logout) error {
 			return errors.Wrap(err, "could not get the user")
 		}
 
-		if !u.RemoveSession(cmd.Token) {
+		if !u.RemoveSession(token) {
 			return errors.New("session not found")
 		}
 

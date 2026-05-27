@@ -29,6 +29,7 @@ var appSet = wire.NewSet(
 	auth.NewRegisterHandler,
 	auth.NewRemoveHandler,
 	auth.NewSetPasswordHandler,
+	auth.NewGetCurrentUserHandler,
 
 	wire.Struct(new(application.Music), "*"),
 	newMusicHandlerLogger,
