@@ -15,7 +15,11 @@ func NewListHandler(transactionProvider TransactionProvider) *ListHandler {
 	}
 }
 
-func (h *ListHandler) Execute() ([]ReadUser, error) {
+func (h *ListHandler) Execute(accessCtx AccessContext) ([]authdomain.User, error) {
+	if !accessCtx.Can(PermissionManageUsers) {
+		return nil, ErrUnauthorized
+	}
+
 	var users []authdomain.User
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
 		u, err := r.Users.List()
@@ -27,5 +31,5 @@ func (h *ListHandler) Execute() ([]ReadUser, error) {
 	}); err != nil {
 		return nil, errors.Wrap(err, "transaction failed")
 	}
-	return toReadUsers(users), nil
+	return users, nil
 }

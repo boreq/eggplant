@@ -13,6 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var adminCtx = auth.NewAdminAccessContext()
+
+func userFromCtx(t *testing.T, ctx auth.AccessContext) authdomain.User {
+	ac, ok := ctx.(auth.AuthenticatedAccessContext)
+	require.True(t, ok)
+	return ac.User()
+}
+
 func mustUsername(t *testing.T, s string) authdomain.Username {
 	u, err := authdomain.NewUsernameFromString(s)
 	require.NoError(t, err)
@@ -61,14 +69,14 @@ func TestRegisterInitial(t *testing.T) {
 			err := a.RegisterInitial.Execute(cmd)
 			require.NoError(t, err)
 
-			users, err := a.List.Execute()
+			users, err := a.List.Execute(adminCtx)
 			require.NoError(t, err)
 
 			require.Equal(t, 1, len(users))
-			require.Equal(t, username, users[0].Username)
-			require.Equal(t, true, users[0].Administrator)
-			require.False(t, users[0].Created.IsZero())
-			require.False(t, users[0].LastSeen.IsZero())
+			require.Equal(t, username, users[0].Username())
+			require.Equal(t, true, users[0].Administrator())
+			require.False(t, users[0].Created().IsZero())
+			require.False(t, users[0].LastSeen().IsZero())
 		})
 	}
 }
@@ -151,15 +159,16 @@ func TestCheckAccessToken(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	u, err := a.CheckAccessToken.Execute(
+	ctx, err := a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: token},
 	)
 	require.NoError(t, err)
 
-	require.Equal(t, username, u.Username)
-	require.Equal(t, true, u.Administrator)
-	require.False(t, u.Created.IsZero())
-	require.False(t, u.LastSeen.IsZero())
+	u := userFromCtx(t, ctx)
+	require.Equal(t, username, u.Username())
+	require.Equal(t, true, u.Administrator())
+	require.False(t, u.Created().IsZero())
+	require.False(t, u.LastSeen().IsZero())
 
 	_, err = a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: mustAccessToken(t, "fake")},
@@ -203,7 +212,7 @@ func TestUpdateLastSeen(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	u1, err := a.CheckAccessToken.Execute(
+	ctx1, err := a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{
 			Token: token,
 		},
@@ -212,18 +221,20 @@ func TestUpdateLastSeen(t *testing.T) {
 
 	<-time.After(10 * time.Millisecond)
 
-	u2, err := a.CheckAccessToken.Execute(
+	ctx2, err := a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{
 			Token: token,
 		},
 	)
 	require.NoError(t, err)
 
-	require.False(t, u1.Created.IsZero())
-	require.False(t, u1.LastSeen.IsZero())
-	require.False(t, u2.Created.IsZero())
-	require.False(t, u2.LastSeen.IsZero())
-	require.Equal(t, u1.Created, u2.Created)
+	u1 := userFromCtx(t, ctx1)
+	u2 := userFromCtx(t, ctx2)
+	require.False(t, u1.Created().IsZero())
+	require.False(t, u1.LastSeen().IsZero())
+	require.False(t, u2.Created().IsZero())
+	require.False(t, u2.LastSeen().IsZero())
+	require.Equal(t, u1.Created(), u2.Created())
 }
 
 func TestLogout(t *testing.T) {
@@ -277,20 +288,20 @@ func TestList(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	users, err := a.List.Execute()
+	users, err := a.List.Execute(adminCtx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(users))
-	require.Equal(t, username, users[0].Username)
-	require.Equal(t, true, users[0].Administrator)
-	require.False(t, users[0].Created.IsZero())
-	require.False(t, users[0].LastSeen.IsZero())
+	require.Equal(t, username, users[0].Username())
+	require.Equal(t, true, users[0].Administrator())
+	require.False(t, users[0].Created().IsZero())
+	require.False(t, users[0].LastSeen().IsZero())
 }
 
 func TestCreateInvitation(t *testing.T) {
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
-	token, err := a.CreateInvitation.Execute()
+	token, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 	require.NotEmpty(t, token.String())
 }
@@ -316,7 +327,7 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
-	token, err := a.CreateInvitation.Execute()
+	token, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(
@@ -346,7 +357,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 	username := mustUsername(t, "username")
 	password := mustPassword(t, "password")
 
-	token, err := a.CreateInvitation.Execute()
+	token, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(
@@ -358,7 +369,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token, err = a.CreateInvitation.Execute()
+	token, err = a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(
@@ -394,7 +405,7 @@ func TestRegisterInvalid(t *testing.T) {
 			require.NoError(t, usernameErr)
 			require.NoError(t, passwordErr)
 
-			token, err := a.CreateInvitation.Execute()
+			token, err := a.CreateInvitation.Execute(adminCtx)
 			require.NoError(t, err)
 
 			err = a.Register.Execute(
@@ -406,13 +417,13 @@ func TestRegisterInvalid(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			users, err := a.List.Execute()
+			users, err := a.List.Execute(adminCtx)
 			require.NoError(t, err)
 			require.Equal(t, 1, len(users))
-			require.Equal(t, username, users[0].Username)
-			require.Equal(t, false, users[0].Administrator)
-			require.False(t, users[0].Created.IsZero())
-			require.False(t, users[0].LastSeen.IsZero())
+			require.Equal(t, username, users[0].Username())
+			require.Equal(t, false, users[0].Administrator())
+			require.False(t, users[0].Created().IsZero())
+			require.False(t, users[0].LastSeen().IsZero())
 		})
 	}
 }
@@ -424,7 +435,7 @@ func TestLogin(t *testing.T) {
 	username := mustUsername(t, "username")
 	password := mustPassword(t, "password")
 
-	invitationToken, err := a.CreateInvitation.Execute()
+	invitationToken, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(
@@ -469,7 +480,7 @@ func TestRemove(t *testing.T) {
 	username := mustUsername(t, "username")
 	password := mustPassword(t, "password")
 
-	invitationToken, err := a.CreateInvitation.Execute()
+	invitationToken, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(
@@ -481,18 +492,18 @@ func TestRemove(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	users, err := a.List.Execute()
+	users, err := a.List.Execute(adminCtx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(users))
 
-	err = a.Remove.Execute(
+	err = a.Remove.Execute(adminCtx,
 		auth.Remove{
 			Username: username,
 		},
 	)
 	require.NoError(t, err)
 
-	users, err = a.List.Execute()
+	users, err = a.List.Execute(adminCtx)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(users))
 }
@@ -501,18 +512,18 @@ func TestRemoveNoUser(t *testing.T) {
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
-	users, err := a.List.Execute()
+	users, err := a.List.Execute(adminCtx)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(users))
 
-	err = a.Remove.Execute(
+	err = a.Remove.Execute(adminCtx,
 		auth.Remove{
 			Username: mustUsername(t, "username"),
 		},
 	)
 	require.NoError(t, err)
 
-	users, err = a.List.Execute()
+	users, err = a.List.Execute(adminCtx)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, len(users))
@@ -526,7 +537,7 @@ func TestSetPassword(t *testing.T) {
 	password := mustPassword(t, "password")
 	newPassword := mustPassword(t, "new-password")
 
-	invitationToken, err := a.CreateInvitation.Execute()
+	invitationToken, err := a.CreateInvitation.Execute(adminCtx)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(
@@ -546,7 +557,7 @@ func TestSetPassword(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = a.SetPassword.Execute(
+	err = a.SetPassword.Execute(adminCtx,
 		auth.SetPassword{
 			Username: username,
 			Password: newPassword,

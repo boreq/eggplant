@@ -19,7 +19,11 @@ func NewCreateInvitationHandler(
 	}
 }
 
-func (h *CreateInvitationHandler) Execute() (authdomain.InvitationToken, error) {
+func (h *CreateInvitationHandler) Execute(accessCtx AccessContext) (authdomain.InvitationToken, error) {
+	if !accessCtx.Can(PermissionCreateInvitations) {
+		return authdomain.InvitationToken{}, ErrUnauthorized
+	}
+
 	token, err := authdomain.NewInvitationToken()
 	if err != nil {
 		return authdomain.InvitationToken{}, errors.Wrap(err, "could not create a token")

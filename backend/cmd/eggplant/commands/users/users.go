@@ -47,7 +47,7 @@ func runList(c guinea.Context) error {
 		return errors.Wrap(err, "failed to build the application")
 	}
 
-	users, err := a.List.Execute()
+	users, err := a.List.Execute(auth.NewAdminAccessContext())
 	if err != nil {
 		return errors.Wrap(err, "failed to list users")
 	}
@@ -67,12 +67,12 @@ type userOutput struct {
 	Administrator bool   `json:"administrator"`
 }
 
-func toUserList(users []auth.ReadUser) []userOutput {
+func toUserList(users []authdomain.User) []userOutput {
 	rv := make([]userOutput, 0, len(users))
 	for _, u := range users {
 		rv = append(rv, userOutput{
-			Username:      u.Username.String(),
-			Administrator: u.Administrator,
+			Username:      u.Username().String(),
+			Administrator: u.Administrator(),
 		})
 	}
 	return rv
@@ -121,7 +121,7 @@ func runResetPassword(c guinea.Context) error {
 		Password: rawPassword,
 	}
 
-	if err := a.SetPassword.Execute(cmd); err != nil {
+	if err := a.SetPassword.Execute(auth.NewAdminAccessContext(), cmd); err != nil {
 		return errors.Wrap(err, "failed to set a password")
 	}
 

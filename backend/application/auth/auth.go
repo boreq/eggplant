@@ -78,38 +78,3 @@ type Auth struct {
 	Remove           *RemoveHandler
 	SetPassword      *SetPasswordHandler
 }
-
-type ReadSession struct {
-	LastSeen time.Time
-}
-
-type ReadUser struct {
-	Username      authdomain.Username
-	Administrator bool
-	Created       time.Time
-	LastSeen      time.Time
-	Sessions      []ReadSession
-}
-
-func toReadUsers(users []authdomain.User) []ReadUser {
-	var rv []ReadUser
-	for _, user := range users {
-		rv = append(rv, toReadUser(user))
-	}
-	return rv
-}
-
-func toReadUser(user authdomain.User) ReadUser {
-	rv := ReadUser{
-		Username:      user.Username(),
-		Administrator: user.Administrator(),
-		Created:       user.Created(),
-		LastSeen:      user.LastSeen(),
-	}
-	for _, session := range user.Sessions() {
-		rv.Sessions = append(rv.Sessions, ReadSession{
-			LastSeen: session.LastSeen(),
-		})
-	}
-	return rv
-}

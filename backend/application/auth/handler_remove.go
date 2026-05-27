@@ -18,7 +18,11 @@ func NewRemoveHandler(transactionProvider TransactionProvider) *RemoveHandler {
 	}
 }
 
-func (h *RemoveHandler) Execute(cmd Remove) error {
+func (h *RemoveHandler) Execute(accessCtx AccessContext, cmd Remove) error {
+	if !accessCtx.Can(PermissionManageUsers) {
+		return ErrUnauthorized
+	}
+
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		return r.Users.Remove(cmd.Username)
 	})
