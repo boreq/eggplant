@@ -28,7 +28,11 @@ func NewRegisterHandler(
 	}
 }
 
-func (h *RegisterHandler) Execute(cmd Register) error {
+func (h *RegisterHandler) Execute(accessCtx AccessContext, cmd Register) error {
+	if _, ok := accessCtx.(AuthenticatedAccessContext); ok {
+		return ErrAlreadyAuthenticated
+	}
+
 	passwordHash, err := h.passwordHasher.Hash(cmd.Password)
 	if err != nil {
 		return errors.Wrap(err, "hashing the password failed")

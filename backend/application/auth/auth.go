@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ErrUnauthorized  = errors.New("unauthorized")
-	ErrUsernameTaken = errors.New("username taken")
-	ErrNotFound      = errors.New("not found")
+	ErrUnauthorized         = errors.New("unauthorized")
+	ErrUsernameTaken        = errors.New("username taken")
+	ErrNotFound             = errors.New("not found")
+	ErrAlreadyAuthenticated = errors.New("already authenticated")
 )
 
 type PasswordHasher interface {

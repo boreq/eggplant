@@ -27,7 +27,11 @@ func NewLoginHandler(
 	}
 }
 
-func (h *LoginHandler) Execute(cmd Login) (authdomain.AccessToken, error) {
+func (h *LoginHandler) Execute(accessCtx AccessContext, cmd Login) (authdomain.AccessToken, error) {
+	if _, ok := accessCtx.(AuthenticatedAccessContext); ok {
+		return authdomain.AccessToken{}, ErrAlreadyAuthenticated
+	}
+
 	var token authdomain.AccessToken
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {

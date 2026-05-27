@@ -446,10 +446,6 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	if _, ok := currentUser(accessCtx.Auth()); ok {
-		return rest.ErrBadRequest.WithMessage("You are already signed in.")
-	}
-
 	var t loginInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("login decoding failed", "err", err)
@@ -471,10 +467,13 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 		Password: password,
 	}
 
-	token, err := h.app.Auth.Login.Execute(cmd)
+	token, err := h.app.Auth.Login.Execute(accessCtx.Auth(), cmd)
 	if err != nil {
 		if errors.Is(err, auth.ErrUnauthorized) {
 			return rest.ErrForbidden.WithMessage("Invalid credentials.")
+		}
+		if errors.Is(err, auth.ErrAlreadyAuthenticated) {
+			return rest.ErrBadRequest.WithMessage("You are already signed in.")
 		}
 		h.log.Error("login command failed", "err", err)
 		return rest.ErrInternalServerError
@@ -584,10 +583,6 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	if _, ok := currentUser(accessCtx.Auth()); ok {
-		return rest.ErrBadRequest.WithMessage("You are signed in.")
-	}
-
 	var t registerInput
 	if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register decoding failed", "err", err)
@@ -613,9 +608,12 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 		Token:    invitationToken,
 	}
 
-	if err := h.app.Auth.Register.Execute(cmd); err != nil {
+	if err := h.app.Auth.Register.Execute(accessCtx.Auth(), cmd); err != nil {
 		if errors.Is(err, auth.ErrUsernameTaken) {
 			return rest.ErrConflict.WithMessage("Username is taken.")
+		}
+		if errors.Is(err, auth.ErrAlreadyAuthenticated) {
+			return rest.ErrBadRequest.WithMessage("You are already signed in.")
 		}
 		h.log.Error("could not register a user", "err", err)
 		return rest.ErrInternalServerError
