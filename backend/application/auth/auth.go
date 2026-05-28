@@ -9,6 +9,7 @@ import (
 
 var (
 	ErrUnauthorized         = errors.New("unauthorized")
+	ErrPermissionDenied     = errors.New("permission denied")
 	ErrUsernameTaken        = errors.New("username taken")
 	ErrNotFound             = errors.New("not found")
 	ErrAlreadyAuthenticated = errors.New("already authenticated")

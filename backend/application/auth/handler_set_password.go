@@ -27,7 +27,7 @@ func NewSetPasswordHandler(
 
 func (h *SetPasswordHandler) Execute(accessCtx AccessContext, cmd SetPassword) error {
 	if !accessCtx.Can(PermissionManageUsers) {
-		return ErrUnauthorized
+		return ErrPermissionDenied
 	}
 
 	passwordHash, err := h.passwordHasher.Hash(cmd.Password)

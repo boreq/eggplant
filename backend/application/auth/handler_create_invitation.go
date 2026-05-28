@@ -21,7 +21,7 @@ func NewCreateInvitationHandler(
 
 func (h *CreateInvitationHandler) Execute(accessCtx AccessContext) (authdomain.InvitationToken, error) {
 	if !accessCtx.Can(PermissionCreateInvitations) {
-		return authdomain.InvitationToken{}, ErrUnauthorized
+		return authdomain.InvitationToken{}, ErrPermissionDenied
 	}
 
 	token, err := authdomain.NewInvitationToken()

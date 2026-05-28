@@ -17,7 +17,7 @@ func NewListHandler(transactionProvider TransactionProvider) *ListHandler {
 
 func (h *ListHandler) Execute(accessCtx AccessContext) ([]authdomain.User, error) {
 	if !accessCtx.Can(PermissionManageUsers) {
-		return nil, ErrUnauthorized
+		return nil, ErrPermissionDenied
 	}
 
 	var users []authdomain.User

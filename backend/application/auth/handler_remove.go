@@ -20,7 +20,7 @@ func NewRemoveHandler(transactionProvider TransactionProvider) *RemoveHandler {
 
 func (h *RemoveHandler) Execute(accessCtx AuthenticatedAccessContext, cmd Remove) error {
 	if !accessCtx.Can(PermissionManageUsers) {
-		return ErrUnauthorized
+		return ErrPermissionDenied
 	}
 
 	if accessCtx.Username() == cmd.Username {
