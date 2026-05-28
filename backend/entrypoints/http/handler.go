@@ -535,7 +535,7 @@ func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
 
 	users, err := h.app.Auth.List.Execute(accessCtx.Auth())
 	if err != nil {
-		if errors.Is(err, auth.ErrUnauthorized) {
+		if errors.Is(err, auth.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can list users.")
 		}
 		h.log.Error("could not list", "err", err)
@@ -558,7 +558,7 @@ func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 
 	token, err := h.app.Auth.CreateInvitation.Execute(accessCtx.Auth())
 	if err != nil {
-		if errors.Is(err, auth.ErrUnauthorized) {
+		if errors.Is(err, auth.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can create invites.")
 		}
 		h.log.Error("could not create an invitation", "err", err)
@@ -647,7 +647,7 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 	}
 
 	if err := h.app.Auth.Remove.Execute(authCtx, cmd); err != nil {
-		if errors.Is(err, auth.ErrUnauthorized) {
+		if errors.Is(err, auth.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
 		}
 		if errors.Is(err, auth.ErrCannotRemoveSelf) {
