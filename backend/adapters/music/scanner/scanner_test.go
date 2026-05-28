@@ -240,6 +240,14 @@ func TestScanner(t *testing.T) {
 			},
 		},
 		{
+			Name: "duplicate_titles",
+			Result: &testAlbum{
+				tracks: []testTrack{
+					{title: "a", path: "test_data/duplicate_titles/a.flac"},
+				},
+			},
+		},
+		{
 			Name:  "symlinks_loop",
 			Error: errors.New("walk failed: loop detected: 'test_data/symlinks_loop/a' visited multiple times"),
 		},
@@ -273,7 +281,10 @@ func TestScannerFailsIfDirectoryDoesNotExist(t *testing.T) {
 func testConfig(t *testing.T) scanner.Config {
 	t.Helper()
 
-	trackExt, err := music.NewFileExtension(".mp3")
+	mp3Ext, err := music.NewFileExtension(".mp3")
+	require.NoError(t, err)
+
+	flacExt, err := music.NewFileExtension(".flac")
 	require.NoError(t, err)
 
 	thumbnailStem, err := scanner.NewThumbnailStem("thumbnail")
@@ -283,7 +294,7 @@ func testConfig(t *testing.T) scanner.Config {
 	require.NoError(t, err)
 
 	cfg, err := scanner.NewConfig(
-		[]music.FileExtension{trackExt},
+		[]music.FileExtension{mp3Ext, flacExt},
 		[]scanner.ThumbnailStem{thumbnailStem},
 		[]music.FileExtension{thumbnailExt},
 	)

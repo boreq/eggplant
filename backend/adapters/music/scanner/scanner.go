@@ -120,7 +120,7 @@ func (s *Scanner) Scan() (scanner.FoundRootAlbum, error) {
 		}
 
 		if s.isTrack(filePath) {
-			if err := s.addTrack(root, filePath); err != nil {
+			if err := s.addTrack(root, filePath, info.Size()); err != nil {
 				return errors.Wrap(err, "could not add a track")
 			}
 			return nil
@@ -140,7 +140,7 @@ func (s *Scanner) Scan() (scanner.FoundRootAlbum, error) {
 	return result, nil
 }
 
-func (s *Scanner) addTrack(root *album, file music.FilePath) error {
+func (s *Scanner) addTrack(root *album, file music.FilePath, size int64) error {
 	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
@@ -154,10 +154,20 @@ func (s *Scanner) addTrack(root *album, file music.FilePath) error {
 		return errors.Wrap(err, "could not create track title")
 	}
 
-	if _, exists := a.tracks[title]; exists {
-		return fmt.Errorf("track with title '%s' already exists", title)
+	if existing, exists := a.tracks[title]; exists {
+		kept, discarded := existing, track{path: file, size: size}
+		if size > existing.size {
+			kept, discarded = discarded, kept
+		}
+		s.logger.Warn("duplicate track title, keeping larger file",
+			"title", title,
+			"kept", kept,
+			"discarded", discarded,
+		)
+		a.tracks[title] = kept
+		return nil
 	}
-	a.tracks[title] = track{path: file}
+	a.tracks[title] = track{path: file, size: size}
 	return nil
 }
 
@@ -256,6 +266,7 @@ func newAlbum() *album {
 
 type track struct {
 	path music.FilePath
+	size int64
 }
 
 func removeEmptyAlbums(root *album) {
