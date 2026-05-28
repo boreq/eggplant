@@ -47,7 +47,7 @@ func (h *LoginHandler) Execute(accessCtx AccessContext, cmd Login) (authdomain.A
 			return errors.Wrap(ErrUnauthorized, "invalid password")
 		}
 
-		t, err := authdomain.NewAccessToken(cmd.Username)
+		t, err := authdomain.NewAccessToken()
 		if err != nil {
 			return errors.Wrap(err, "could not create an access token")
 		}
@@ -55,7 +55,15 @@ func (h *LoginHandler) Execute(accessCtx AccessContext, cmd Login) (authdomain.A
 
 		u.AddSession(authdomain.NewSession(t, time.Now()))
 
-		return r.Users.Put(*u)
+		if err := r.Users.Put(*u); err != nil {
+			return errors.Wrap(err, "could not put the user")
+		}
+
+		if err := r.SessionTokens.Put(t, cmd.Username); err != nil {
+			return errors.Wrap(err, "could not put the session token")
+		}
+
+		return nil
 	}); err != nil {
 		return authdomain.AccessToken{}, errors.Wrap(err, "transaction failed")
 	}

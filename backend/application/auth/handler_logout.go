@@ -18,10 +18,7 @@ func NewLogoutHandler(
 
 func (h *LogoutHandler) Execute(accessCtx AuthenticatedAccessContext) error {
 	token := accessCtx.Token()
-	username, err := token.Username()
-	if err != nil {
-		return errors.Wrap(err, "could not extract the username")
-	}
+	username := accessCtx.Username()
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		u, err := r.Users.Get(username)
@@ -33,7 +30,15 @@ func (h *LogoutHandler) Execute(accessCtx AuthenticatedAccessContext) error {
 			return errors.New("session not found")
 		}
 
-		return r.Users.Put(*u)
+		if err := r.Users.Put(*u); err != nil {
+			return errors.Wrap(err, "could not put the user")
+		}
+
+		if err := r.SessionTokens.Remove(token); err != nil {
+			return errors.Wrap(err, "could not remove the session token")
+		}
+
+		return nil
 	}); err != nil {
 		return errors.Wrap(err, "transaction failed")
 	}

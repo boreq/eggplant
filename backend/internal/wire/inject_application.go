@@ -79,6 +79,9 @@ var appSet = wire.NewSet(
 	wire.Bind(new(auth.InvitationRepository), new(*authAdapters.InvitationRepository)),
 	authAdapters.NewInvitationRepository,
 
+	wire.Bind(new(auth.SessionTokenRepository), new(*authAdapters.SessionTokenRepository)),
+	authAdapters.NewSessionTokenRepository,
+
 	wire.Bind(new(auth.PasswordHasher), new(*authAdapters.BcryptPasswordHasher)),
 	authAdapters.NewBcryptPasswordHasher,
 

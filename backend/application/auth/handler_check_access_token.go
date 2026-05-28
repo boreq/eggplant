@@ -27,15 +27,18 @@ func NewCheckAccessTokenHandler(
 }
 
 func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, error) {
-	username, err := cmd.Token.Username()
-	if err != nil {
-		return nil, errors.Wrap(ErrUnauthorized, "could not get the username")
-	}
-
 	var foundUser *authdomain.User
 	var foundSession *authdomain.Session
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
+		username, err := r.SessionTokens.Get(cmd.Token)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return errors.Wrap(ErrUnauthorized, "session token not found")
+			}
+			return errors.Wrap(err, "could not look up the session token")
+		}
+
 		u, err := r.Users.Get(username)
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
@@ -48,7 +51,8 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, 
 
 		for _, s := range u.Sessions() {
 			if s.Token() == cmd.Token {
-				foundSession = &s
+				session := s
+				foundSession = &session
 				return nil
 			}
 		}
