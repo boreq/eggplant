@@ -199,19 +199,19 @@ func TestCheckAccessToken(t *testing.T) {
 	_, err = a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: mustAccessToken(t, "fake")},
 	)
-	require.EqualError(t, err, "could not get the username: unauthorized")
+	require.EqualError(t, err, "transaction failed: session token not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: mustAccessToken(t, "fake-ab")},
 	)
-	require.EqualError(t, err, "transaction failed: user not found: unauthorized")
+	require.EqualError(t, err, "transaction failed: session token not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: mustAccessToken(t, "fake-757365726E616D65")},
 	)
-	require.EqualError(t, err, "transaction failed: invalid token: unauthorized")
+	require.EqualError(t, err, "transaction failed: session token not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 }
 

@@ -34,9 +34,14 @@ func BuildTransactableAuthRepositories(tx *bbolt.Tx) (*auth.TransactableReposito
 	if err != nil {
 		return nil, err
 	}
+	sessionTokenRepository, err := auth2.NewSessionTokenRepository(tx)
+	if err != nil {
+		return nil, err
+	}
 	transactableRepositories := &auth.TransactableRepositories{
-		Invitations: invitationRepository,
-		Users:       userRepository,
+		Invitations:   invitationRepository,
+		Users:         userRepository,
+		SessionTokens: sessionTokenRepository,
 	}
 	return transactableRepositories, nil
 }

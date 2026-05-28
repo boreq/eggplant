@@ -54,6 +54,20 @@ type InvitationRepository interface {
 	Remove(token authdomain.InvitationToken) error
 }
 
+type SessionTokenRepository interface {
+	// Put writes a token -> username index entry. An existing entry with
+	// the same token is overwritten.
+	Put(token authdomain.AccessToken, username authdomain.Username) error
+
+	// Get returns the username associated with the token. If no entry
+	// exists ErrNotFound is returned.
+	Get(token authdomain.AccessToken) (authdomain.Username, error)
+
+	// Remove removes the index entry for the token. If no entry exists
+	// this function returns nil.
+	Remove(token authdomain.AccessToken) error
+}
+
 type LastSeenUpdater interface {
 	Update(username authdomain.Username, token authdomain.AccessToken, t time.Time)
 }
@@ -66,8 +80,9 @@ type TransactionProvider interface {
 type TransactionHandler func(repositories *TransactableRepositories) error
 
 type TransactableRepositories struct {
-	Invitations InvitationRepository
-	Users       UserRepository
+	Invitations   InvitationRepository
+	Users         UserRepository
+	SessionTokens SessionTokenRepository
 }
 
 type Auth struct {
