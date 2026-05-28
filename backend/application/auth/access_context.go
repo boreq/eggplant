@@ -19,45 +19,39 @@ type AccessContext interface {
 	Can(p Permission) bool
 }
 
-type AuthenticatedAccessContext interface {
-	AccessContext
-	Username() authdomain.Username
-	Token() authdomain.AccessToken
-}
-
-type UserAccessContext struct {
+type AuthenticatedAccessContext struct {
 	username      authdomain.Username
 	administrator bool
 	token         authdomain.AccessToken
 }
 
-func NewUserAccessContext(u authdomain.User, t authdomain.AccessToken) UserAccessContext {
-	return UserAccessContext{
+func NewAuthenticatedAccessContext(u authdomain.User, t authdomain.AccessToken) AuthenticatedAccessContext {
+	return AuthenticatedAccessContext{
 		username:      u.Username(),
 		administrator: u.Administrator(),
 		token:         t,
 	}
 }
 
-func (c UserAccessContext) Can(Permission) bool {
+func (c AuthenticatedAccessContext) Can(Permission) bool {
 	return c.administrator
 }
 
-func (c UserAccessContext) Username() authdomain.Username {
+func (c AuthenticatedAccessContext) Username() authdomain.Username {
 	return c.username
 }
 
-func (c UserAccessContext) Token() authdomain.AccessToken {
+func (c AuthenticatedAccessContext) Token() authdomain.AccessToken {
 	return c.token
 }
 
-type AdminAccessContext struct{}
+type CommandLineAccessContext struct{}
 
-func NewAdminAccessContext() AdminAccessContext {
-	return AdminAccessContext{}
+func NewCommandLineAccessContext() CommandLineAccessContext {
+	return CommandLineAccessContext{}
 }
 
-func (AdminAccessContext) Can(Permission) bool {
+func (CommandLineAccessContext) Can(Permission) bool {
 	return true
 }
 
