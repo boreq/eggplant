@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	adminCtx = auth.NewAdminAccessContext()
+	adminCtx = fixture.AdminAccessContext()
 	anonCtx  = auth.NewAnonymousAccessContext()
 )
 

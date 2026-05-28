@@ -60,5 +60,5 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, 
 
 	h.lastSeenUpdater.Update(foundUser.Username(), foundSession.Token(), time.Now())
 
-	return NewUserAccessContext(*foundUser, foundSession.Token()), nil
+	return NewAuthenticatedAccessContext(*foundUser, foundSession.Token()), nil
 }
