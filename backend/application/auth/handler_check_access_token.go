@@ -31,20 +31,12 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, 
 	var foundSession *authdomain.Session
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		username, err := r.SessionTokens.Get(cmd.Token)
+		u, err := r.Users.GetByToken(cmd.Token)
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				return errors.Wrap(ErrUnauthorized, "session token not found")
 			}
-			return errors.Wrap(err, "could not look up the session token")
-		}
-
-		u, err := r.Users.Get(username)
-		if err != nil {
-			if errors.Is(err, ErrNotFound) {
-				return errors.Wrap(ErrUnauthorized, "user not found")
-			}
-			return errors.Wrap(err, "could not get the user")
+			return errors.Wrap(err, "could not look up the user by token")
 		}
 
 		foundUser = u

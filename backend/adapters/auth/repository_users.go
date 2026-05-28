@@ -11,39 +11,42 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+var (
+	usersBucket         = []byte("users")
+	sessionTokensBucket = []byte("session_tokens")
+)
+
 type UserRepository struct {
-	tx     *bolt.Tx
-	bucket []byte
-	log    logging.Logger
+	tx  *bolt.Tx
+	log logging.Logger
 }
 
 func NewUserRepository(tx *bolt.Tx) (*UserRepository, error) {
-	bucket := []byte("users")
-
 	if tx.Writable() {
-		if _, err := tx.CreateBucketIfNotExists(bucket); err != nil {
-			return nil, errors.Wrap(err, "could not create a bucket")
+		if _, err := tx.CreateBucketIfNotExists(usersBucket); err != nil {
+			return nil, errors.Wrap(err, "could not create the users bucket")
+		}
+		if _, err := tx.CreateBucketIfNotExists(sessionTokensBucket); err != nil {
+			return nil, errors.Wrap(err, "could not create the session tokens bucket")
 		}
 	}
 
 	return &UserRepository{
-		tx:     tx,
-		bucket: bucket,
-		log:    logging.New("UserRepository"),
+		tx:  tx,
+		log: logging.New("UserRepository"),
 	}, nil
 }
 
 func (r *UserRepository) Count() (int, error) {
-	b := r.tx.Bucket(r.bucket)
+	b := r.tx.Bucket(usersBucket)
 	if b == nil {
 		return 0, nil
 	}
-	count := b.Stats().KeyN
-	return count, nil
+	return b.Stats().KeyN, nil
 }
 
 func (r *UserRepository) List() ([]authdomain.User, error) {
-	b := r.tx.Bucket(r.bucket)
+	b := r.tx.Bucket(usersBucket)
 	if b == nil {
 		return nil, nil
 	}
@@ -52,11 +55,7 @@ func (r *UserRepository) List() ([]authdomain.User, error) {
 
 	var users []authdomain.User
 	for k, v := c.First(); k != nil; k, v = c.Next() {
-		var dto userDTO
-		if err := json.Unmarshal(v, &dto); err != nil {
-			return nil, errors.Wrap(err, "json unmarshal failed")
-		}
-		u, err := userFromDTO(dto)
+		u, err := decodeUser(v)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not build the user")
 		}
@@ -67,29 +66,35 @@ func (r *UserRepository) List() ([]authdomain.User, error) {
 }
 
 func (r *UserRepository) Remove(username authdomain.Username) error {
-	b := r.tx.Bucket(r.bucket)
-	if b == nil {
-		return errors.New("bucket does not exist")
+	users := r.tx.Bucket(usersBucket)
+	if users == nil {
+		return errors.New("users bucket does not exist")
 	}
-	return b.Delete([]byte(username.String()))
+
+	if existing := users.Get([]byte(username.String())); existing != nil {
+		u, err := decodeUser(existing)
+		if err != nil {
+			return errors.Wrap(err, "could not decode the existing user")
+		}
+		if err := r.removeSessionTokens(u.Sessions()); err != nil {
+			return errors.Wrap(err, "could not remove session tokens")
+		}
+	}
+
+	return users.Delete([]byte(username.String()))
 }
 
 func (r *UserRepository) Get(username authdomain.Username) (*authdomain.User, error) {
-	b := r.tx.Bucket(r.bucket)
+	b := r.tx.Bucket(usersBucket)
 	if b == nil {
-		return nil, errors.Wrap(auth.ErrNotFound, "bucket does not exist")
+		return nil, errors.Wrap(auth.ErrNotFound, "users bucket does not exist")
 	}
 	j := b.Get([]byte(username.String()))
 	if j == nil {
 		return nil, auth.ErrNotFound
 	}
 
-	var dto userDTO
-	if err := json.Unmarshal(j, &dto); err != nil {
-		return nil, errors.Wrap(err, "json unmarshal failed")
-	}
-
-	u, err := userFromDTO(dto)
+	u, err := decodeUser(j)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not build the user")
 	}
@@ -97,7 +102,37 @@ func (r *UserRepository) Get(username authdomain.Username) (*authdomain.User, er
 	return &u, nil
 }
 
+func (r *UserRepository) GetByToken(token authdomain.AccessToken) (*authdomain.User, error) {
+	index := r.tx.Bucket(sessionTokensBucket)
+	if index == nil {
+		return nil, errors.Wrap(auth.ErrNotFound, "session tokens bucket does not exist")
+	}
+	v := index.Get([]byte(token.String()))
+	if v == nil {
+		return nil, auth.ErrNotFound
+	}
+	username, err := authdomain.NewUsernameFromString(string(v))
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid username in index")
+	}
+	return r.Get(username)
+}
+
 func (r *UserRepository) Put(user authdomain.User) error {
+	users := r.tx.Bucket(usersBucket)
+	if users == nil {
+		return errors.New("users bucket does not exist")
+	}
+
+	var priorSessions []authdomain.Session
+	if existing := users.Get([]byte(user.Username().String())); existing != nil {
+		prior, err := decodeUser(existing)
+		if err != nil {
+			return errors.Wrap(err, "could not decode the existing user")
+		}
+		priorSessions = prior.Sessions()
+	}
+
 	dto := userToDTO(user)
 	dto.Sessions = removeOldSessions(dto.Sessions)
 
@@ -106,11 +141,61 @@ func (r *UserRepository) Put(user authdomain.User) error {
 		return errors.Wrap(err, "marshaling to json failed")
 	}
 
-	b := r.tx.Bucket(r.bucket)
-	if b == nil {
-		return errors.New("bucket does not exist")
+	if err := users.Put([]byte(dto.Username), j); err != nil {
+		return errors.Wrap(err, "could not put the user")
 	}
-	return b.Put([]byte(dto.Username), j)
+
+	return r.syncSessionTokens(user.Username(), priorSessions, dto.Sessions)
+}
+
+func (r *UserRepository) syncSessionTokens(username authdomain.Username, prior []authdomain.Session, current []sessionDTO) error {
+	index := r.tx.Bucket(sessionTokensBucket)
+	if index == nil {
+		return errors.New("session tokens bucket does not exist")
+	}
+
+	keep := make(map[string]struct{}, len(current))
+	for _, s := range current {
+		keep[s.Token] = struct{}{}
+	}
+
+	for _, s := range prior {
+		if _, ok := keep[s.Token().String()]; ok {
+			continue
+		}
+		if err := index.Delete([]byte(s.Token().String())); err != nil {
+			return errors.Wrap(err, "could not delete a stale session token")
+		}
+	}
+
+	for tokenStr := range keep {
+		if err := index.Put([]byte(tokenStr), []byte(username.String())); err != nil {
+			return errors.Wrap(err, "could not put a session token")
+		}
+	}
+
+	return nil
+}
+
+func (r *UserRepository) removeSessionTokens(sessions []authdomain.Session) error {
+	index := r.tx.Bucket(sessionTokensBucket)
+	if index == nil {
+		return errors.New("session tokens bucket does not exist")
+	}
+	for _, s := range sessions {
+		if err := index.Delete([]byte(s.Token().String())); err != nil {
+			return errors.Wrap(err, "could not delete a session token")
+		}
+	}
+	return nil
+}
+
+func decodeUser(j []byte) (authdomain.User, error) {
+	var dto userDTO
+	if err := json.Unmarshal(j, &dto); err != nil {
+		return authdomain.User{}, errors.Wrap(err, "json unmarshal failed")
+	}
+	return userFromDTO(dto)
 }
 
 func removeOldSessions(sessions []sessionDTO) []sessionDTO {

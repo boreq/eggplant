@@ -34,10 +34,6 @@ func (h *LogoutHandler) Execute(accessCtx AuthenticatedAccessContext) error {
 			return errors.Wrap(err, "could not put the user")
 		}
 
-		if err := r.SessionTokens.Remove(token); err != nil {
-			return errors.Wrap(err, "could not remove the session token")
-		}
-
 		return nil
 	}); err != nil {
 		return errors.Wrap(err, "transaction failed")
