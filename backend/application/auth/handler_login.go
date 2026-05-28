@@ -59,10 +59,6 @@ func (h *LoginHandler) Execute(accessCtx AccessContext, cmd Login) (authdomain.A
 			return errors.Wrap(err, "could not put the user")
 		}
 
-		if err := r.SessionTokens.Put(t, cmd.Username); err != nil {
-			return errors.Wrap(err, "could not put the session token")
-		}
-
 		return nil
 	}); err != nil {
 		return authdomain.AccessToken{}, errors.Wrap(err, "transaction failed")
