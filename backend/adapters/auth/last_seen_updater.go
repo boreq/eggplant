@@ -7,7 +7,7 @@ import (
 
 	"github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 	bolt "go.etcd.io/bbolt"
 )
@@ -142,8 +142,12 @@ func userToDTO(u authdomain.User) userDTO {
 		Username:      u.Username().String(),
 		Password:      u.Password().Bytes(),
 		Administrator: u.Administrator(),
-		Created:       u.Created(),
-		LastSeen:      u.LastSeen(),
+	}
+	if c := u.Created(); c != nil {
+		dto.Created = *c
+	}
+	if ls := u.LastSeen(); ls != nil {
+		dto.LastSeen = *ls
 	}
 	for _, s := range u.Sessions() {
 		dto.Sessions = append(dto.Sessions, sessionDTO{
@@ -171,12 +175,20 @@ func userFromDTO(dto userDTO) (authdomain.User, error) {
 		}
 		sessions = append(sessions, authdomain.NewSession(token, s.LastSeen))
 	}
-	return authdomain.NewUser(
+	var created *time.Time
+	if !dto.Created.IsZero() {
+		created = &dto.Created
+	}
+	var lastSeen *time.Time
+	if !dto.LastSeen.IsZero() {
+		lastSeen = &dto.LastSeen
+	}
+	return authdomain.NewUserFromDatabase(
 		username,
 		password,
 		dto.Administrator,
-		dto.Created,
-		dto.LastSeen,
+		created,
+		lastSeen,
 		sessions,
 	), nil
 }

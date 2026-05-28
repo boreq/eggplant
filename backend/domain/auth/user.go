@@ -6,12 +6,23 @@ type User struct {
 	username      Username
 	password      PasswordHash
 	administrator bool
-	created       time.Time
-	lastSeen      time.Time
+	created       *time.Time
+	lastSeen      *time.Time
 	sessions      []Session
 }
 
-func NewUser(username Username, password PasswordHash, administrator bool, created, lastSeen time.Time, sessions []Session) User {
+func NewUser(username Username, password PasswordHash, administrator bool, created time.Time) User {
+	return User{
+		username:      username,
+		password:      password,
+		administrator: administrator,
+		created:       &created,
+		lastSeen:      nil,
+		sessions:      nil,
+	}
+}
+
+func NewUserFromDatabase(username Username, password PasswordHash, administrator bool, created, lastSeen *time.Time, sessions []Session) User {
 	return User{
 		username:      username,
 		password:      password,
@@ -34,11 +45,11 @@ func (u *User) Administrator() bool {
 	return u.administrator
 }
 
-func (u *User) Created() time.Time {
+func (u *User) Created() *time.Time {
 	return u.created
 }
 
-func (u *User) LastSeen() time.Time {
+func (u *User) LastSeen() *time.Time {
 	return u.lastSeen
 }
 
@@ -65,8 +76,8 @@ func (u *User) SetPassword(hash PasswordHash) {
 }
 
 func (u *User) UpdateLastSeen(t time.Time) {
-	if t.After(u.lastSeen) {
-		u.lastSeen = t
+	if u.lastSeen == nil || t.After(*u.lastSeen) {
+		u.lastSeen = &t
 	}
 }
 

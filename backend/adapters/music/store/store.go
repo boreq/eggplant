@@ -12,7 +12,7 @@ import (
 
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
 

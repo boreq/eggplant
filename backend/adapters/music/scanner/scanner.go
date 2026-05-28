@@ -11,7 +11,7 @@ import (
 	"github.com/boreq/eggplant/adapters/music/scanner/symwalk"
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/scanner"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
 

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/boreq/eggplant/cmd/eggplant/commands"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/guinea"
 )
 

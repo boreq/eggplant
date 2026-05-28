@@ -33,8 +33,7 @@ func (h *RegisterInitialHandler) Execute(cmd RegisterInitial) error {
 		return errors.Wrap(err, "hashing the password failed")
 	}
 
-	now := time.Now()
-	u := authdomain.NewUser(cmd.Username, passwordHash, true, now, now, nil)
+	u := authdomain.NewUser(cmd.Username, passwordHash, true, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		n, err := r.Users.Count()

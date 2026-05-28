@@ -8,7 +8,7 @@ import (
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 )
 
 type LoggingGetAlbumHandler struct {
