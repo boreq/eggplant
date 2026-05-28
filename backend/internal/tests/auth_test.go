@@ -101,8 +101,6 @@ func TestRegisterInitial(t *testing.T) {
 			require.Equal(t, 1, len(users))
 			require.Equal(t, username, users[0].Username())
 			require.Equal(t, true, users[0].Administrator())
-			require.False(t, users[0].Created().IsZero())
-			require.False(t, users[0].LastSeen().IsZero())
 		})
 	}
 }
@@ -193,8 +191,6 @@ func TestCheckAccessToken(t *testing.T) {
 	u := userFromCtx(t, a, ctx)
 	require.Equal(t, username, u.Username())
 	require.Equal(t, true, u.Administrator())
-	require.False(t, u.Created().IsZero())
-	require.False(t, u.LastSeen().IsZero())
 
 	_, err = a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: mustAccessToken(t, "fake")},

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
 

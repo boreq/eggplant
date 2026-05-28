@@ -14,7 +14,7 @@ import (
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/entrypoints/http/frontend"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
@@ -675,8 +675,8 @@ type readSessionResponse struct {
 type readUserResponse struct {
 	Username      string                `json:"username"`
 	Administrator bool                  `json:"administrator"`
-	Created       time.Time             `json:"created"`
-	LastSeen      time.Time             `json:"lastSeen"`
+	Created       *time.Time            `json:"created"`
+	LastSeen      *time.Time            `json:"lastSeen"`
 	Sessions      []readSessionResponse `json:"sessions"`
 }
 

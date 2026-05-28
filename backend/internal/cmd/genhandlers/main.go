@@ -45,7 +45,7 @@ func main() {
 	flag.StringVar(&dir, "dir", ".", "package directory to scan")
 	flag.StringVar(&out, "out", "handlers_logging_gen.go", "output filename (relative to -dir)")
 	flag.StringVar(&pkgName, "pkg", "", "package name of generated file (defaults to detected)")
-	flag.StringVar(&loggerImport, "logger-import", "github.com/boreq/eggplant/logging", "import path of logger package")
+	flag.StringVar(&loggerImport, "logger-import", "github.com/boreq/eggplant/internal/logging", "import path of logger package")
 	flag.StringVar(&loggerType, "logger-type", "logging.Logger", "logger type expression")
 	flag.StringVar(&loggerKey, "logger-key", "handler", "log key for handler name")
 	flag.Parse()

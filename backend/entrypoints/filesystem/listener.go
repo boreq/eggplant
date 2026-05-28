@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/application/music"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 )
 
 const retryDelay = 30 * time.Second

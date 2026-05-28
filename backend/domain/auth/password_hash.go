@@ -1,8 +1,12 @@
 package auth
 
-import "github.com/boreq/errors"
+import (
+	"github.com/boreq/eggplant/internal/pragma"
+	"github.com/boreq/errors"
+)
 
 type PasswordHash struct {
+	_     pragma.DoNotCompare
 	value []byte
 }
 

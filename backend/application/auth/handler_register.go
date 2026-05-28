@@ -38,8 +38,7 @@ func (h *RegisterHandler) Execute(accessCtx AccessContext, cmd Register) error {
 		return errors.Wrap(err, "hashing the password failed")
 	}
 
-	now := time.Now()
-	u := authdomain.NewUser(cmd.Username, passwordHash, false, now, now, nil)
+	u := authdomain.NewUser(cmd.Username, passwordHash, false, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		if _, err := r.Invitations.Get(cmd.Token); err != nil {

@@ -16,7 +16,7 @@ import (
 	"github.com/boreq/eggplant/application/queries"
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/hls"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
 

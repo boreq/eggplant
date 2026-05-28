@@ -6,7 +6,7 @@ import (
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/google/wire"
 	bolt "go.etcd.io/bbolt"
 )
