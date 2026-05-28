@@ -9,24 +9,15 @@ import (
 	app "github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/internal/fixture"
-	"github.com/boreq/eggplant/internal/wire"
 	"github.com/stretchr/testify/require"
-	bolt "go.etcd.io/bbolt"
 )
 
 func TestLastSeenUpdater(t *testing.T) {
-	db, cleanup := fixture.Bolt(t)
+	transactionProvider, cleanup := fixture.AuthTransactionProvider(t)
 	defer cleanup()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	repositoriesProvider := newAuthRepositoriesProvider()
-
-	transactionProvider := auth.NewAuthTransactionProvider(
-		db,
-		repositoriesProvider,
-	)
 
 	u, err := auth.NewLastSeenUpdater(transactionProvider)
 	require.NoError(t, err)
@@ -47,12 +38,13 @@ func TestLastSeenUpdater(t *testing.T) {
 	password, err := authdomain.NewPasswordHash([]byte("hash"))
 	require.NoError(t, err)
 
-	user := authdomain.NewUser(
+	now := time.Now()
+	user := authdomain.NewUserFromDatabase(
 		username,
 		password,
 		false,
-		time.Now(),
-		time.Now(),
+		&now,
+		&now,
 		[]authdomain.Session{session1, session2},
 	)
 
@@ -84,15 +76,4 @@ func TestLastSeenUpdater(t *testing.T) {
 		return nil
 	})
 	require.NoError(t, err)
-}
-
-type authRepositoriesProvider struct {
-}
-
-func newAuthRepositoriesProvider() *authRepositoriesProvider {
-	return &authRepositoriesProvider{}
-}
-
-func (p *authRepositoriesProvider) Provide(tx *bolt.Tx) (*app.TransactableRepositories, error) {
-	return wire.BuildTransactableAuthRepositories(tx)
 }

@@ -101,6 +101,8 @@ func TestRegisterInitial(t *testing.T) {
 			require.Equal(t, 1, len(users))
 			require.Equal(t, username, users[0].Username())
 			require.Equal(t, true, users[0].Administrator())
+			require.NotNil(t, users[0].Created())
+			require.Nil(t, users[0].LastSeen())
 		})
 	}
 }
@@ -191,6 +193,8 @@ func TestCheckAccessToken(t *testing.T) {
 	u := userFromCtx(t, a, ctx)
 	require.Equal(t, username, u.Username())
 	require.Equal(t, true, u.Administrator())
+	require.NotNil(t, u.Created())
+	require.Nil(t, u.LastSeen())
 
 	_, err = a.CheckAccessToken.Execute(
 		auth.CheckAccessToken{Token: mustAccessToken(t, "fake")},
@@ -252,10 +256,10 @@ func TestUpdateLastSeen(t *testing.T) {
 
 	u1 := userFromCtx(t, a, ctx1)
 	u2 := userFromCtx(t, a, ctx2)
-	require.False(t, u1.Created().IsZero())
-	require.False(t, u1.LastSeen().IsZero())
-	require.False(t, u2.Created().IsZero())
-	require.False(t, u2.LastSeen().IsZero())
+	require.NotNil(t, u1.Created())
+	require.NotNil(t, u2.Created())
+	require.Nil(t, u1.LastSeen())
+	require.Nil(t, u2.LastSeen())
 	require.Equal(t, u1.Created(), u2.Created())
 }
 
@@ -312,8 +316,8 @@ func TestList(t *testing.T) {
 	require.Equal(t, 1, len(users))
 	require.Equal(t, username, users[0].Username())
 	require.Equal(t, true, users[0].Administrator())
-	require.False(t, users[0].Created().IsZero())
-	require.False(t, users[0].LastSeen().IsZero())
+	require.NotNil(t, users[0].Created())
+	require.Nil(t, users[0].LastSeen())
 }
 
 func TestCreateInvitation(t *testing.T) {
@@ -441,8 +445,8 @@ func TestRegisterInvalid(t *testing.T) {
 			require.Equal(t, 1, len(users))
 			require.Equal(t, username, users[0].Username())
 			require.Equal(t, false, users[0].Administrator())
-			require.False(t, users[0].Created().IsZero())
-			require.False(t, users[0].LastSeen().IsZero())
+			require.NotNil(t, users[0].Created())
+			require.Nil(t, users[0].LastSeen())
 		})
 	}
 }
