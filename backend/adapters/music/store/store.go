@@ -365,6 +365,9 @@ func (s *Store) getOriginalSize() (int64, error) {
 	for _, item := range s.items {
 		fileInfo, err := os.Stat(item.Path)
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
 			return 0, errors.Wrap(err, "could not stat")
 		}
 		sum += fileInfo.Size()

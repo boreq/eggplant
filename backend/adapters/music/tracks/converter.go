@@ -259,6 +259,9 @@ func (c *Converter) GetStats() (queries.TrackStats, error) {
 	for _, it := range c.items {
 		info, err := os.Stat(it.Path().String())
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
 			return queries.TrackStats{}, errors.Wrap(err, "could not stat original")
 		}
 		originalSize += info.Size()
