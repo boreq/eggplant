@@ -69,6 +69,10 @@ func (c *ThumbnailConverter) Convert(item Item) error {
 	outputPath := c.OutputFile(item.Id)
 	tmpOutputPath := c.TemporaryOutputFile(item.Id)
 
+	if err := os.MkdirAll(c.OutputDirectory(), 0755); err != nil {
+		return errors.Wrap(err, "could not create the output directory")
+	}
+
 	f, err := os.Open(item.Path)
 	if err != nil {
 		return errors.Wrap(err, "could not open the input file")
