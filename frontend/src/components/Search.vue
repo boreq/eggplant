@@ -11,7 +11,7 @@
                         </a>
                     </template>
                 </SubHeader>
-                <Tracks v-if="hasTracks" :entries="displayedTracks" :showGoToAlbum="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
+                <Tracks v-if="hasTracks" :entries="displayedTracks" :allEntries="tracks" :showGoToAlbum="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
                 <div class="message" v-else>
                     No tracks found.
                 </div>

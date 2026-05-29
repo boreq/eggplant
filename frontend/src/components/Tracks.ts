@@ -25,6 +25,9 @@ export default class Tracks extends Vue {
     entries: TrackWithAlbum[];
 
     @Prop()
+    allEntries: TrackWithAlbum[];
+
+    @Prop()
     queueMode: boolean;
 
     @Prop()
@@ -85,7 +88,7 @@ export default class Tracks extends Vue {
         } else {
             // I am very tired but something tells me it may be a good idea to copy
             // this instead of using it directly
-            const entries: TrackWithAlbum[] = this.entries
+            const entries: TrackWithAlbum[] = this.queueEntries
                 .map(v => {
                     return {
                         album: v.album,
@@ -128,6 +131,11 @@ export default class Tracks extends Vue {
 
     get nowPlaying(): TrackWithAlbum {
         return this.$store.getters.nowPlaying;
+    }
+
+    // Full track list to enqueue on play; entries may be a displayed subset.
+    private get queueEntries(): TrackWithAlbum[] {
+        return this.allEntries || this.entries;
     }
 
     private paused(): boolean {
