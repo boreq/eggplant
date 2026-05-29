@@ -51,6 +51,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
 
+	h.router.HandlerFunc(http.MethodGet, "/api/track/:trackid/duration", rest.Wrap(h.getTrackDuration))
 	h.router.HandlerFunc(http.MethodPost, "/api/track/:trackid/stream", rest.Wrap(h.startTrackStream))
 	h.router.GET("/api/track/:trackid/stream/:streamid/playlist", h.streamPlaylist)
 	h.router.GET("/api/track/:trackid/stream/:streamid/init", h.streamInit)
@@ -190,6 +191,38 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	}
 
 	return rest.NewResponse(startStreamResponse{StreamId: streamId.String()})
+}
+
+func (h *Handler) getTrackDuration(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackid"))
+	if err != nil {
+		h.log.Warn("invalid track id", "err", err)
+		return rest.ErrBadRequest.WithMessage("Invalid track id.")
+	}
+
+	accessCtx, err := h.authProvider.Get(r)
+	if err != nil {
+		h.log.Error("auth provider get failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	duration, err := h.app.Music.GetTrackDuration.Execute(r.Context(), accessCtx.Library(), music.GetTrackDuration{
+		TrackId: trackId,
+	})
+	if err != nil {
+		if errors.Is(err, library.ErrTrackNotFound) {
+			return rest.ErrNotFound
+		}
+		if errors.Is(err, music.ErrLibraryNotReady) {
+			return rest.ErrServiceUnavailable.WithMessage("The music library is being prepared.")
+		}
+		h.log.Error("get track duration failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(trackDuration{Duration: duration.Seconds()})
 }
 
 func parseSeekParam(s string) (*musicdomain.RequestedSeekPosition, error) {

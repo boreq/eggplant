@@ -2,7 +2,6 @@ package music_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/stretchr/testify/require"
@@ -70,7 +69,5 @@ func validTrack(t *testing.T) music.Track {
 	t.Helper()
 	title, err := music.NewTrackTitle("track")
 	require.NoError(t, err)
-	dur, err := music.NewTrackDuration(time.Second)
-	require.NoError(t, err)
-	return music.NewTrack(music.TrackId{}, music.FileId{}, title, dur)
+	return music.NewTrack(music.TrackId{}, music.FileId{}, title)
 }

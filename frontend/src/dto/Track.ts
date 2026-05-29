@@ -2,5 +2,6 @@ export interface Track {
     id: string;
     number?: number;
     title: string;
-    duration: number;
+    // Loaded lazily from the track duration endpoint; undefined until fetched.
+    duration?: number;
 }

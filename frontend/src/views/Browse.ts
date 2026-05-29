@@ -1,5 +1,6 @@
 import { Component, Vue, Ref, Watch } from 'vue-property-decorator';
 import { ApiService } from '@/services/ApiService';
+import { DurationLoader } from '@/services/DurationLoader';
 import { HttpStatus } from '@/services/HttpStatus';
 import { NavigationService } from '@/services/NavigationService';
 import { Album, PartialAlbum } from '@/dto/Album';
@@ -81,6 +82,7 @@ export default class Browse extends Vue {
 
     private readonly apiService = new ApiService(this);
     private readonly navigationService = new NavigationService();
+    private readonly durationLoader = new DurationLoader(this);
 
     @Watch('$route')
     onRouteChanged(): void {
@@ -112,6 +114,7 @@ export default class Browse extends Vue {
 
     destroyed(): void {
         this.clearTimeout();
+        this.durationLoader.cancel();
     }
 
     parentUrl(album: PartialAlbum): Location {
@@ -291,6 +294,13 @@ export default class Browse extends Vue {
         return 0;
     }
 
+    get durationsLoading(): boolean {
+        if (this.album && this.album.tracks) {
+            return this.album.tracks.some(track => track.duration === undefined);
+        }
+        return false;
+    }
+
     get showPlayAlbumButtonAsPause(): boolean {
         if (!this.anyAlbumSongIsCurrentlyNowPlaying()) {
             return false;
@@ -329,13 +339,12 @@ export default class Browse extends Vue {
                     this.album = response.data;
                     this.state = this.noContent ? BrowseState.Empty : BrowseState.Ready;
 
+                    if (this.album && this.album.tracks) {
+                        this.durationLoader.load(this.album.tracks);
+                    }
+
                     if (this.state === BrowseState.Empty) {
                         this.scheduleTimeout();
-                    } else if (this.album.tracks) {
-                        const trackAwaitingConversion = this.album.tracks.find(track => !track.duration);
-                        if (trackAwaitingConversion) {
-                            this.scheduleTimeout();
-                        }
                     }
                 },
                 error => {

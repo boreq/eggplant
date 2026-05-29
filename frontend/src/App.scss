@@ -58,9 +58,11 @@ a {
         .button .spinner,
         .app-button .spinner,
         .action-bar-button .spinner,
-        .message .spinner {
+        .message .spinner,
+        .duration .spinner {
             font-size: inherit;
             padding: 0;
+            display: inline-block;
         }
 
         > .wrapper {

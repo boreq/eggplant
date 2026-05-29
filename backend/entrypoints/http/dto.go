@@ -41,9 +41,12 @@ type thumbnail struct {
 }
 
 type track struct {
-	Id       string  `json:"id"`
-	Number   *int    `json:"number,omitempty"`
-	Title    string  `json:"title"`
+	Id     string `json:"id"`
+	Number *int   `json:"number,omitempty"`
+	Title  string `json:"title"`
+}
+
+type trackDuration struct {
 	Duration float64 `json:"duration"`
 }
 
@@ -90,10 +93,9 @@ func toTrack(t music.Track) track {
 		number = &v
 	}
 	return track{
-		Id:       t.Id().String(),
-		Number:   number,
-		Title:    t.Title().String(),
-		Duration: t.Duration().Seconds(),
+		Id:     t.Id().String(),
+		Number: number,
+		Title:  t.Title().String(),
 	}
 }
 

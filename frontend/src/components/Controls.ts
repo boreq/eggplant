@@ -40,7 +40,7 @@ export default class Controls extends Vue {
     }
 
     get duration(): string {
-        if (!this.playbackData) {
+        if (!this.playbackData || !Number.isFinite(this.playbackData.duration)) {
             return null;
         }
         return this.textService.formatTime(this.playbackData.duration);

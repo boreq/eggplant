@@ -41,6 +41,7 @@ var appSet = wire.NewSet(
 	music.NewThumbnailHandler,
 	music.NewGetRootAlbumHandler,
 	music.NewGetAlbumHandler,
+	music.NewGetTrackDurationHandler,
 	music.NewSearchHandler,
 	music.NewLoadLibraryHandler,
 	music.NewLoggingStartStreamingHandler,
@@ -51,6 +52,7 @@ var appSet = wire.NewSet(
 	music.NewLoggingThumbnailHandler,
 	music.NewLoggingGetRootAlbumHandler,
 	music.NewLoggingGetAlbumHandler,
+	music.NewLoggingGetTrackDurationHandler,
 	music.NewLoggingSearchHandler,
 	music.NewLoggingLoadLibraryHandler,
 

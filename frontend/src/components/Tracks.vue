@@ -47,7 +47,8 @@
             </dropdown>
 
             <div class="duration">
-                {{ formatDuration(entry.track) }}
+                <spinner v-if="entry.track.duration === undefined"></spinner>
+                <template v-else>{{ formatDuration(entry.track) }}</template>
             </div>
         </li>
     </ul>

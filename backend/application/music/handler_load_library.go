@@ -2,15 +2,12 @@ package music
 
 import (
 	"context"
-	"runtime"
-	"sync"
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	scannerdomain "github.com/boreq/eggplant/domain/music/scanner"
 	"github.com/boreq/eggplant/domain/music/titleparser"
 	"github.com/boreq/errors"
-	"golang.org/x/sync/errgroup"
 )
 
 type Scanner interface {
@@ -23,7 +20,7 @@ type LoadLibraryHandler struct {
 	trackStore     TrackConverter
 	thumbnailStore ThumbnailStore
 	accessLoader   AccessLoader
-	durations      TrackDurations
+	durations      TrackDurationStore
 }
 
 func NewLoadLibraryHandler(
@@ -32,7 +29,7 @@ func NewLoadLibraryHandler(
 	trackStore TrackConverter,
 	thumbnailStore ThumbnailStore,
 	accessLoader AccessLoader,
-	durations TrackDurations,
+	durations TrackDurationStore,
 ) *LoadLibraryHandler {
 	return &LoadLibraryHandler{
 		repo:           repo,
@@ -50,14 +47,8 @@ func (h *LoadLibraryHandler) Execute(ctx context.Context) error {
 		return errors.Wrap(err, "scan failed")
 	}
 
-	pathDurations, err := h.probeDurations(ctx, scan)
-	if err != nil {
-		return errors.Wrap(err, "could not probe track durations")
-	}
-
 	b := &libraryBuilder{
-		accessLoader:  h.accessLoader,
-		pathDurations: pathDurations,
+		accessLoader: h.accessLoader,
 	}
 
 	root, err := b.buildRoot(scan)
@@ -67,58 +58,13 @@ func (h *LoadLibraryHandler) Execute(ctx context.Context) error {
 
 	h.trackStore.SetItems(b.trackItems)
 	h.thumbnailStore.SetItems(b.thumbnailItems)
+	h.durations.SetItems(b.trackItems)
 	h.repo.Save(library.NewLibrary(root))
 	return nil
 }
 
-func (h *LoadLibraryHandler) probeDurations(ctx context.Context, scan scannerdomain.FoundRootAlbum) (map[string]music.TrackDuration, error) {
-	paths := uniqueTrackPaths(scan)
-	out := make(map[string]music.TrackDuration, len(paths))
-	var mu sync.Mutex
-
-	var g errgroup.Group
-	g.SetLimit(runtime.NumCPU())
-	for _, p := range paths {
-		g.Go(func() error {
-			d, err := h.durations.GetDuration(ctx, p)
-			if err != nil {
-				return errors.Wrapf(err, "could not measure duration of '%s'", p)
-			}
-			mu.Lock()
-			out[p] = d
-			mu.Unlock()
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func uniqueTrackPaths(scan scannerdomain.FoundRootAlbum) []string {
-	seen := map[string]struct{}{}
-	var walk func(albums map[music.AlbumTitle]scannerdomain.FoundAlbum, tracks map[music.TrackTitle]scannerdomain.FoundTrack)
-	walk = func(albums map[music.AlbumTitle]scannerdomain.FoundAlbum, tracks map[music.TrackTitle]scannerdomain.FoundTrack) {
-		for _, t := range tracks {
-			seen[t.Path().String()] = struct{}{}
-		}
-		for _, a := range albums {
-			walk(a.Albums(), a.Tracks())
-		}
-	}
-	walk(scan.Albums(), scan.Tracks())
-
-	out := make([]string, 0, len(seen))
-	for p := range seen {
-		out = append(out, p)
-	}
-	return out
-}
-
 type libraryBuilder struct {
 	accessLoader   AccessLoader
-	pathDurations  map[string]music.TrackDuration
 	trackItems     []TrackStoreItem
 	thumbnailItems []ThumbnailStoreItem
 }
@@ -199,11 +145,6 @@ func (b *libraryBuilder) buildTracks(parents []music.AlbumId, src map[music.Trac
 	for title, ft := range src {
 		path := ft.Path()
 
-		duration, ok := b.pathDurations[path.String()]
-		if !ok {
-			return nil, errors.New("missing duration for '" + path.String() + "'")
-		}
-
 		id, err := music.NewTrackId(parents, title)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not generate track id for '%s'", title)
@@ -214,8 +155,8 @@ func (b *libraryBuilder) buildTracks(parents []music.AlbumId, src map[music.Trac
 			return nil, errors.Wrapf(err, "could not generate file id for '%s'", path)
 		}
 
-		out = append(out, music.NewTrack(id, fileId, title, duration))
-		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path, duration))
+		out = append(out, music.NewTrack(id, fileId, title))
+		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path))
 	}
 	return tryAddingTrackNumbers(out), nil
 }
@@ -229,7 +170,7 @@ func tryAddingTrackNumbers(tracks []music.Track) []music.Track {
 		if err != nil || parsed.Number() == nil {
 			return tracks
 		}
-		annotated = append(annotated, music.NewTrackWithNumber(t.Id(), t.FileId(), *parsed.Number(), parsed.Title(), t.Duration()))
+		annotated = append(annotated, music.NewTrackWithNumber(t.Id(), t.FileId(), *parsed.Number(), parsed.Title()))
 	}
 	return annotated
 }

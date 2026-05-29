@@ -2,7 +2,6 @@ package music_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/titleparser"
@@ -175,8 +174,6 @@ func TestNewTracks(t *testing.T) {
 
 func mkTracks(t *testing.T, titles []string) []music.Track {
 	t.Helper()
-	dur, err := music.NewTrackDuration(time.Second)
-	require.NoError(t, err)
 	tracks := make([]music.Track, 0, len(titles))
 	for _, s := range titles {
 		title, err := music.NewTrackTitle(s)
@@ -184,9 +181,9 @@ func mkTracks(t *testing.T, titles []string) []music.Track {
 		parsed, err := titleparser.Parse(title)
 		require.NoError(t, err)
 		if parsed.Number() == nil {
-			tracks = append(tracks, music.NewTrack(music.TrackId{}, music.FileId{}, parsed.Title(), dur))
+			tracks = append(tracks, music.NewTrack(music.TrackId{}, music.FileId{}, parsed.Title()))
 		} else {
-			tracks = append(tracks, music.NewTrackWithNumber(music.TrackId{}, music.FileId{}, *parsed.Number(), parsed.Title(), dur))
+			tracks = append(tracks, music.NewTrackWithNumber(music.TrackId{}, music.FileId{}, *parsed.Number(), parsed.Title()))
 		}
 	}
 	return tracks

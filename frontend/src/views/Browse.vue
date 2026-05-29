@@ -44,7 +44,7 @@
                         </div>
 
                         <div class="details" v-if="numberOfTracks > 0">
-                            {{ numberOfTracks }} tracks, {{ totalDurationMinutes }} minutes
+                            {{ numberOfTracks }} tracks, {{ totalDurationMinutes }}<template v-if="durationsLoading">+</template> minutes
                         </div>
 
                         <ul class="actions" v-if="numberOfTracks > 0">
