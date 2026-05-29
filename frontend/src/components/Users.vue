@@ -29,11 +29,13 @@
                 </td>
 
                 <td class="created">
-                    <timeago :datetime="user.created"></timeago>
+                    <timeago v-if="user.created" :datetime="user.created"></timeago>
+                    <template v-else>Unknown</template>
                 </td>
 
                 <td class="last-seen">
-                    <timeago :datetime="user.lastSeen"></timeago>
+                    <timeago v-if="user.lastSeen" :datetime="user.lastSeen"></timeago>
+                    <template v-else>Never</template>
                 </td>
 
                 <td class="actions">
