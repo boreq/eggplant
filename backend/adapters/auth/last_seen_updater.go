@@ -25,6 +25,7 @@ type LastSeenUpdater struct {
 
 func NewLastSeenUpdater(transactionProvider auth.TransactionProvider) (*LastSeenUpdater, error) {
 	return &LastSeenUpdater{
+		log:                 logging.New("adapters/auth.LastSeenUpdater"),
 		transactionProvider: transactionProvider,
 		userUpdates:         make(map[authdomain.Username]*updateCache),
 	}, nil
