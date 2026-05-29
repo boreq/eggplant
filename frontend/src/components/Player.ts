@@ -187,6 +187,7 @@ export default class Player extends Vue {
                 xhr.withCredentials = true;
             },
             startPosition: 0,
+            debug: true,
         });
         this.hlsErrorHandler = errorHandler;
         this.hls.on(Hls.Events.ERROR, errorHandler);
