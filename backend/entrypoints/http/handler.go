@@ -249,8 +249,15 @@ func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
-	w.Header().Set("Accept-Ranges", "bytes")
-	http.ServeContent(w, r, "playlist.m3u8", res.Modtime, bytes.NewReader(res.Playlist.Bytes()))
+	// While ffmpeg converts a track it rewrites the playlist several times per
+	// second, each time with more segments. Last-Modified has 1s resolution, so
+	// those sub-second updates collapse to one value and ServeContent answers
+	// refreshes with spurious 304s: the client keeps a stale playlist that's
+	// missing the later segments and stalls forever once it drains the ones it
+	// has (issue #83). Pass a zero modtime to disable conditional requests;
+	// no-store keeps it out of the browser cache too.
+	w.Header().Set("Cache-Control", "no-store")
+	http.ServeContent(w, r, "playlist.m3u8", time.Time{}, bytes.NewReader(res.Playlist.Bytes()))
 }
 
 func (h *Handler) streamInit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
