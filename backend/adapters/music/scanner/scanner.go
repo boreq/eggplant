@@ -106,7 +106,7 @@ func (s *Scanner) Scan() (scanner.FoundRootAlbum, error) {
 		}
 
 		if s.isThumbnail(filePath) {
-			if err := s.setThumbnailFile(root, filePath); err != nil {
+			if err := s.setThumbnailFile(root, filePath, info.Size()); err != nil {
 				return errors.Wrap(err, "could not add a thumbnail")
 			}
 			return nil
@@ -171,15 +171,24 @@ func (s *Scanner) addTrack(root *album, file music.FilePath, size int64) error {
 	return nil
 }
 
-func (s *Scanner) setThumbnailFile(root *album, file music.FilePath) error {
+func (s *Scanner) setThumbnailFile(root *album, file music.FilePath, size int64) error {
 	a, err := s.findAlbum(root, file)
 	if err != nil {
 		return errors.Wrap(err, "could not find an album")
 	}
-	if a.thumbnailFile != nil {
-		return fmt.Errorf("thumbnail file already set (%s) but found a new one (%s)", *a.thumbnailFile, file)
+	if a.thumbnail != nil {
+		kept, discarded := *a.thumbnail, thumbnail{path: file, size: size}
+		if size > a.thumbnail.size {
+			kept, discarded = discarded, kept
+		}
+		s.logger.Warn("duplicate thumbnail, keeping larger file",
+			"kept", kept,
+			"discarded", discarded,
+		)
+		a.thumbnail = &kept
+		return nil
 	}
-	a.thumbnailFile = &file
+	a.thumbnail = &thumbnail{path: file, size: size}
 	return nil
 }
 
@@ -251,10 +260,10 @@ func (s *Scanner) findAlbum(root *album, file music.FilePath) (*album, error) {
 }
 
 type album struct {
-	thumbnailFile *music.FilePath
-	accessFile    *music.FilePath
-	albums        map[music.AlbumTitle]*album
-	tracks        map[music.TrackTitle]track
+	thumbnail  *thumbnail
+	accessFile *music.FilePath
+	albums     map[music.AlbumTitle]*album
+	tracks     map[music.TrackTitle]track
 }
 
 func newAlbum() *album {
@@ -265,6 +274,11 @@ func newAlbum() *album {
 }
 
 type track struct {
+	path music.FilePath
+	size int64
+}
+
+type thumbnail struct {
 	path music.FilePath
 	size int64
 }
@@ -284,7 +298,7 @@ func toFoundRootAlbum(root *album) (scanner.FoundRootAlbum, error) {
 	if err != nil {
 		return scanner.FoundRootAlbum{}, err
 	}
-	return scanner.NewFoundRootAlbum(root.thumbnailFile, root.accessFile, albums, toFoundTracks(root.tracks)), nil
+	return scanner.NewFoundRootAlbum(thumbnailPath(root.thumbnail), root.accessFile, albums, toFoundTracks(root.tracks)), nil
 }
 
 func toFoundAlbums(src map[music.AlbumTitle]*album) (map[music.AlbumTitle]scanner.FoundAlbum, error) {
@@ -295,13 +309,20 @@ func toFoundAlbums(src map[music.AlbumTitle]*album) (map[music.AlbumTitle]scanne
 			return nil, err
 		}
 
-		found, err := scanner.NewFoundAlbum(a.thumbnailFile, a.accessFile, subAlbums, toFoundTracks(a.tracks))
+		found, err := scanner.NewFoundAlbum(thumbnailPath(a.thumbnail), a.accessFile, subAlbums, toFoundTracks(a.tracks))
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not create found album '%s'", title)
 		}
 		out[title] = found
 	}
 	return out, nil
+}
+
+func thumbnailPath(t *thumbnail) *music.FilePath {
+	if t == nil {
+		return nil
+	}
+	return &t.path
 }
 
 func toFoundTracks(src map[music.TrackTitle]track) map[music.TrackTitle]scanner.FoundTrack {
