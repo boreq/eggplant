@@ -4,19 +4,22 @@ import (
 	"context"
 	"time"
 
-	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/internal/logging"
 )
 
 const retryDelay = 30 * time.Second
 
+type LoadLibraryHandler interface {
+	Execute(ctx context.Context) error
+}
+
 type Listener struct {
-	loadLibrary *music.LoadLibraryHandler
+	loadLibrary LoadLibraryHandler
 	updates     <-chan struct{}
 	log         logging.Logger
 }
 
-func NewListener(loadLibrary *music.LoadLibraryHandler, updates <-chan struct{}) *Listener {
+func NewListener(loadLibrary LoadLibraryHandler, updates <-chan struct{}) *Listener {
 	return &Listener{
 		loadLibrary: loadLibrary,
 		updates:     updates,

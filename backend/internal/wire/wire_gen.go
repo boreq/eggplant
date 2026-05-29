@@ -233,7 +233,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	if err != nil {
 		return nil, err
 	}
-	listener := filesystem.NewListener(loadLibraryHandler, v2)
+	listener := filesystem.NewListener(loggingLoadLibraryHandler, v2)
 	serviceService := service.NewService(server, listener, lastSeenUpdater, conf)
 	return serviceService, nil
 }

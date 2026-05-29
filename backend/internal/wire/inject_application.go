@@ -6,6 +6,7 @@ import (
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
+	"github.com/boreq/eggplant/entrypoints/filesystem"
 	"github.com/boreq/eggplant/internal/logging"
 	"github.com/google/wire"
 	bolt "go.etcd.io/bbolt"
@@ -55,6 +56,7 @@ var appSet = wire.NewSet(
 	music.NewLoggingGetTrackDurationHandler,
 	music.NewLoggingSearchHandler,
 	music.NewLoggingLoadLibraryHandler,
+	wire.Bind(new(filesystem.LoadLibraryHandler), new(*music.LoggingLoadLibraryHandler)),
 
 	wire.Struct(new(application.Queries), "*"),
 	queries.NewStatsHandler,
