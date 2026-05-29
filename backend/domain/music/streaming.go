@@ -49,11 +49,11 @@ type SeekPosition struct {
 	value time.Duration
 }
 
-func NewSeekPosition(requested RequestedSeekPosition, track Track) (SeekPosition, error) {
-	if requested.value >= track.Duration().Duration() {
-		return SeekPosition{}, errors.New("seek position must be before the end of the track")
-	}
-	return SeekPosition(requested), nil
+func NewSeekPosition(requested RequestedSeekPosition) SeekPosition {
+	// The upper bound is not validated here: track durations are no longer
+	// known at this point and ffmpeg clamps an over-long seek to the end of
+	// the track anyway.
+	return SeekPosition(requested)
 }
 
 func (s SeekPosition) Duration() time.Duration {

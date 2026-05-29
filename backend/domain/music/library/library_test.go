@@ -2,7 +2,6 @@ package library_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
@@ -617,13 +616,11 @@ func mkTrack(t *testing.T, title string) music.Track {
 	tt, err := music.NewTrackTitle(title)
 	require.NoError(t, err)
 	id := trackIdFor(t, title)
-	d, err := music.NewTrackDuration(time.Second)
-	require.NoError(t, err)
 	p, err := music.NewFilePath("/test/" + title)
 	require.NoError(t, err)
 	fileId, err := music.NewFileId(p)
 	require.NoError(t, err)
-	return music.NewTrack(id, fileId, tt, d)
+	return music.NewTrack(id, fileId, tt)
 }
 
 func mkThumb(t *testing.T, filename string) music.Thumbnail {

@@ -182,6 +182,10 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
 	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
+	ffProbe := tracks.NewFFProbe()
+	durationStore := tracks.NewDurationStore(ffProbe)
+	getTrackDurationHandler := music.NewGetTrackDurationHandler(inMemoryRepository, durationStore)
+	loggingGetTrackDurationHandler := music.NewLoggingGetTrackDurationHandler(getTrackDurationHandler, v)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
 	loggingSearchHandler := music.NewLoggingSearchHandler(searchHandler, v)
 	scannerConfig, err := newScannerConfig(conf)
@@ -193,20 +197,20 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		return nil, err
 	}
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
-	ffProbe := tracks.NewFFProbe()
-	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, ffProbe)
+	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, durationStore)
 	loggingLoadLibraryHandler := music.NewLoggingLoadLibraryHandler(loadLibraryHandler, v)
 	applicationMusic := application.Music{
-		Thumbnail:       loggingThumbnailHandler,
-		StartStreaming:  loggingStartStreamingHandler,
-		StreamPlaylist:  loggingStreamPlaylistHandler,
-		StreamInit:      loggingStreamInitHandler,
-		StreamFragment:  loggingStreamFragmentHandler,
-		KeepAliveStream: loggingKeepAliveStreamHandler,
-		GetRootAlbum:    loggingGetRootAlbumHandler,
-		GetAlbum:        loggingGetAlbumHandler,
-		Search:          loggingSearchHandler,
-		LoadLibrary:     loggingLoadLibraryHandler,
+		Thumbnail:        loggingThumbnailHandler,
+		StartStreaming:   loggingStartStreamingHandler,
+		StreamPlaylist:   loggingStreamPlaylistHandler,
+		StreamInit:       loggingStreamInitHandler,
+		StreamFragment:   loggingStreamFragmentHandler,
+		KeepAliveStream:  loggingKeepAliveStreamHandler,
+		GetRootAlbum:     loggingGetRootAlbumHandler,
+		GetAlbum:         loggingGetAlbumHandler,
+		GetTrackDuration: loggingGetTrackDurationHandler,
+		Search:           loggingSearchHandler,
+		LoadLibrary:      loggingLoadLibraryHandler,
 	}
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)

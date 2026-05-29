@@ -54,8 +54,15 @@ export default class Player extends Vue {
         }
 
         if (!this.currentNowPlaying || this.currentNowPlaying !== this.storeNowPlaying) {
+            const track = this.storeNowPlaying.track;
+            if (track.duration === undefined) {
+                Notifications.pushError(this, `Cannot play "${track.title}", its duration is not loaded yet.`);
+                this.currentNowPlaying = null;
+                this.$store.commit(Mutation.Next);
+                return;
+            }
             this.currentNowPlaying = this.storeNowPlaying;
-            this.startStream(this.storeNowPlaying.track);
+            this.startStream(track);
         }
     }
 

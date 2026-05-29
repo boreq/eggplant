@@ -68,6 +68,35 @@ func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library.AccessContext) (m
 	return ret0, ret1
 }
 
+type LoggingGetTrackDurationHandler struct {
+	inner  *GetTrackDurationHandler
+	logger logging.Logger
+}
+
+func NewLoggingGetTrackDurationHandler(inner *GetTrackDurationHandler, logger logging.Logger) *LoggingGetTrackDurationHandler {
+	return &LoggingGetTrackDurationHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingGetTrackDurationHandler) Execute(ctx context.Context, accessCtx library.AccessContext, cmd GetTrackDuration) (music.TrackDuration, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "GetTrackDuration",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
 type LoggingKeepAliveStreamHandler struct {
 	inner  *KeepAliveStreamHandler
 	logger logging.Logger

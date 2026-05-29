@@ -36,12 +36,7 @@ func (h *StartStreamingHandler) Execute(ctx context.Context, accessCtx library.A
 		return music.StreamId{}, errors.Wrap(err, "could not get the track")
 	}
 
-	seekPosition, err := h.seekPosition(cmd, track)
-	if err != nil {
-		return music.StreamId{}, errors.Wrap(err, "could not resolve seek position")
-	}
-
-	streamId, err := h.trackConverter.StartStream(ctx, track.FileId(), seekPosition)
+	streamId, err := h.trackConverter.StartStream(ctx, track.FileId(), h.seekPosition(cmd))
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not start the stream")
 	}
@@ -49,13 +44,10 @@ func (h *StartStreamingHandler) Execute(ctx context.Context, accessCtx library.A
 	return streamId, nil
 }
 
-func (h *StartStreamingHandler) seekPosition(cmd StartStreaming, track music.Track) (*music.SeekPosition, error) {
+func (h *StartStreamingHandler) seekPosition(cmd StartStreaming) *music.SeekPosition {
 	if cmd.SeekPosition == nil {
-		return nil, nil
+		return nil
 	}
-	seekPosition, err := music.NewSeekPosition(*cmd.SeekPosition, track)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not validate seek position against the track")
-	}
-	return &seekPosition, nil
+	seekPosition := music.NewSeekPosition(*cmd.SeekPosition)
+	return &seekPosition
 }

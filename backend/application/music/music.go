@@ -33,13 +33,12 @@ type TrackConverter interface {
 }
 
 type TrackStoreItem struct {
-	fileId   music.FileId
-	path     music.FilePath
-	duration music.TrackDuration
+	fileId music.FileId
+	path   music.FilePath
 }
 
-func NewTrackStoreItem(fileId music.FileId, path music.FilePath, duration music.TrackDuration) TrackStoreItem {
-	return TrackStoreItem{fileId: fileId, path: path, duration: duration}
+func NewTrackStoreItem(fileId music.FileId, path music.FilePath) TrackStoreItem {
+	return TrackStoreItem{fileId: fileId, path: path}
 }
 
 func (t TrackStoreItem) FileId() music.FileId {
@@ -48,10 +47,6 @@ func (t TrackStoreItem) FileId() music.FileId {
 
 func (t TrackStoreItem) Path() music.FilePath {
 	return t.path
-}
-
-func (t TrackStoreItem) Duration() music.TrackDuration {
-	return t.duration
 }
 
 type ThumbnailStore interface {
@@ -76,8 +71,9 @@ func (t ThumbnailStoreItem) Path() music.FilePath {
 	return t.path
 }
 
-type TrackDurations interface {
-	GetDuration(ctx context.Context, path string) (music.TrackDuration, error)
+type TrackDurationStore interface {
+	SetItems(items []TrackStoreItem)
+	GetDuration(ctx context.Context, fileId music.FileId) (music.TrackDuration, error)
 }
 
 type AccessLoader interface {

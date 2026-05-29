@@ -12,6 +12,7 @@ import { User } from '@/dto/User';
 import { Invitation } from '@/dto/Invitation';
 import { RegisterCommand } from '@/dto/RegisterCommand';
 import { StreamStartResponse } from '@/dto/StreamStartResponse';
+import { TrackDuration } from '@/dto/TrackDuration';
 
 /*
 declare module 'vue-property-decorator' {
@@ -60,6 +61,11 @@ export class ApiService {
     stats(): Promise<AxiosResponse<Stats>> {
         const url = `stats`;
         return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
+    getTrackDuration(track: Track): Promise<AxiosResponse<TrackDuration>> {
+        const url = `track/${track.id}/duration`;
+        return this.axios.get<TrackDuration>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     startStream(track: Track, seekSeconds?: number): Promise<AxiosResponse<StreamStartResponse>> {

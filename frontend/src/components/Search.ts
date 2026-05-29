@@ -1,6 +1,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { ApiService } from '@/services/ApiService';
+import { DurationLoader } from '@/services/DurationLoader';
 
 import MainHeader from '@/components/MainHeader.vue';
 import SubHeader from '@/components/SubHeader.vue';
@@ -43,7 +44,13 @@ export default class Search extends Vue {
 
     private timeoutId: number = null;
     private readonly apiService = new ApiService(this);
+    private readonly durationLoader = new DurationLoader(this);
     private readonly searchDelay = 50;
+
+    destroyed(): void {
+        this.clearTimeout();
+        this.durationLoader.cancel();
+    }
 
     @Watch('query', { immediate: true })
     onQueryChanged(): void {
@@ -123,6 +130,9 @@ export default class Search extends Vue {
                 response => {
                     if (this.query === query) {
                         this.result = response.data;
+                        if (this.result && this.result.tracks) {
+                            this.durationLoader.load(this.result.tracks.map(entry => entry.track));
+                        }
                     }
                 },
             );

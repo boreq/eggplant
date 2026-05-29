@@ -7,30 +7,27 @@ import (
 )
 
 type Track struct {
-	id       TrackId
-	fileId   FileId
-	number   *TrackNumber
-	title    TrackTitle
-	duration TrackDuration
+	id     TrackId
+	fileId FileId
+	number *TrackNumber
+	title  TrackTitle
 }
 
-func NewTrack(id TrackId, fileId FileId, title TrackTitle, duration TrackDuration) Track {
+func NewTrack(id TrackId, fileId FileId, title TrackTitle) Track {
 	return Track{
-		id:       id,
-		fileId:   fileId,
-		number:   nil,
-		title:    title,
-		duration: duration,
+		id:     id,
+		fileId: fileId,
+		number: nil,
+		title:  title,
 	}
 }
 
-func NewTrackWithNumber(id TrackId, fileId FileId, number TrackNumber, title TrackTitle, duration TrackDuration) Track {
+func NewTrackWithNumber(id TrackId, fileId FileId, number TrackNumber, title TrackTitle) Track {
 	return Track{
-		id:       id,
-		fileId:   fileId,
-		number:   &number,
-		title:    title,
-		duration: duration,
+		id:     id,
+		fileId: fileId,
+		number: &number,
+		title:  title,
 	}
 }
 
@@ -48,10 +45,6 @@ func (t Track) Title() TrackTitle {
 
 func (t Track) Number() *TrackNumber {
 	return t.number
-}
-
-func (t Track) Duration() TrackDuration {
-	return t.duration
 }
 
 type TrackId struct {

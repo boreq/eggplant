@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/application"
+	"github.com/boreq/eggplant/application/auth"
 	appmusic "github.com/boreq/eggplant/application/music"
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/hls"
 	"github.com/boreq/eggplant/domain/music/library"
 	httpentrypoint "github.com/boreq/eggplant/entrypoints/http"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,9 +56,7 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 	require.NoError(t, err)
 	fileId, err := musicdomain.NewFileId(path)
 	require.NoError(t, err)
-	duration, err := musicdomain.NewTrackDuration(36 * time.Second)
-	require.NoError(t, err)
-	track := musicdomain.NewTrack(testTrackId(t), fileId, title, duration)
+	track := musicdomain.NewTrack(testTrackId(t), fileId, title)
 
 	visibility := library.NewVisibility(true)
 	root, err := library.NewRootAlbum(nil, &visibility, nil, []musicdomain.Track{track})
@@ -130,6 +129,6 @@ func (c fakeTrackConverter) GetPlaylist(musicdomain.FileId, musicdomain.StreamId
 
 type anonymousAuthProvider struct{}
 
-func (anonymousAuthProvider) Get(*http.Request) (*httpentrypoint.AuthenticatedUser, error) {
-	return nil, nil
+func (anonymousAuthProvider) Get(*http.Request) (httpentrypoint.AccessContext, error) {
+	return httpentrypoint.NewAccessContext(auth.NewAnonymousAccessContext()), nil
 }
