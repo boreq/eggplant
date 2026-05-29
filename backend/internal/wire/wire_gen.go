@@ -8,6 +8,7 @@ package wire
 
 import (
 	"context"
+
 	auth2 "github.com/boreq/eggplant/adapters/auth"
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/tracks"
