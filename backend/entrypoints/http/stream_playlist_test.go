@@ -13,7 +13,7 @@ import (
 	"github.com/boreq/eggplant/domain/music/hls"
 	"github.com/boreq/eggplant/domain/music/library"
 	httpentrypoint "github.com/boreq/eggplant/entrypoints/http"
-	"github.com/boreq/eggplant/logging"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/stretchr/testify/require"
 )
 
