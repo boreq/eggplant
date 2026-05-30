@@ -494,7 +494,7 @@ components:
       properties:
         message:
           type: string
-          example: Bad request.
+          example: Some kind of a message.
     Thumbnail:
       type: object
       required: [id]
