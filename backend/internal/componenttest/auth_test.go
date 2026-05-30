@@ -18,53 +18,6 @@ var (
 	anonCtx  = auth.NewAnonymousAccessContext()
 )
 
-func userFromCtx(t *testing.T, a *auth.Auth, ctx auth.AccessContext) authdomain.User {
-	ac, ok := ctx.(auth.AuthenticatedAccessContext)
-	require.True(t, ok)
-	u, err := a.GetCurrentUser.Execute(ac)
-	require.NoError(t, err)
-	return u
-}
-
-func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, password authdomain.Password) auth.AuthenticatedAccessContext {
-	err := a.RegisterInitial.Execute(auth.RegisterInitial{
-		Username: username,
-		Password: password,
-	})
-	require.NoError(t, err)
-
-	token, err := a.Login.Execute(anonCtx, auth.Login{
-		Username: username,
-		Password: password,
-	})
-	require.NoError(t, err)
-
-	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
-	require.NoError(t, err)
-
-	authCtx, ok := ctx.(auth.AuthenticatedAccessContext)
-	require.True(t, ok)
-	return authCtx
-}
-
-func mustUsername(t *testing.T, s string) authdomain.Username {
-	u, err := authdomain.NewUsernameFromString(s)
-	require.NoError(t, err)
-	return u
-}
-
-func mustPassword(t *testing.T, s string) authdomain.Password {
-	p, err := authdomain.NewPasswordFromString(s)
-	require.NoError(t, err)
-	return p
-}
-
-func mustAccessToken(t *testing.T, s string) authdomain.AccessToken {
-	tok, err := authdomain.NewAccessTokenFromString(s)
-	require.NoError(t, err)
-	return tok
-}
-
 func TestRegisterInitial(t *testing.T) {
 	for _, testCase := range registerTestCases {
 		t.Run(testCase.Name, func(t *testing.T) {
@@ -650,4 +603,51 @@ var registerTestCases = []struct {
 		Password:      strings.Repeat("a", 10001),
 		ExpectedError: errors.New("password length can't exceed 10000 characters"),
 	},
+}
+
+func userFromCtx(t *testing.T, a *auth.Auth, ctx auth.AccessContext) authdomain.User {
+	ac, ok := ctx.(auth.AuthenticatedAccessContext)
+	require.True(t, ok)
+	u, err := a.GetCurrentUser.Execute(ac)
+	require.NoError(t, err)
+	return u
+}
+
+func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, password authdomain.Password) auth.AuthenticatedAccessContext {
+	err := a.RegisterInitial.Execute(auth.RegisterInitial{
+		Username: username,
+		Password: password,
+	})
+	require.NoError(t, err)
+
+	token, err := a.Login.Execute(anonCtx, auth.Login{
+		Username: username,
+		Password: password,
+	})
+	require.NoError(t, err)
+
+	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
+	require.NoError(t, err)
+
+	authCtx, ok := ctx.(auth.AuthenticatedAccessContext)
+	require.True(t, ok)
+	return authCtx
+}
+
+func mustUsername(t *testing.T, s string) authdomain.Username {
+	u, err := authdomain.NewUsernameFromString(s)
+	require.NoError(t, err)
+	return u
+}
+
+func mustPassword(t *testing.T, s string) authdomain.Password {
+	p, err := authdomain.NewPasswordFromString(s)
+	require.NoError(t, err)
+	return p
+}
+
+func mustAccessToken(t *testing.T, s string) authdomain.AccessToken {
+	tok, err := authdomain.NewAccessTokenFromString(s)
+	require.NoError(t, err)
+	return tok
 }
