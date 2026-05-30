@@ -14,6 +14,7 @@ var (
 	ErrNotFound             = errors.New("not found")
 	ErrAlreadyAuthenticated = errors.New("already authenticated")
 	ErrCannotRemoveSelf     = errors.New("cannot remove self")
+	ErrUsersAlreadyExist    = errors.New("there are existing users")
 )
 
 type PasswordHasher interface {

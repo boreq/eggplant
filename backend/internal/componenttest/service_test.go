@@ -55,7 +55,7 @@ func TestServiceInitialSetup(t *testing.T) {
 		Password: "password",
 	})
 	require.NoError(t, err)
-	require.Equal(t, http.StatusInternalServerError, registerResp.StatusCode())
+	require.Equal(t, http.StatusConflict, registerResp.StatusCode())
 }
 
 func TestServiceAuthFlow(t *testing.T) {

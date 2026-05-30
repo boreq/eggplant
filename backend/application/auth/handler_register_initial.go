@@ -41,7 +41,7 @@ func (h *RegisterInitialHandler) Execute(cmd RegisterInitial) error {
 			return errors.Wrap(err, "could not get a count")
 		}
 		if n != 0 {
-			return errors.New("there are existing users")
+			return ErrUsersAlreadyExist
 		}
 		return r.Users.Put(u)
 	}); err != nil {

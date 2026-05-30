@@ -452,6 +452,9 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 	}
 
 	if err := h.app.Auth.RegisterInitial.Execute(cmd); err != nil {
+		if errors.Is(err, auth.ErrUsersAlreadyExist) {
+			return rest.ErrConflict.WithMessage("The initial setup has already been performed.")
+		}
 		h.log.Error("register initial command failed", "err", err)
 		return rest.ErrInternalServerError
 	}
