@@ -17,55 +17,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testService struct {
-	baseURL string
-	client  *openapi.ClientWithResponses
-}
-
-func newTestService(t *testing.T) *testService {
-	requireBinary(t, "ffmpeg")
-	requireBinary(t, "ffprobe")
-
-	musicDir := t.TempDir()
-	writeFixtureLibrary(t, musicDir)
-
-	conf := config.Default()
-	conf.MusicDirectory = musicDir
-	conf.DataDirectory = t.TempDir()
-	conf.CacheDirectory = t.TempDir()
-	conf.ServeAddress = "127.0.0.1:0"
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	svc, err := wire.BuildTestHTTPService(ctx, conf)
-	require.NoError(t, err)
-
-	// Scan the fixture library synchronously so the music endpoints have data.
-	require.NoError(t, svc.App.Music.LoadLibrary.Execute(ctx))
-
-	server := httptest.NewServer(svc.Handler)
-
-	t.Cleanup(func() {
-		server.Close()
-		cancel()
-		_ = svc.DB.Close()
-	})
-
-	client, err := openapi.NewClientWithResponses(server.URL)
-	require.NoError(t, err)
-
-	return &testService{baseURL: server.URL, client: client}
-}
-
-func authedAs(token string) openapi.RequestEditorFn {
-	return func(ctx context.Context, req *http.Request) error {
-		req.AddCookie(&http.Cookie{Name: "auth-token", Value: token})
-		return nil
-	}
-}
-
-func registerAdminAndLogin(t *testing.T, ts *testService) string {
+func TestServiceInitialSetup(t *testing.T) {
+	ts := newTestService(t)
 	ctx := context.Background()
+
+	statsResp, err := ts.client.GetStatsWithResponse(ctx)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, statsResp.StatusCode())
+	require.NotNil(t, statsResp.JSON200)
+	require.Equal(t, 0, statsResp.JSON200.Users)
 
 	registerResp, err := ts.client.RegisterInitialWithResponse(ctx, openapi.RegisterInitialJSONRequestBody{
 		Username: "admin",
@@ -83,7 +43,19 @@ func registerAdminAndLogin(t *testing.T, ts *testService) string {
 	require.NotNil(t, loginResp.JSON200)
 	require.NotEmpty(t, loginResp.JSON200.Token)
 
-	return loginResp.JSON200.Token
+	meResp, err := ts.client.GetCurrentUserWithResponse(ctx, authedAs(loginResp.JSON200.Token))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, meResp.StatusCode())
+	require.NotNil(t, meResp.JSON200)
+	require.Equal(t, "admin", meResp.JSON200.Username)
+	require.True(t, meResp.JSON200.Administrator)
+
+	registerResp, err = ts.client.RegisterInitialWithResponse(ctx, openapi.RegisterInitialJSONRequestBody{
+		Username: "other",
+		Password: "password",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusInternalServerError, registerResp.StatusCode())
 }
 
 func TestServiceAuthFlow(t *testing.T) {
@@ -269,9 +241,10 @@ func TestServiceBrowseAndStream(t *testing.T) {
 func TestServiceDocs(t *testing.T) {
 	ts := newTestService(t)
 
-	t.Run("redoc page is served under /api", func(t *testing.T) {
+	t.Run("redoc page is served", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, ts.baseURL+"/api", nil)
 		require.NoError(t, err)
+
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
@@ -283,9 +256,10 @@ func TestServiceDocs(t *testing.T) {
 		require.Contains(t, string(body), "<redoc")
 	})
 
-	t.Run("openapi spec is served", func(t *testing.T) {
+	t.Run("openapi spec file is served", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, ts.baseURL+"/api/openapi.yaml", nil)
 		require.NoError(t, err)
+
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
@@ -295,6 +269,75 @@ func TestServiceDocs(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, string(body), "openapi: 3.0.3")
 	})
+}
+
+type testService struct {
+	baseURL string
+	client  *openapi.ClientWithResponses
+}
+
+func newTestService(t *testing.T) *testService {
+	requireBinary(t, "ffmpeg")
+	requireBinary(t, "ffprobe")
+
+	musicDir := t.TempDir()
+	writeFixtureLibrary(t, musicDir)
+
+	conf := config.Default()
+	conf.MusicDirectory = musicDir
+	conf.DataDirectory = t.TempDir()
+	conf.CacheDirectory = t.TempDir()
+	conf.ServeAddress = "127.0.0.1:0"
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	svc, err := wire.BuildTestHTTPService(ctx, conf)
+	require.NoError(t, err)
+
+	// Scan the fixture library synchronously so the music endpoints have data.
+	require.NoError(t, svc.App.Music.LoadLibrary.Execute(ctx))
+
+	server := httptest.NewServer(svc.Handler)
+
+	t.Cleanup(func() {
+		server.Close()
+		cancel()
+		_ = svc.DB.Close()
+	})
+
+	client, err := openapi.NewClientWithResponses(server.URL)
+	require.NoError(t, err)
+
+	return &testService{baseURL: server.URL, client: client}
+}
+
+func authedAs(token string) openapi.RequestEditorFn {
+	return func(ctx context.Context, req *http.Request) error {
+		req.AddCookie(&http.Cookie{Name: "auth-token", Value: token})
+		return nil
+	}
+}
+
+func registerAdminAndLogin(t *testing.T, ts *testService) string {
+	ctx := context.Background()
+
+	registerResp, err := ts.client.RegisterInitialWithResponse(ctx, openapi.RegisterInitialJSONRequestBody{
+		Username: "admin",
+		Password: "password",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, registerResp.StatusCode())
+
+	loginResp, err := ts.client.LoginWithResponse(ctx, openapi.LoginJSONRequestBody{
+		Username: "admin",
+		Password: "password",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, loginResp.StatusCode())
+	require.NotNil(t, loginResp.JSON200)
+	require.NotEmpty(t, loginResp.JSON200.Token)
+
+	return loginResp.JSON200.Token
 }
 
 func requireBinary(t *testing.T, name string) {
