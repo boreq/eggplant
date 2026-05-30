@@ -186,7 +186,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	if err != nil {
 		return nil, err
 	}
-	durationStore := tracks.NewDurationStore(ffProbe)
+	durationStore := tracks.NewDurationStore(ctx, ffProbe)
 	getTrackDurationHandler := music.NewGetTrackDurationHandler(inMemoryRepository, durationStore)
 	loggingGetTrackDurationHandler := music.NewLoggingGetTrackDurationHandler(getTrackDurationHandler, v)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
@@ -305,7 +305,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	if err != nil {
 		return nil, err
 	}
-	durationStore := tracks.NewDurationStore(ffProbe)
+	durationStore := tracks.NewDurationStore(ctx, ffProbe)
 	getTrackDurationHandler := music.NewGetTrackDurationHandler(inMemoryRepository, durationStore)
 	loggingGetTrackDurationHandler := music.NewLoggingGetTrackDurationHandler(getTrackDurationHandler, v)
 	searchHandler := music.NewSearchHandler(inMemoryRepository)
