@@ -53,6 +53,9 @@ type Converter struct {
 }
 
 func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		return nil, errors.Wrap(err, "ffmpeg not found in PATH")
+	}
 	c := &Converter{
 		ctx:        ctx,
 		dataDir:    dataDir,

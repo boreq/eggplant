@@ -182,7 +182,10 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
 	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
 	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
-	ffProbe := tracks.NewFFProbe()
+	ffProbe, err := tracks.NewFFProbe()
+	if err != nil {
+		return nil, err
+	}
 	durationStore := tracks.NewDurationStore(ffProbe)
 	getTrackDurationHandler := music.NewGetTrackDurationHandler(inMemoryRepository, durationStore)
 	loggingGetTrackDurationHandler := music.NewLoggingGetTrackDurationHandler(getTrackDurationHandler, v)
@@ -236,4 +239,117 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	listener := filesystem.NewListener(loggingLoadLibraryHandler, v2)
 	serviceService := service.NewService(server, listener, lastSeenUpdater, conf)
 	return serviceService, nil
+}
+
+func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPService, error) {
+	bcryptPasswordHasher := auth2.NewBcryptPasswordHasher()
+	db, err := newBolt(conf)
+	if err != nil {
+		return nil, err
+	}
+	wireAuthRepositoriesProvider := newAuthRepositoriesProvider()
+	authTransactionProvider := auth2.NewAuthTransactionProvider(db, wireAuthRepositoriesProvider)
+	registerInitialHandler := auth.NewRegisterInitialHandler(bcryptPasswordHasher, authTransactionProvider)
+	registerHandler := auth.NewRegisterHandler(bcryptPasswordHasher, authTransactionProvider)
+	loginHandler := auth.NewLoginHandler(bcryptPasswordHasher, authTransactionProvider)
+	logoutHandler := auth.NewLogoutHandler(authTransactionProvider)
+	lastSeenUpdater, err := auth2.NewLastSeenUpdater(authTransactionProvider)
+	if err != nil {
+		return nil, err
+	}
+	checkAccessTokenHandler := auth.NewCheckAccessTokenHandler(authTransactionProvider, lastSeenUpdater)
+	listHandler := auth.NewListHandler(authTransactionProvider)
+	createInvitationHandler := auth.NewCreateInvitationHandler(authTransactionProvider)
+	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
+	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
+	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
+	authAuth := auth.Auth{
+		RegisterInitial:  registerInitialHandler,
+		Register:         registerHandler,
+		Login:            loginHandler,
+		Logout:           logoutHandler,
+		CheckAccessToken: checkAccessTokenHandler,
+		List:             listHandler,
+		CreateInvitation: createInvitationHandler,
+		Remove:           removeHandler,
+		SetPassword:      setPasswordHandler,
+		GetCurrentUser:   getCurrentUserHandler,
+	}
+	inMemoryRepository := library.NewInMemoryRepository()
+	thumbnailStore, err := newThumbnailStore(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+	thumbnailHandler := music.NewThumbnailHandler(inMemoryRepository, thumbnailStore)
+	v := newMusicHandlerLogger()
+	loggingThumbnailHandler := music.NewLoggingThumbnailHandler(thumbnailHandler, v)
+	converter, err := newTrackStore(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+	startStreamingHandler := music.NewStartStreamingHandler(inMemoryRepository, converter)
+	loggingStartStreamingHandler := music.NewLoggingStartStreamingHandler(startStreamingHandler, v)
+	streamPlaylistHandler := music.NewStreamPlaylistHandler(inMemoryRepository, converter)
+	loggingStreamPlaylistHandler := music.NewLoggingStreamPlaylistHandler(streamPlaylistHandler, v)
+	streamInitHandler := music.NewStreamInitHandler(inMemoryRepository, converter)
+	loggingStreamInitHandler := music.NewLoggingStreamInitHandler(streamInitHandler, v)
+	streamFragmentHandler := music.NewStreamFragmentHandler(inMemoryRepository, converter)
+	loggingStreamFragmentHandler := music.NewLoggingStreamFragmentHandler(streamFragmentHandler, v)
+	keepAliveStreamHandler := music.NewKeepAliveStreamHandler(inMemoryRepository, converter)
+	loggingKeepAliveStreamHandler := music.NewLoggingKeepAliveStreamHandler(keepAliveStreamHandler, v)
+	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
+	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
+	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
+	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
+	ffProbe, err := tracks.NewFFProbe()
+	if err != nil {
+		return nil, err
+	}
+	durationStore := tracks.NewDurationStore(ffProbe)
+	getTrackDurationHandler := music.NewGetTrackDurationHandler(inMemoryRepository, durationStore)
+	loggingGetTrackDurationHandler := music.NewLoggingGetTrackDurationHandler(getTrackDurationHandler, v)
+	searchHandler := music.NewSearchHandler(inMemoryRepository)
+	loggingSearchHandler := music.NewLoggingSearchHandler(searchHandler, v)
+	scannerConfig, err := newScannerConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+	scanner, err := newScanner(conf, scannerConfig)
+	if err != nil {
+		return nil, err
+	}
+	delimiterAccessLoader := library.NewDelimiterAccessLoader()
+	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, durationStore)
+	loggingLoadLibraryHandler := music.NewLoggingLoadLibraryHandler(loadLibraryHandler, v)
+	applicationMusic := application.Music{
+		Thumbnail:        loggingThumbnailHandler,
+		StartStreaming:   loggingStartStreamingHandler,
+		StreamPlaylist:   loggingStreamPlaylistHandler,
+		StreamInit:       loggingStreamInitHandler,
+		StreamFragment:   loggingStreamFragmentHandler,
+		KeepAliveStream:  loggingKeepAliveStreamHandler,
+		GetRootAlbum:     loggingGetRootAlbumHandler,
+		GetAlbum:         loggingGetAlbumHandler,
+		GetTrackDuration: loggingGetTrackDurationHandler,
+		Search:           loggingSearchHandler,
+		LoadLibrary:      loggingLoadLibraryHandler,
+	}
+	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
+	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
+	statsHandler := queries.NewStatsHandler(converter, thumbnailStore, queryTransactionProvider)
+	applicationQueries := application.Queries{
+		Stats: statsHandler,
+	}
+	applicationApplication := &application.Application{
+		Auth:    authAuth,
+		Music:   applicationMusic,
+		Queries: applicationQueries,
+	}
+	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
+	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
+	if err != nil {
+		return nil, err
+	}
+	testHTTPService := newTestHTTPService(handler, applicationApplication, db)
+	return testHTTPService, nil
 }

@@ -14,15 +14,12 @@ import (
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/entrypoints/http/frontend"
+	"github.com/boreq/eggplant/entrypoints/http/openapi"
 	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
 )
-
-type startStreamResponse struct {
-	StreamId string `json:"streamId"`
-}
 
 var Version = "unknown"
 
@@ -68,6 +65,10 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
 	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.removeUser))
+
+	// API documentation
+	h.router.HandlerFunc(http.MethodGet, "/api/openapi.yaml", h.openapiSpec)
+	h.router.HandlerFunc(http.MethodGet, "/api", h.docs)
 
 	// Frontend
 	ffs, err := frontend.NewFrontendFileSystem()
@@ -190,7 +191,7 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	return rest.NewResponse(startStreamResponse{StreamId: streamId.String()})
+	return rest.NewResponse(openapi.StartStreamResponse{StreamId: streamId.String()})
 }
 
 func (h *Handler) getTrackDuration(r *http.Request) rest.RestResponse {
@@ -222,7 +223,7 @@ func (h *Handler) getTrackDuration(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	return rest.NewResponse(trackDuration{Duration: duration.Seconds()})
+	return rest.NewResponse(openapi.TrackDuration{Duration: duration.Seconds()})
 }
 
 func parseSeekParam(s string) (*musicdomain.RequestedSeekPosition, error) {
@@ -429,13 +430,8 @@ func (h *Handler) stats(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(stats)
 }
 
-type registerInitialInput struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
-	var t registerInitialInput
+	var t openapi.RegisterInitialInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register initial decoding failed", "err", err)
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
@@ -463,15 +459,6 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(nil)
 }
 
-type loginInput struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type loginResponse struct {
-	Token string `json:"token"`
-}
-
 func (h *Handler) login(r *http.Request) rest.RestResponse {
 	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
@@ -479,7 +466,7 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	var t loginInput
+	var t openapi.LoginInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("login decoding failed", "err", err)
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
@@ -512,7 +499,7 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	response := loginResponse{
+	response := openapi.LoginResult{
 		Token: token.String(),
 	}
 
@@ -578,10 +565,6 @@ func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(toReadUserResponses(users))
 }
 
-type createInvitationResponse struct {
-	Token string `json:"token"`
-}
-
 func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 	accessCtx, err := h.authProvider.Get(r)
 	if err != nil {
@@ -598,17 +581,11 @@ func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	response := createInvitationResponse{
+	response := openapi.CreateInvitationResult{
 		Token: token.String(),
 	}
 
 	return rest.NewResponse(response)
-}
-
-type registerInput struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Token    string `json:"token"`
 }
 
 func (h *Handler) register(r *http.Request) rest.RestResponse {
@@ -618,7 +595,7 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	var t registerInput
+	var t openapi.RegisterInput
 	if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register decoding failed", "err", err)
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
@@ -693,41 +670,29 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(nil)
 }
 
-type getVersionResponse struct {
-	Version string `json:"version"`
-}
-
 func (h *Handler) getVersion(r *http.Request) rest.RestResponse {
-	return rest.NewResponse(getVersionResponse{Version: Version})
+	return rest.NewResponse(openapi.VersionResponse{Version: Version})
 }
 
-type readSessionResponse struct {
-	LastSeen time.Time `json:"lastSeen"`
-}
-
-type readUserResponse struct {
-	Username      string                `json:"username"`
-	Administrator bool                  `json:"administrator"`
-	Created       *time.Time            `json:"created"`
-	LastSeen      *time.Time            `json:"lastSeen"`
-	Sessions      []readSessionResponse `json:"sessions"`
-}
-
-func toReadUserResponse(u authdomain.User) readUserResponse {
-	rv := readUserResponse{
+func toReadUserResponse(u authdomain.User) openapi.ReadUserResponse {
+	rv := openapi.ReadUserResponse{
 		Username:      u.Username().String(),
 		Administrator: u.Administrator(),
 		Created:       u.Created(),
 		LastSeen:      u.LastSeen(),
 	}
-	for _, s := range u.Sessions() {
-		rv.Sessions = append(rv.Sessions, readSessionResponse{LastSeen: s.LastSeen()})
+	if sessions := u.Sessions(); len(sessions) > 0 {
+		converted := make([]openapi.ReadSessionResponse, 0, len(sessions))
+		for _, s := range sessions {
+			converted = append(converted, openapi.ReadSessionResponse{LastSeen: s.LastSeen()})
+		}
+		rv.Sessions = &converted
 	}
 	return rv
 }
 
-func toReadUserResponses(users []authdomain.User) []readUserResponse {
-	rv := make([]readUserResponse, 0, len(users))
+func toReadUserResponses(users []authdomain.User) []openapi.ReadUserResponse {
+	rv := make([]openapi.ReadUserResponse, 0, len(users))
 	for _, u := range users {
 		rv = append(rv, toReadUserResponse(u))
 	}

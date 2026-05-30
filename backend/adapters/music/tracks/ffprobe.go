@@ -13,8 +13,11 @@ import (
 
 type FFProbe struct{}
 
-func NewFFProbe() *FFProbe {
-	return &FFProbe{}
+func NewFFProbe() (*FFProbe, error) {
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		return nil, errors.Wrap(err, "ffprobe not found in PATH")
+	}
+	return &FFProbe{}, nil
 }
 
 func (p *FFProbe) GetDuration(ctx context.Context, path string) (music.TrackDuration, error) {

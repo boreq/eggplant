@@ -17,6 +17,19 @@
         margin: 0 -2em;
     }
 
+    .api-docs {
+        margin-top: 1em;
+
+        a {
+            color: $primary-color;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
     .no-admin-settings {
         margin-top: 3em;
         padding: 2em;

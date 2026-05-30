@@ -16,6 +16,11 @@
             <sub-header text="Users"></sub-header>
             <Users></Users>
 
+            <sub-header text="API"></sub-header>
+            <p class="api-docs">
+                Eggplant exposes an API, have a look at <a href="/api" target="_blank" rel="noopener">the documentation</a> to learn more.
+            </p>
+
             <sub-header text="Version"></sub-header>
             <Version></Version>
         </template>

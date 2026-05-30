@@ -1,0 +1,750 @@
+openapi: 3.0.3
+info:
+  title: Eggplant API
+  description: |
+    Eggplant is a self-hosted music streaming service .
+  version: 0.0.0
+servers:
+  - url: /
+    description: The running Eggplant instance.
+tags:
+  - name: browse
+    description: Browsing the music library.
+  - name: stream
+    description: HLS streaming of tracks.
+  - name: auth
+    description: Authentication and user management.
+  - name: meta
+    description: Server metadata.
+security:
+  - {}
+  - cookieAuth: []
+paths:
+  /api/browse:
+    get:
+      tags: [browse]
+      operationId: browse
+      summary: Return the root of the music library.
+      responses:
+        '200':
+          description: The root album.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RootAlbum'
+        '503':
+          $ref: '#/components/responses/LibraryNotReady'
+  /api/browse/{id}:
+    get:
+      tags: [browse]
+      operationId: browseAlbum
+      summary: Return a single album by id.
+      parameters:
+        - $ref: '#/components/parameters/AlbumId'
+      responses:
+        '200':
+          description: The requested album.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/LibraryNotReady'
+  /api/stats:
+    get:
+      tags: [meta]
+      operationId: getStats
+      summary: Return library statistics.
+      responses:
+        '200':
+          description: Library statistics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stats'
+  /api/search:
+    get:
+      tags: [browse]
+      operationId: search
+      summary: Search albums and tracks.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            example: eggplant
+          description: The search query.
+      responses:
+        '200':
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/track/{trackId}/duration:
+    get:
+      tags: [stream]
+      operationId: getTrackDuration
+      summary: Return the duration of a track.
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+      responses:
+        '200':
+          description: The track duration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackDuration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/LibraryNotReady'
+  /api/track/{trackId}/stream:
+    post:
+      tags: [stream]
+      operationId: startTrackStream
+      summary: Start an HLS stream for a track.
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - name: seek
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+            example: 42.5
+          description: Seek position in seconds.
+      responses:
+        '200':
+          description: The created stream.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartStreamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/track/{trackId}/stream/{streamId}/playlist:
+    get:
+      tags: [stream]
+      operationId: getStreamPlaylist
+      summary: Return the HLS playlist for a stream.
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '200':
+          description: The HLS playlist.
+          content:
+            application/vnd.apple.mpegurl:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableEmpty'
+  /api/track/{trackId}/stream/{streamId}/init:
+    get:
+      tags: [stream]
+      operationId: getStreamInit
+      summary: Return the HLS init segment for a stream.
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '200':
+          description: The init segment.
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableEmpty'
+  /api/track/{trackId}/stream/{streamId}/fragment/{number}:
+    get:
+      tags: [stream]
+      operationId: getStreamFragment
+      summary: Return a single HLS fragment for a stream.
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The fragment number.
+      responses:
+        '200':
+          description: The fragment.
+          content:
+            video/iso.segment:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableEmpty'
+  /api/track/{trackId}/stream/{streamId}/keepalive:
+    post:
+      tags: [stream]
+      operationId: keepAliveStream
+      summary: Keep a stream alive.
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '204':
+          description: The stream was kept alive.
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableEmpty'
+  /api/thumbnail/{id}:
+    get:
+      tags: [browse]
+      operationId: getThumbnail
+      summary: Return a thumbnail image.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The thumbnail id.
+      responses:
+        '200':
+          description: The thumbnail image.
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+  /api/auth/register-initial:
+    post:
+      tags: [auth]
+      operationId: registerInitial
+      summary: Register the initial administrator account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInitialInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: Register a new account using an invitation token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Log in and obtain an access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: The access token. Also intended to be stored in the auth-token cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Log out the current session.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/create-invitation:
+    post:
+      tags: [auth]
+      operationId: createInvitation
+      summary: Create an invitation token (administrators only).
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: The invitation token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInvitationResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/auth:
+    get:
+      tags: [auth]
+      operationId: getCurrentUser
+      summary: Return the currently authenticated user.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadUserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/users:
+    get:
+      tags: [auth]
+      operationId: getUsers
+      summary: List all users (administrators only).
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: All users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReadUserResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/auth/users/{username}/remove:
+    post:
+      tags: [auth]
+      operationId: removeUser
+      summary: Remove a user (administrators only).
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The username to remove.
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/version:
+    get:
+      tags: [meta]
+      operationId: getVersion
+      summary: Return the server version.
+      responses:
+        '200':
+          description: The server version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: auth-token
+  parameters:
+    AlbumId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 8X4F2K9MNPQRSTVW
+      description: The album id.
+    TrackId:
+      name: trackId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: J6H3M0PQ9RSTVWXY
+      description: The track id.
+    StreamId:
+      name: streamId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+      description: The stream id.
+  responses:
+    Empty:
+      description: Success with no body.
+      content:
+        application/json:
+          schema:
+            nullable: true
+    BadRequest:
+      description: The request was malformed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication is required.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: The caller is not allowed to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The request conflicts with the current state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    LibraryNotReady:
+      description: The music library is being prepared.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailable:
+      description: The service is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequestEmpty:
+      description: The request was malformed.
+    NotFoundEmpty:
+      description: The resource was not found.
+    ServiceUnavailableEmpty:
+      description: The service is temporarily unavailable.
+  schemas:
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Bad request.
+    Thumbnail:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          example: AB12CD34EF56GH78
+    Track:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+          example: J6H3M0PQ9RSTVWXY
+        number:
+          type: integer
+          nullable: true
+          example: 3
+        title:
+          type: string
+          example: The Eggplant Song
+    PartialAlbum:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+          example: 8X4F2K9MNPQRSTVW
+        title:
+          type: string
+          example: Eggplant - Greatest Hits
+        thumbnail:
+          allOf:
+            - $ref: '#/components/schemas/Thumbnail'
+          nullable: true
+    RootAlbum:
+      type: object
+      required: [albums, tracks]
+      properties:
+        thumbnail:
+          allOf:
+            - $ref: '#/components/schemas/Thumbnail'
+          nullable: true
+        albums:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartialAlbum'
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+    Album:
+      type: object
+      required: [id, title, parents, albums, tracks]
+      properties:
+        id:
+          type: string
+          example: 8X4F2K9MNPQRSTVW
+        title:
+          type: string
+          example: Eggplant - Greatest Hits
+        thumbnail:
+          allOf:
+            - $ref: '#/components/schemas/Thumbnail'
+          nullable: true
+        parents:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartialAlbum'
+        albums:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartialAlbum'
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+    TrackWithAlbum:
+      type: object
+      required: [track]
+      properties:
+        track:
+          $ref: '#/components/schemas/Track'
+        album:
+          allOf:
+            - $ref: '#/components/schemas/PartialAlbum'
+          nullable: true
+    SearchResults:
+      type: object
+      required: [albums, tracks]
+      properties:
+        albums:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartialAlbum'
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackWithAlbum'
+    TrackDuration:
+      type: object
+      required: [duration]
+      properties:
+        duration:
+          type: number
+          format: double
+          description: Duration in seconds.
+          example: 215.6
+    StartStreamResponse:
+      type: object
+      required: [streamId]
+      properties:
+        streamId:
+          type: string
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+    ThumbnailStats:
+      type: object
+      required: [allItems, convertedItems, originalSize, convertedSize]
+      properties:
+        allItems:
+          type: integer
+          format: int64
+          example: 1200
+        convertedItems:
+          type: integer
+          format: int64
+          example: 1180
+        originalSize:
+          type: integer
+          format: int64
+          example: 524288000
+        convertedSize:
+          type: integer
+          format: int64
+          example: 41943040
+    TrackStats:
+      type: object
+      required: [numberOfTracks, sizeOfTracks, numberOfStreams, streamCacheSize]
+      properties:
+        numberOfTracks:
+          type: integer
+          format: int64
+          example: 3400
+        sizeOfTracks:
+          type: integer
+          format: int64
+          example: 21474836480
+        numberOfStreams:
+          type: integer
+          format: int64
+          example: 87
+        streamCacheSize:
+          type: integer
+          format: int64
+          example: 268435456
+    Stats:
+      type: object
+      required: [users, thumbnails, tracks]
+      properties:
+        users:
+          type: integer
+          example: 4
+        thumbnails:
+          $ref: '#/components/schemas/ThumbnailStats'
+        tracks:
+          $ref: '#/components/schemas/TrackStats'
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: correct-horse-battery-staple
+    LoginResult:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          example: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+    RegisterInitialInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: correct-horse-battery-staple
+    RegisterInput:
+      type: object
+      required: [username, password, token]
+      properties:
+        username:
+          type: string
+          example: alice
+        password:
+          type: string
+          example: correct-horse-battery-staple
+        token:
+          type: string
+          example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+    CreateInvitationResult:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+    VersionResponse:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: string
+          example: 1.4.2
+    ReadSessionResponse:
+      type: object
+      required: [lastSeen]
+      properties:
+        lastSeen:
+          type: string
+          format: date-time
+          example: '2026-05-30T14:23:00Z'
+    ReadUserResponse:
+      type: object
+      required: [username, administrator]
+      properties:
+        username:
+          type: string
+          example: admin
+        administrator:
+          type: boolean
+          example: true
+        created:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2025-11-02T09:14:00Z'
+        lastSeen:
+          type: string
+          format: date-time
+          example: '2026-05-30T14:23:00Z'
+          nullable: true
+        sessions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ReadSessionResponse'

@@ -59,3 +59,15 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 
 	return nil, nil
 }
+
+func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPService, error) {
+	wire.Build(
+		newTestHTTPService,
+		httpSet,
+		appSet,
+		musicSet,
+		boltSet,
+	)
+
+	return nil, nil
+}
