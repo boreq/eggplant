@@ -104,11 +104,16 @@ type StartStreamResponse struct {
 	StreamId string `json:"streamId"`
 }
 
-// Stats defines model for Stats.
+// Stats Statistics about the server and its music library.
 type Stats struct {
+	// Thumbnails Statistics about thumbnail images and their conversion.
 	Thumbnails ThumbnailStats `json:"thumbnails"`
-	Tracks     TrackStats     `json:"tracks"`
-	Users      int            `json:"users"`
+
+	// Tracks Statistics about tracks and the stream cache.
+	Tracks TrackStats `json:"tracks"`
+
+	// Users Total number of registered user accounts.
+	Users int `json:"users"`
 }
 
 // Thumbnail defines model for Thumbnail.
@@ -116,12 +121,19 @@ type Thumbnail struct {
 	Id string `json:"id"`
 }
 
-// ThumbnailStats defines model for ThumbnailStats.
+// ThumbnailStats Statistics about thumbnail images and their conversion.
 type ThumbnailStats struct {
-	AllItems       int64 `json:"allItems"`
+	// AllItems Total number of thumbnail source items known to the library.
+	AllItems int64 `json:"allItems"`
+
+	// ConvertedItems Number of thumbnails which had to be converted.
 	ConvertedItems int64 `json:"convertedItems"`
-	ConvertedSize  int64 `json:"convertedSize"`
-	OriginalSize   int64 `json:"originalSize"`
+
+	// ConvertedSize Total size, in bytes, of the converted thumbnail files.
+	ConvertedSize int64 `json:"convertedSize"`
+
+	// OriginalSize Total size, in bytes, of the original source files.
+	OriginalSize int64 `json:"originalSize"`
 }
 
 // Track defines model for Track.
@@ -137,11 +149,18 @@ type TrackDuration struct {
 	Duration float64 `json:"duration"`
 }
 
-// TrackStats defines model for TrackStats.
+// TrackStats Statistics about tracks and the stream cache.
 type TrackStats struct {
+	// NumberOfStreams Number of converted (cached) streams.
 	NumberOfStreams int64 `json:"numberOfStreams"`
-	NumberOfTracks  int64 `json:"numberOfTracks"`
-	SizeOfTracks    int64 `json:"sizeOfTracks"`
+
+	// NumberOfTracks Total number of tracks in the library.
+	NumberOfTracks int64 `json:"numberOfTracks"`
+
+	// SizeOfTracks Total size, in bytes, of the original track files.
+	SizeOfTracks int64 `json:"sizeOfTracks"`
+
+	// StreamCacheSize Total size, in bytes, of the cached converted streams.
 	StreamCacheSize int64 `json:"streamCacheSize"`
 }
 

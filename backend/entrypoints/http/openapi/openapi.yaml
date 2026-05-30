@@ -612,50 +612,62 @@ components:
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     ThumbnailStats:
       type: object
+      description: Statistics about thumbnail images and their conversion.
       required: [allItems, convertedItems, originalSize, convertedSize]
       properties:
         allItems:
           type: integer
           format: int64
+          description: Total number of thumbnail source items known to the library.
           example: 1200
         convertedItems:
           type: integer
           format: int64
+          description: Number of thumbnails which had to be converted.
           example: 1180
         originalSize:
           type: integer
           format: int64
+          description: Total size, in bytes, of the original source files.
           example: 524288000
         convertedSize:
           type: integer
           format: int64
+          description: Total size, in bytes, of the converted thumbnail files.
           example: 41943040
     TrackStats:
       type: object
+      description: Statistics about tracks and the stream cache.
       required: [numberOfTracks, sizeOfTracks, numberOfStreams, streamCacheSize]
       properties:
         numberOfTracks:
           type: integer
           format: int64
+          description: Total number of tracks in the library.
           example: 3400
         sizeOfTracks:
           type: integer
           format: int64
+          description: Total size, in bytes, of the original track files.
           example: 21474836480
         numberOfStreams:
           type: integer
           format: int64
+          description: Number of converted (cached) streams.
           example: 87
         streamCacheSize:
           type: integer
           format: int64
+          description: Total size, in bytes, of the cached converted streams.
           example: 268435456
     Stats:
       type: object
+      description: Statistics about the server and its music library.
       required: [users, thumbnails, tracks]
       properties:
         users:
           type: integer
+          description: Total number of registered user accounts.
           example: 4
         thumbnails:
           $ref: '#/components/schemas/ThumbnailStats'
