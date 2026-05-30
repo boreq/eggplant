@@ -2,21 +2,27 @@ BUILD_DIRECTORY=_build
 PROGRAM_NAME=eggplant
 
 .PHONY: all
-all: build
+all: build-without-frontend
 
 .PHONY: dev
-dev: test lint build
+dev: test lint build-without-frontend
 
 .PHONY: ci
-ci: tools dependencies generate tidy fmt check-repository-unchanged test lint build
+ci: tools dependencies generate tidy fmt check-repository-unchanged test lint build-without-frontend
 
 .PHONY: build-directory
 build-directory:
 	mkdir -p ./${BUILD_DIRECTORY}
 
-.PHONY: build
-build: build-directory
-	go build -o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
+.PHONY: build-without-frontend
+build-without-frontend: build-directory
+	CGO_ENABLED=0 go build -o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
+
+.PHONY: build-with-frontend
+build-with-frontend: build-directory
+	CGO_ENABLED=0 go build -tags withfrontend \
+		-ldflags "-X github.com/boreq/eggplant/entrypoints/http.Version=${VERSION}" \
+		-o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
 
 .PHONY: run
 run:
@@ -65,5 +71,5 @@ fmt:
 	goimports -w -l .
 
 .PHONY: update-golden
-update-golden: build
+update-golden: build-without-frontend
 	./_build/eggplant default_config > internal/config/data/config.golden.toml

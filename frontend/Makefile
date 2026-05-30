@@ -25,4 +25,4 @@ type-check:
 
 .PHONY: build
 build:
-	$(YARN) build
+	VUE_APP_VERSION=$(VUE_APP_VERSION) $(YARN) build

@@ -17,6 +17,16 @@ ci-backend:
 ci-frontend:
 	$(MAKE) -C frontend ci
 
+.PHONY: build
+build:
+	version=$$($(MAKE) --no-print-directory version); \
+	$(MAKE) -C frontend install; \
+	$(MAKE) -C frontend build VUE_APP_VERSION=$$version; \
+	cp -r frontend/dist/. backend/entrypoints/http/frontend/; \
+	$(MAKE) -C backend build-with-frontend VERSION=$$version; \
+	mv backend/_build/eggplant ./eggplant
+	@echo "Binary is available here: ./eggplant"
+
 .PHONY: version
 version:
 	@hash=$$(git rev-parse HEAD 2>/dev/null); \

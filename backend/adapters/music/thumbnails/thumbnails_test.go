@@ -18,7 +18,7 @@ func TestThumbnailConverterCreatesOutputDirectory(t *testing.T) {
 	inputPath := filepath.Join(dataDir, "input.png")
 	createTestImage(t, inputPath)
 
-	converter := thumbnails.NewThumbnailConverter(dataDir)
+	converter := thumbnails.NewThumbnailConverter(dataDir, thumbnails.NewGen2BrainWebpFormat(thumbnails.DefaultGen2BrainWebpQuality))
 
 	_, err := os.Stat(converter.OutputDirectory())
 	require.True(t, os.IsNotExist(err))

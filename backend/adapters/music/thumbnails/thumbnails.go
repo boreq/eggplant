@@ -3,10 +3,6 @@ package thumbnails
 import (
 	"context"
 	"fmt"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"os"
 	"path"
 
@@ -14,22 +10,22 @@ import (
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
-	"github.com/chai2010/webp"
-	"github.com/nfnt/resize"
 )
 
-const thumbnailSize = 300
-const thumbnailQuality = 90
-const thumbnailExtension = "webp"
 const thumbnailDirectory = "thumbnails"
+
+type ThumbnailFormat interface {
+	Extension() string
+	Convert(inputPath string, outputPath string) error
+}
 
 type ThumbnailStore struct {
 	*Store
 }
 
-func NewThumbnailStore(ctx context.Context, dataDir string) (*ThumbnailStore, error) {
+func NewThumbnailStore(ctx context.Context, dataDir string, format ThumbnailFormat) (*ThumbnailStore, error) {
 	log := logging.New("thumbnailStore")
-	converter := NewThumbnailConverter(dataDir)
+	converter := NewThumbnailConverter(dataDir, format)
 	store, err := NewStore(ctx, log, converter)
 	if err != nil {
 		return nil, err
@@ -52,9 +48,10 @@ func (s *ThumbnailStore) GetConvertedFile(ctx context.Context, fileId musicdomai
 	return s.getConvertedFileForId(ctx, fileId.String())
 }
 
-func NewThumbnailConverter(dataDir string) *ThumbnailConverter {
+func NewThumbnailConverter(dataDir string, format ThumbnailFormat) *ThumbnailConverter {
 	converter := &ThumbnailConverter{
 		dataDir: dataDir,
+		format:  format,
 		log:     logging.New("thumbnailConverter"),
 	}
 	return converter
@@ -62,6 +59,7 @@ func NewThumbnailConverter(dataDir string) *ThumbnailConverter {
 
 type ThumbnailConverter struct {
 	dataDir string
+	format  ThumbnailFormat
 	log     logging.Logger
 }
 
@@ -73,27 +71,8 @@ func (c *ThumbnailConverter) Convert(item Item) error {
 		return errors.Wrap(err, "could not create the output directory")
 	}
 
-	f, err := os.Open(item.Path)
-	if err != nil {
-		return errors.Wrap(err, "could not open the input file")
-	}
-	defer f.Close()
-
-	output, err := os.Create(tmpOutputPath)
-	if err != nil {
-		return errors.Wrap(err, "could not create an output file")
-	}
-	defer output.Close()
-
-	img, _, err := image.Decode(f)
-	if err != nil {
-		return errors.Wrap(err, "decoding failed")
-	}
-
-	resized := resize.Resize(thumbnailSize, thumbnailSize, img, resize.Lanczos3)
-
-	if err := webp.Encode(output, resized, &webp.Options{Quality: thumbnailQuality}); err != nil {
-		return errors.Wrap(err, "encoding failed")
+	if err := c.format.Convert(item.Path, tmpOutputPath); err != nil {
+		return errors.Wrap(err, "conversion failed")
 	}
 
 	if err := os.Rename(tmpOutputPath, outputPath); err != nil {
@@ -108,11 +87,11 @@ func (c *ThumbnailConverter) OutputDirectory() string {
 }
 
 func (c *ThumbnailConverter) OutputFile(id string) string {
-	file := fmt.Sprintf("%s.%s", id, thumbnailExtension)
+	file := fmt.Sprintf("%s.%s", id, c.format.Extension())
 	return path.Join(c.OutputDirectory(), file)
 }
 
 func (c *ThumbnailConverter) TemporaryOutputFile(id string) string {
-	file := fmt.Sprintf("_%s.%s", id, thumbnailExtension)
+	file := fmt.Sprintf("_%s.%s", id, c.format.Extension())
 	return path.Join(c.OutputDirectory(), file)
 }

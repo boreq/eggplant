@@ -48,25 +48,37 @@ above.
 
 The layout of the music directory is documented in the section ["Music directory"][anchor-music-directory]. 
 
-### I want a prebuilt binary
+### I do not want to use Docker
 
-Prebuilt binaries are available from the [actions page][main-ci-builds]. Simply click on one of the builds and scroll
-down to the "Artifacts" section. You need a config file to run Eggplant. To get started you can generate a default
-config file by running the following command:
+Eggplant needs the following dependencies:
+- `ffmpeg`
+- `ffprobe`
+- `libwebp`
+
+You will obtain a binary via one of the methods below but once you do you will
+need to generate a config file:
 
     $ ./eggplant-linux-amd64 default_config | tee /path/to/config.toml
 
-Then you can edit the generated config file and set the path to your music directory, data directory and cache
-directory. After that you can run Eggplant using the following command:
+Then you can edit the generated config file and set the path to your music
+directory, data directory and cache directory. After that you can run Eggplant
+using the following command:
 
     $ ./eggplant-linux-amd64 run /path/to/config.toml
 
-### I want to build from source
+#### I want a prebuilt binary
+
+Prebuilt binaries are available from the [actions page][main-ci-builds]. Simply
+click on one of the builds and scroll down to the "Artifacts" section. 
+
+#### I want to build from source
 
 If you prefer to suffer instead and want to build and install everything
-yourself then you need to look at the `Dockerfile` and basically go through the
-same steps. Honestly, save yourself the trouble and use the provided
-`Dockerfile`.
+yourself then you need to ensure that you have Node version v26 and corepack as
+well the Go toolchain. I recommmend using nvm. Once you have that you can use
+the Makefile:
+
+    $ make build
 
 ## Music directory
 

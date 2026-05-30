@@ -64,7 +64,7 @@ func newTrackStore(ctx context.Context, conf *config.Config) (*tracks.Converter,
 }
 
 func newThumbnailStore(ctx context.Context, conf *config.Config) (*thumbnails.ThumbnailStore, error) {
-	thumbnailStore, err := thumbnails.NewThumbnailStore(ctx, conf.CacheDirectory)
+	thumbnailStore, err := thumbnails.NewThumbnailStore(ctx, conf.CacheDirectory, thumbnails.NewGen2BrainWebpFormat(thumbnails.DefaultGen2BrainWebpQuality))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a thumbnail store")
 	}

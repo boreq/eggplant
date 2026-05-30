@@ -15,8 +15,7 @@ jobs:
       run:
         working-directory: backend
     steps:
-
-      - name: Check out code into the Go module directory
+      - name: Check out code
         uses: actions/checkout@v6
 
       - name: Set up Go
@@ -24,7 +23,6 @@ jobs:
         with:
           go-version: 1.26
           cache-dependency-path: backend/go.sum
-        id: go
 
       - name: Run tests
         run: make ci
@@ -36,7 +34,6 @@ jobs:
       run:
         working-directory: frontend
     steps:
-
       - name: Check out code
         uses: actions/checkout@v6
 
@@ -44,9 +41,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 26
-
-      - name: Enable corepack
-        run: corepack enable
 
       - name: Run CI
         run: make ci
@@ -61,30 +55,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
-      - name: Compute version
-        id: version
-        run: echo "version=$(make version)" >> "$GITHUB_OUTPUT"
-
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: 26
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: yarn install --immutable
-
-      - name: Build frontend
-        working-directory: frontend
-        env:
-          VUE_APP_VERSION: ${{ steps.version.outputs.version }}
-        run: yarn build
-
-      - name: Stage frontend into backend embed directory
-        run: cp -r frontend/dist/. backend/entrypoints/http/frontend/
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -92,17 +66,12 @@ jobs:
           go-version: 1.26
           cache-dependency-path: backend/go.sum
 
-      - name: Build backend with embedded frontend
-        working-directory: backend
-        run: |
-          mkdir -p _build
-          go build -tags withfrontend \
-            -ldflags "-X github.com/boreq/eggplant/entrypoints/http.Version=${{ steps.version.outputs.version }}" \
-            -o ./_build/eggplant ./cmd/eggplant
+      - name: Build release binary
+        run: make build
 
       - name: Upload binary
         uses: actions/upload-artifact@v7
         with:
           name: eggplant-linux-amd64
-          path: backend/_build/eggplant
+          path: eggplant
           if-no-files-found: error
