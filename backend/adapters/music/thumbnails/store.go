@@ -1,6 +1,4 @@
-// Package store is responsible for conversion and storage of tracks and
-// thumbnails.
-package store
+package thumbnails
 
 import (
 	"context"

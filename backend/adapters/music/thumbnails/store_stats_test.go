@@ -1,4 +1,4 @@
-package store_test
+package thumbnails_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/boreq/eggplant/adapters/music/store"
+	"github.com/boreq/eggplant/adapters/music/thumbnails"
 	"github.com/boreq/eggplant/internal/logging"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +27,7 @@ func (f fakeConverter) OutputDirectory() string {
 	return f.outputDir
 }
 
-func (f fakeConverter) Convert(item store.Item) error {
+func (f fakeConverter) Convert(item thumbnails.Item) error {
 	return nil
 }
 
@@ -37,7 +37,7 @@ func TestStoreGetStatsSkipsMissingFiles(t *testing.T) {
 
 	converter := fakeConverter{outputDir: filepath.Join(t.TempDir(), "converted")}
 
-	s, err := store.NewStore(ctx, logging.New("test"), converter)
+	s, err := thumbnails.NewStore(ctx, logging.New("test"), converter)
 	require.NoError(t, err)
 
 	content := []byte("thumbnail data")
@@ -46,7 +46,7 @@ func TestStoreGetStatsSkipsMissingFiles(t *testing.T) {
 
 	missing := filepath.Join(t.TempDir(), "missing.jpg")
 
-	s.SetItems([]store.Item{
+	s.SetItems([]thumbnails.Item{
 		{Id: "existing", Path: existing},
 		{Id: "missing", Path: missing},
 	})

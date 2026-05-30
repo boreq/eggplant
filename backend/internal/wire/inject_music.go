@@ -5,7 +5,7 @@ import (
 
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/scanner"
-	"github.com/boreq/eggplant/adapters/music/store"
+	"github.com/boreq/eggplant/adapters/music/thumbnails"
 	"github.com/boreq/eggplant/adapters/music/tracks"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
@@ -30,12 +30,12 @@ var musicSet = wire.NewSet(
 	wire.Bind(new(music.Scanner), new(*scanner.Scanner)),
 	wire.Bind(new(music.AccessLoader), new(*library.DelimiterAccessLoader)),
 	wire.Bind(new(music.TrackConverter), new(*tracks.Converter)),
-	wire.Bind(new(music.ThumbnailStore), new(*store.ThumbnailStore)),
+	wire.Bind(new(music.ThumbnailStore), new(*thumbnails.ThumbnailStore)),
 	wire.Bind(new(tracks.DurationChecker), new(*tracks.FFProbe)),
 	wire.Bind(new(music.TrackDurationStore), new(*tracks.DurationStore)),
 	wire.Bind(new(music.LibraryRepository), new(*library.InMemoryRepository)),
 	wire.Bind(new(queries.TrackStore), new(*tracks.Converter)),
-	wire.Bind(new(queries.ThumbnailStore), new(*store.ThumbnailStore)),
+	wire.Bind(new(queries.ThumbnailStore), new(*thumbnails.ThumbnailStore)),
 )
 
 func newScanner(conf *config.Config, scannerConf scanner.Config) (*scanner.Scanner, error) {
@@ -63,8 +63,8 @@ func newTrackStore(ctx context.Context, conf *config.Config) (*tracks.Converter,
 	return converter, nil
 }
 
-func newThumbnailStore(ctx context.Context, conf *config.Config) (*store.ThumbnailStore, error) {
-	thumbnailStore, err := store.NewThumbnailStore(ctx, conf.CacheDirectory)
+func newThumbnailStore(ctx context.Context, conf *config.Config) (*thumbnails.ThumbnailStore, error) {
+	thumbnailStore, err := thumbnails.NewThumbnailStore(ctx, conf.CacheDirectory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a thumbnail store")
 	}

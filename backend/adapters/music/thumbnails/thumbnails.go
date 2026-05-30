@@ -1,4 +1,4 @@
-package store
+package thumbnails
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package store_test
+package thumbnails_test
 
 import (
 	"image"
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/boreq/eggplant/adapters/music/store"
+	"github.com/boreq/eggplant/adapters/music/thumbnails"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,12 +18,12 @@ func TestThumbnailConverterCreatesOutputDirectory(t *testing.T) {
 	inputPath := filepath.Join(dataDir, "input.png")
 	createTestImage(t, inputPath)
 
-	converter := store.NewThumbnailConverter(dataDir)
+	converter := thumbnails.NewThumbnailConverter(dataDir)
 
 	_, err := os.Stat(converter.OutputDirectory())
 	require.True(t, os.IsNotExist(err))
 
-	item := store.Item{
+	item := thumbnails.Item{
 		Id:   "someid",
 		Path: inputPath,
 	}
