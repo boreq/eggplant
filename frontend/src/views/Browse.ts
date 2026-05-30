@@ -35,7 +35,7 @@ enum BrowseState {
     Loading = 'loading',
     Ready = 'ready',
     Empty = 'empty',
-    PermissionDenied = 'permission-denied',
+    PermissionDeniedOrDoesNotExist = 'permission-denied',
     LibraryNotReady = 'library-not-ready',
 }
 
@@ -351,8 +351,8 @@ export default class Browse extends Vue {
                     const status = error.response && error.response.status;
                     if (status === HttpStatus.ServiceUnavailable) {
                         this.state = BrowseState.LibraryNotReady;
-                    } else if (status === HttpStatus.Forbidden) {
-                        this.state = BrowseState.PermissionDenied;
+                    } else if (status === HttpStatus.NotFound) {
+                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
                         Notifications.pushError(this, 'Could not list the tracks and albums.', error);
                     } else {
                         Notifications.pushError(this, 'Could not list the tracks and albums.', error);

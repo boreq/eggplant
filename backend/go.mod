@@ -4,7 +4,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/boreq/errors v0.1.0
 	github.com/boreq/guinea v0.1.0
-	github.com/boreq/rest v1.0.0
+	github.com/boreq/rest v1.0.1
 	github.com/chai2010/webp v1.4.0
 	github.com/google/wire v0.7.0
 	github.com/inconshreveable/log15 v2.16.0+incompatible
