@@ -16,12 +16,14 @@ $font-size: 15px;
     .core {
         display: flex;
         flex: 1;
-        justify-content: center;
+        justify-content: space-between;
         align-items: flex-end;
-        margin-bottom: $spacing;
+        margin: 0 auto $spacing;
+        width: 100%;
+        max-width: 480px;
+        box-sizing: border-box;
 
         > * {
-            margin: 0 50px;
             font-size: 15px;
         }
 
@@ -62,25 +64,8 @@ $font-size: 15px;
 
     @media (max-width: 700px) {
         .core {
-            > * {
-                margin: 0 40px;
-            }
-        }
-    }
-
-    @media (max-width: 500px) {
-        .core {
-            > * {
-                margin: 0 30px;
-            }
-        }
-    }
-
-    @media (max-width: 420px) {
-        .core {
-            > * {
-                margin: 0 20px;
-            }
+            max-width: none;
+            padding: 0 30px;
         }
     }
 }
