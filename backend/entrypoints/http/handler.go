@@ -176,10 +176,12 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
+	h.log.Debug("calling StartStreaming handler", "trackId", trackId.String(), "seekPos", seekPos)
 	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx.Library(), music.StartStreaming{
 		TrackId:      trackId,
 		SeekPosition: seekPos,
 	})
+	h.log.Debug("StartStreaming handler returned", "err", err)
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
 			return rest.ErrNotFound

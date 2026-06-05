@@ -5,8 +5,11 @@ import (
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
+
+var startStreamingLog = logging.New("StartStreamingHandler")
 
 type StartStreaming struct {
 	TrackId      music.TrackId
@@ -26,17 +29,23 @@ func NewStartStreamingHandler(libraryRepository LibraryRepository, trackConverte
 }
 
 func (h *StartStreamingHandler) Execute(ctx context.Context, accessCtx library.AccessContext, cmd StartStreaming) (music.StreamId, error) {
+	startStreamingLog.Debug("Execute: entered", "trackId", cmd.TrackId.String())
+
 	lib, err := h.libraryRepository.Get()
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not get the library")
 	}
+	startStreamingLog.Debug("Execute: got library")
 
 	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not get the track")
 	}
+	startStreamingLog.Debug("Execute: got track", "fileId", track.FileId().String())
 
+	startStreamingLog.Debug("Execute: calling trackConverter.StartStream")
 	streamId, err := h.trackConverter.StartStream(ctx, track.FileId(), h.seekPosition(cmd))
+	startStreamingLog.Debug("Execute: trackConverter.StartStream returned", "err", err)
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not start the stream")
 	}

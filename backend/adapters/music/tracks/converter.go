@@ -111,19 +111,25 @@ func (c *Converter) unregisterIdleStreams() []musicdomain.StreamId {
 }
 
 func (c *Converter) ffmpegWorker(ctx context.Context) {
+	c.log.Debug("ffmpegWorker: started")
 	for {
 		select {
 		case <-ctx.Done():
+			c.log.Debug("ffmpegWorker: ctx done, exiting", "err", ctx.Err())
 			return
 		case job := <-c.ffmpegJobs:
+			job.s.log.Debug("ffmpegWorker: picked up job")
 			start := time.Now()
 			err := c.runFFmpeg(job.s.ctx, job.s)
 			job.s.log.Debug("ffmpeg exited", "duration", time.Since(start), "err", err)
 
 			select {
 			case job.result <- err:
+				job.s.log.Debug("ffmpegWorker: result delivered")
 			case <-job.s.ctx.Done():
+				job.s.log.Debug("ffmpegWorker: stream ctx done before result delivery")
 			case <-ctx.Done():
+				c.log.Debug("ffmpegWorker: ctx done before result delivery, exiting")
 				return
 			}
 		}
@@ -141,28 +147,36 @@ func (c *Converter) SetItems(items []music.TrackStoreItem) {
 }
 
 func (c *Converter) StartStream(reqCtx context.Context, fileId musicdomain.FileId, seekPos *musicdomain.SeekPosition) (musicdomain.StreamId, error) {
+	c.log.Debug("StartStream: entered", "fileId", fileId.String())
 	stream, err := c.createAndRegisterStream(fileId, seekPos)
 	if err != nil {
+		c.log.Debug("StartStream: createAndRegisterStream failed", "err", err)
 		return musicdomain.StreamId{}, errors.Wrap(err, "could not register a stream")
 	}
+	stream.log.Debug("StartStream: stream registered, starting runConversion goroutine")
 
 	go c.runConversion(stream)
 
+	stream.log.Debug("StartStream: waiting for stream.ready or reqCtx.Done")
 	select {
 	case err := <-stream.ready:
+		stream.log.Debug("StartStream: stream.ready received", "err", err)
 		if err != nil {
 			return musicdomain.StreamId{}, errors.Wrap(err, "received an error")
 		}
 		return stream.id, nil
 	case <-reqCtx.Done():
+		stream.log.Debug("StartStream: reqCtx canceled, cancelling stream", "err", reqCtx.Err())
 		stream.cancel()
 		return musicdomain.StreamId{}, reqCtx.Err()
 	}
 }
 
 func (c *Converter) createAndRegisterStream(fileId musicdomain.FileId, seekPos *musicdomain.SeekPosition) (*stream, error) {
+	c.log.Debug("createAndRegisterStream: waiting for lock", "fileId", fileId.String())
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.log.Debug("createAndRegisterStream: lock acquired", "openStreams", len(c.streams))
 
 	if len(c.streams) >= maxOpenStreams {
 		return nil, music.ErrTooManyOpenStreams
@@ -170,6 +184,7 @@ func (c *Converter) createAndRegisterStream(fileId musicdomain.FileId, seekPos *
 
 	it, ok := c.items[fileId]
 	if !ok {
+		c.log.Debug("createAndRegisterStream: item does not exist", "fileId", fileId.String(), "itemsCount", len(c.items))
 		return nil, errors.New("item does not exist")
 	}
 
@@ -331,24 +346,34 @@ func (c *Converter) runConversion(s *stream) {
 	defer s.cancel()
 
 	ctx := s.ctx
+	s.log.Debug("runConversion: entered")
 
 	if err := os.MkdirAll(c.streamDir(s.id), 0755); err != nil {
+		s.log.Debug("runConversion: MkdirAll failed", "err", err)
 		s.signalReady(ctx, errors.Wrap(err, "could not create the stream directory"))
 		return
 	}
+	s.log.Debug("runConversion: stream dir created", "dir", c.streamDir(s.id))
 
 	ffmpegResult := make(chan error, 1)
+	s.log.Debug("runConversion: submitting ffmpeg job")
 	select {
 	case c.ffmpegJobs <- ffmpegJob{s: s, result: ffmpegResult}:
+		s.log.Debug("runConversion: ffmpeg job accepted by worker")
 	case <-time.After(jobAcceptanceTimeout):
+		s.log.Debug("runConversion: timed out waiting for worker to pick up job")
 		s.signalReady(ctx, errors.New("timeout waiting for the worker to pick up a job"))
 		return
 	case <-ctx.Done():
+		s.log.Debug("runConversion: ctx canceled before job submission", "err", ctx.Err())
 		return
 	}
 
+	s.log.Debug("runConversion: waiting for readiness")
 	readyErr := c.waitForReadiness(ctx, s, ffmpegResult)
+	s.log.Debug("runConversion: readiness wait returned", "err", readyErr)
 	s.signalReady(ctx, readyErr)
+	s.log.Debug("runConversion: signaled ready to caller")
 	if readyErr != nil {
 		if !errors.Is(readyErr, context.Canceled) {
 			s.log.Error("readiness failed", "err", readyErr)
@@ -356,13 +381,16 @@ func (c *Converter) runConversion(s *stream) {
 		return
 	}
 
+	s.log.Debug("runConversion: waiting for ffmpeg to fully exit")
 	select {
 	case err := <-ffmpegResult:
+		s.log.Debug("runConversion: ffmpeg exited", "err", err)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			s.log.Error("ffmpeg failed", "err", err)
 			return
 		}
 	case <-ctx.Done():
+		s.log.Debug("runConversion: ctx canceled while waiting for ffmpeg", "err", ctx.Err())
 		return
 	}
 }
@@ -373,6 +401,8 @@ func (c *Converter) waitForReadiness(ctx context.Context, s *stream, ffmpegResul
 	initSegment := c.initPathInDir(dir)
 	lastSegment := c.fragmentPathInDir(dir, readinessLastFragmentId)
 
+	s.log.Debug("waitForReadiness: entered", "playlist", playlist, "initSegment", initSegment, "lastSegment", lastSegment)
+
 	tick := time.NewTicker(readinessPoll)
 	defer tick.Stop()
 	timeout := time.After(readinessTimeout)
@@ -380,17 +410,24 @@ func (c *Converter) waitForReadiness(ctx context.Context, s *stream, ffmpegResul
 	for {
 		select {
 		case err := <-ffmpegResult:
+			s.log.Debug("waitForReadiness: ffmpegResult received early", "err", err)
 			if err != nil {
 				return errors.Wrap(err, "ffmpeg failed")
 			}
 			return nil
 		case <-timeout:
+			s.log.Debug("waitForReadiness: timeout reached",
+				"playlistExists", fileExists(playlist),
+				"initExists", fileExists(initSegment),
+				"lastFragmentExists", fileExists(lastSegment))
 			return errors.New("timed out waiting for ffmpeg to produce initial output")
 		case <-tick.C:
 			if fileExists(playlist) && fileExists(initSegment) && fileExists(lastSegment) {
+				s.log.Debug("waitForReadiness: all required files present")
 				return nil
 			}
 		case <-ctx.Done():
+			s.log.Debug("waitForReadiness: ctx canceled", "err", ctx.Err())
 			return ctx.Err()
 		}
 	}
@@ -435,7 +472,10 @@ func (c *Converter) runFFmpeg(ctx context.Context, s *stream) error {
 	cmd.Stderr = stderr
 	s.log.Debug("converting", "command", cmd.String())
 
-	if err := cmd.Run(); err != nil {
+	s.log.Debug("runFFmpeg: starting cmd.Run")
+	err := cmd.Run()
+	s.log.Debug("runFFmpeg: cmd.Run returned", "err", err)
+	if err != nil {
 		return errors.Wrapf(err, "ffmpeg failed (stderr: %s)", strings.TrimSpace(stderr.String()))
 	}
 	return nil
