@@ -13,6 +13,7 @@ import { Invitation } from '@/dto/Invitation';
 import { RegisterCommand } from '@/dto/RegisterCommand';
 import { StreamStartResponse } from '@/dto/StreamStartResponse';
 import { TrackDuration } from '@/dto/TrackDuration';
+import { RemoteInstance, AddRemoteCommand } from '@/dto/RemoteInstance';
 
 /*
 declare module 'vue-property-decorator' {
@@ -46,6 +47,20 @@ export class ApiService {
         return this.axios.get<Album>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
+    browseRemote(remoteId: string, albumId?: string): Promise<AxiosResponse<Album>> {
+        const url = albumId
+            ? `remote/${remoteId}/browse/${albumId}`
+            : `remote/${remoteId}/browse`;
+        return this.axios.get<Album>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
+    searchRemote(remoteId: string, query: string): Promise<AxiosResponse<any>> {
+        return this.axios.get<any>(
+            import.meta.env.VUE_APP_API_PREFIX + `remote/${remoteId}/search`,
+            { params: { query } },
+        );
+    }
+
     search(query: string): Promise<AxiosResponse<any>> {
         const url = `search`;
         return this.axios.get<any>(
@@ -64,12 +79,18 @@ export class ApiService {
     }
 
     getTrackDuration(track: Track): Promise<AxiosResponse<TrackDuration>> {
-        const url = `track/${track.id}/duration`;
+        const prefix = track.remoteId
+            ? `remote/${track.remoteId}/`
+            : '';
+        const url = `${prefix}track/${track.id}/duration`;
         return this.axios.get<TrackDuration>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     startStream(track: Track, seekSeconds?: number): Promise<AxiosResponse<StreamStartResponse>> {
-        let url = `track/${track.id}/stream`;
+        const prefix = track.remoteId
+            ? `remote/${track.remoteId}/`
+            : '';
+        let url = `${prefix}track/${track.id}/stream`;
         if (seekSeconds !== undefined && seekSeconds > 0) {
             url += `?seek=${encodeURIComponent(seekSeconds.toString())}`;
         }
@@ -77,18 +98,40 @@ export class ApiService {
     }
 
     keepStreamAlive(track: Track, streamId: string): Promise<void> {
-        const url = `track/${track.id}/stream/${streamId}/keepalive`;
+        const prefix = track.remoteId
+            ? `remote/${track.remoteId}/`
+            : '';
+        const url = `${prefix}track/${track.id}/stream/${streamId}/keepalive`;
         return this.axios.post(import.meta.env.VUE_APP_API_PREFIX + url).then(() => {});
     }
 
     streamPlaylistUrl(track: Track, streamId: string): string {
-        const url = `track/${track.id}/stream/${streamId}/playlist`;
+        const prefix = track.remoteId
+            ? `remote/${track.remoteId}/`
+            : '';
+        const url = `${prefix}track/${track.id}/stream/${streamId}/playlist`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
     thumbnailUrl(thumbnail: Thumbnail): string {
+        if (thumbnail.remoteId) {
+            const url = `remote/${thumbnail.remoteId}/thumbnail/${thumbnail.id}`;
+            return import.meta.env.VUE_APP_API_PREFIX + url;
+        }
         const url = `thumbnail/${thumbnail.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
+    }
+
+    listRemotes(): Promise<AxiosResponse<RemoteInstance[]>> {
+        return this.axios.get<RemoteInstance[]>(import.meta.env.VUE_APP_API_PREFIX + 'remote');
+    }
+
+    addRemote(cmd: AddRemoteCommand): Promise<AxiosResponse<RemoteInstance>> {
+        return this.axios.post<RemoteInstance>(import.meta.env.VUE_APP_API_PREFIX + 'remote', cmd);
+    }
+
+    removeRemote(id: string): Promise<AxiosResponse<void>> {
+        return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + `remote/${id}/remove`);
     }
 
     initialize(cmd: CommandInitialize): Promise<AxiosResponse<void>> {

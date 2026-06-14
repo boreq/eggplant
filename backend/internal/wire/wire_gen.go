@@ -12,6 +12,7 @@ import (
 	auth2 "github.com/boreq/eggplant/adapters/auth"
 	"github.com/boreq/eggplant/adapters/music/library"
 	"github.com/boreq/eggplant/adapters/music/tracks"
+	"github.com/boreq/eggplant/adapters/remotes"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
@@ -227,7 +228,11 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		Queries: applicationQueries,
 	}
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
-	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
+	remoteRepository, err := remotes.NewRepository(db)
+	if err != nil {
+		return nil, err
+	}
+	handler, err := http.NewHandler(applicationApplication, accessContextProvider, remoteRepository)
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +351,11 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		Queries: applicationQueries,
 	}
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
-	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
+	remoteRepository2, err := remotes.NewRepository(db)
+	if err != nil {
+		return nil, err
+	}
+	handler, err := http.NewHandler(applicationApplication, accessContextProvider, remoteRepository2)
 	if err != nil {
 		return nil, err
 	}

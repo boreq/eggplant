@@ -5,6 +5,29 @@
                 <search-input class="search" v-model="searchQuery"></search-input>
 
                 <ul class="buttons">
+                    <li class="button" v-if="remoteInstances.length > 0">
+                        <dropdown>
+                            <template v-slot:trigger>
+                                <a v-tooltip="'Switch library source'">
+                                    <i class="fas fa-server"></i>
+                                    <span class="source-label">{{ selectedRemoteName }}</span>
+                                </a>
+                            </template>
+                            <template v-slot:content>
+                                <dropdown-element>
+                                    <a @click="selectSource(null)" :class="{ active: !selectedRemoteId }">
+                                        Local Library
+                                    </a>
+                                </dropdown-element>
+                                <dropdown-divider></dropdown-divider>
+                                <dropdown-element v-for="remote in remoteInstances" :key="remote.id">
+                                    <a @click="selectSource(remote.id)" :class="{ active: selectedRemoteId === remote.id }">
+                                        {{ remote.name }}
+                                    </a>
+                                </dropdown-element>
+                            </template>
+                        </dropdown>
+                    </li>
                     <li class="button" :class="{ active: showQueue }">
                         <a @click="toggleQueue" v-tooltip="showQueue ? 'Close queue.' : 'Queue.'">
                             <i class="fas fa-list-ol"></i>

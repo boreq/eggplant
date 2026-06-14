@@ -32,14 +32,18 @@ type Handler struct {
 	authProvider AuthProvider
 	router       *httprouter.Router
 	log          logging.Logger
+	remoteRepo   RemoteRepository
+	remoteClient *RemoteClient
 }
 
-func NewHandler(app *application.Application, authProvider AuthProvider) (*Handler, error) {
+func NewHandler(app *application.Application, authProvider AuthProvider, remoteRepo RemoteRepository) (*Handler, error) {
 	h := &Handler{
 		app:          app,
 		authProvider: authProvider,
 		router:       httprouter.New(),
 		log:          logging.New("ports/http.Handler"),
+		remoteRepo:   remoteRepo,
+		remoteClient: NewRemoteClient(),
 	}
 
 	// API
@@ -65,6 +69,21 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
 	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.removeUser))
+
+	// Remote instances
+	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.listRemotes))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.addRemote))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote/:remoteid/remove", rest.Wrap(h.removeRemote))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:remoteid/browse", rest.Wrap(h.remoteBrowseRoot))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:remoteid/browse/:albumid", rest.Wrap(h.remoteBrowseByID))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:remoteid/search", rest.Wrap(h.remoteSearch))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:remoteid/track/:trackid/duration", rest.Wrap(h.remoteTrackDuration))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote/:remoteid/track/:trackid/stream", rest.Wrap(h.remoteStartStream))
+	h.router.GET("/api/remote/:remoteid/track/:trackid/stream/:streamid/playlist", h.remoteStreamPlaylist)
+	h.router.GET("/api/remote/:remoteid/track/:trackid/stream/:streamid/init", h.remoteStreamInit)
+	h.router.GET("/api/remote/:remoteid/track/:trackid/stream/:streamid/fragment/:number", h.remoteStreamFragment)
+	h.router.POST("/api/remote/:remoteid/track/:trackid/stream/:streamid/keepalive", h.remoteKeepAlive)
+	h.router.GET("/api/remote/:remoteid/thumbnail/:id", h.remoteThumbnail)
 
 	// API documentation
 	h.router.HandlerFunc(http.MethodGet, "/api/openapi.yaml", h.openapiSpec)

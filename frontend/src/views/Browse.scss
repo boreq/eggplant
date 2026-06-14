@@ -48,6 +48,21 @@ $topbar-height: 45px;
                     text-align: center;
                     font-size: 12px;
 
+                    .source-label {
+                        display: none;
+                        font-size: 10px;
+                        margin-left: 4px;
+
+                        @media (min-width: 480px) {
+                            display: inline;
+                        }
+                    }
+
+                    &:has(.source-label) {
+                        width: auto;
+                        padding: 0 0.75em;
+                    }
+
                     a {
                         display: block;
                         height: 100%;

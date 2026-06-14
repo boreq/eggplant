@@ -1,0 +1,55 @@
+.linked-instances {
+    .instance-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1em;
+
+        .instance-item {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            padding: 0.5em 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+            .instance-name {
+                font-weight: bold;
+                min-width: 8em;
+            }
+
+            .instance-url {
+                flex: 1;
+                opacity: 0.6;
+                font-size: 0.9em;
+                word-break: break-all;
+            }
+
+            .remove-btn {
+                background: none;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: inherit;
+                cursor: pointer;
+                padding: 0.2em 0.6em;
+                border-radius: 3px;
+                font-size: 0.85em;
+
+                &:hover {
+                    border-color: rgba(255, 255, 255, 0.6);
+                }
+            }
+        }
+    }
+
+    .no-instances {
+        opacity: 0.5;
+        font-style: italic;
+        margin-bottom: 1em;
+    }
+
+    .add-form {
+        h4 {
+            margin: 0 0 0.5em;
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+    }
+}

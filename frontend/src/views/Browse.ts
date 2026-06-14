@@ -6,6 +6,8 @@ import { NavigationService } from '@/services/NavigationService';
 import { Album, PartialAlbum } from '@/dto/Album';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Track } from '@/dto/Track';
+import { Thumbnail as ThumbnailDto } from '@/dto/Thumbnail';
+import { RemoteInstance } from '@/dto/RemoteInstance';
 import { Mutation, ReplaceCommand, AppendCommand } from '@/store';
 import { Location } from 'vue-router';
 import Notifications from '@/components/Notifications';
@@ -69,6 +71,10 @@ export default class Browse extends Vue {
     showAllTracks: boolean = false;
     showAllAlbums: boolean = false;
 
+    // Remote instance state
+    remoteInstances: RemoteInstance[] = [];
+    selectedRemoteId: string | null = null;
+
     private readonly initialTrackLimit = 5;
     private readonly initialAlbumLimit = 5;
 
@@ -90,6 +96,8 @@ export default class Browse extends Vue {
         this.state = BrowseState.Loading;
         this.showAllTracks = false;
         this.showAllAlbums = false;
+        // When navigating via router (local albums), clear remote selection.
+        this.selectedRemoteId = null;
         this.load();
         this.scrollContentToTop();
         this.switchView(View.Browse);
@@ -110,6 +118,7 @@ export default class Browse extends Vue {
 
     created(): void {
         this.load();
+        this.loadRemoteInstances();
     }
 
     destroyed(): void {
@@ -123,11 +132,42 @@ export default class Browse extends Vue {
 
     selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
+        if (this.selectedRemoteId) {
+            // Navigating within a remote library — stay in remote mode.
+            this.album = null;
+            this.state = BrowseState.Loading;
+            this.showAllTracks = false;
+            this.showAllAlbums = false;
+            this.loadRemote(this.selectedRemoteId, album.id);
+            this.scrollContentToTop();
+            return;
+        }
         if (this.$route.params.id === album.id) {
             return;
         }
         const location = this.navigationService.getBrowse(album.id);
         this.$router.push(location);
+    }
+
+    get selectedRemoteName(): string {
+        if (!this.selectedRemoteId) return 'Local Library';
+        const inst = this.remoteInstances.find(r => r.id === this.selectedRemoteId);
+        return inst ? inst.name : 'Remote';
+    }
+
+    selectSource(remoteId: string | null): void {
+        this.selectedRemoteId = remoteId;
+        this.album = null;
+        this.state = BrowseState.Loading;
+        this.showAllTracks = false;
+        this.showAllAlbums = false;
+        this.switchView(View.Browse);
+        if (remoteId) {
+            this.loadRemote(remoteId);
+        } else {
+            this.load();
+        }
+        this.scrollContentToTop();
     }
 
     toggleQueue(): void {
@@ -359,6 +399,68 @@ export default class Browse extends Vue {
                     }
                     this.scheduleTimeout();
                 });
+    }
+
+    private loadRemote(remoteId: string, albumId?: string): void {
+        this.clearTimeout();
+        this.apiService.browseRemote(remoteId, albumId)
+            .then(
+                response => {
+                    this.album = this.tagAlbumAsRemote(response.data, remoteId);
+                    this.state = this.noContent ? BrowseState.Empty : BrowseState.Ready;
+
+                    if (this.album && this.album.tracks) {
+                        this.durationLoader.load(this.album.tracks);
+                    }
+                },
+                error => {
+                    const status = error.response && error.response.status;
+                    if (status === HttpStatus.NotFound) {
+                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
+                    } else {
+                        Notifications.pushError(this, 'Could not load remote library.', error);
+                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
+                    }
+                },
+            );
+    }
+
+    private loadRemoteInstances(): void {
+        this.apiService.listRemotes()
+            .then(
+                response => {
+                    this.remoteInstances = response.data || [];
+                },
+                () => { /* not logged in or error — silently ignore */ },
+            );
+    }
+
+    private tagAlbumAsRemote(album: Album, remoteId: string): Album {
+        if (!album) return album;
+        return {
+            ...album,
+            thumbnail: album.thumbnail ? this.tagThumbnail(album.thumbnail, remoteId) : undefined,
+            tracks: album.tracks
+                ? album.tracks.map(t => ({ ...t, remoteId }))
+                : [],
+            albums: album.albums
+                ? album.albums.map(a => this.tagPartialAlbumAsRemote(a, remoteId))
+                : [],
+            parents: album.parents
+                ? album.parents.map(a => this.tagPartialAlbumAsRemote(a, remoteId))
+                : [],
+        };
+    }
+
+    private tagPartialAlbumAsRemote(album: PartialAlbum, remoteId: string): PartialAlbum {
+        return {
+            ...album,
+            thumbnail: album.thumbnail ? this.tagThumbnail(album.thumbnail, remoteId) : undefined,
+        };
+    }
+
+    private tagThumbnail(thumb: any, remoteId: string): ThumbnailDto {
+        return { ...thumb, remoteId };
     }
 
     private scheduleTimeout(): void {

@@ -9,7 +9,12 @@
 
         <spinner v-if="user === undefined"></spinner>
 
-        <template v-else-if="user && user.administrator">
+        <template v-if="user">
+            <sub-header text="Linked Instances"></sub-header>
+            <LinkedInstances></LinkedInstances>
+        </template>
+
+        <template v-if="user && user.administrator">
             <sub-header text="Invitations"></sub-header>
             <Invitations></Invitations>
 
@@ -24,10 +29,6 @@
             <sub-header text="Version"></sub-header>
             <Version></Version>
         </template>
-
-        <div v-else class="no-admin-settings">
-            There are no additional settings available to your account.
-        </div>
     </div>
 </template>
 <script lang="ts" src="./Settings.ts"></script>

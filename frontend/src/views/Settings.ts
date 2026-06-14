@@ -12,6 +12,7 @@ import Users from '@/components/Users.vue';
 import Invitations from '@/components/Invitations.vue';
 import Version from '@/components/Version.vue';
 import Spinner from '@/components/Spinner.vue';
+import LinkedInstances from '@/components/LinkedInstances.vue';
 
 
 @Component({
@@ -26,6 +27,7 @@ import Spinner from '@/components/Spinner.vue';
         Invitations,
         Version,
         Spinner,
+        LinkedInstances,
     },
 })
 export default class Settings extends Vue {
