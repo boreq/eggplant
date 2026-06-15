@@ -228,11 +228,11 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		Queries: applicationQueries,
 	}
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
-	remoteRepository, err := remotes.NewRepository(db)
+	repository, err := remotes.NewRepository(db)
 	if err != nil {
 		return nil, err
 	}
-	handler, err := http.NewHandler(applicationApplication, accessContextProvider, remoteRepository)
+	handler, err := http.NewHandler(applicationApplication, accessContextProvider, repository)
 	if err != nil {
 		return nil, err
 	}
@@ -351,11 +351,11 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		Queries: applicationQueries,
 	}
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
-	remoteRepository2, err := remotes.NewRepository(db)
+	repository, err := remotes.NewRepository(db)
 	if err != nil {
 		return nil, err
 	}
-	handler, err := http.NewHandler(applicationApplication, accessContextProvider, remoteRepository2)
+	handler, err := http.NewHandler(applicationApplication, accessContextProvider, repository)
 	if err != nil {
 		return nil, err
 	}

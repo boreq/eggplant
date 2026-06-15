@@ -72,7 +72,7 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 		},
 	}
 
-	h, err := httpentrypoint.NewHandler(app, anonymousAuthProvider{})
+	h, err := httpentrypoint.NewHandler(app, anonymousAuthProvider{}, nil)
 	require.NoError(t, err)
 	return h
 }

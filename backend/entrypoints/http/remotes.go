@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -48,13 +49,13 @@ func NewRemoteClient() *RemoteClient {
 	return &RemoteClient{tokens: make(map[string]string)}
 }
 
-func (c *RemoteClient) do(inst *remotes.RemoteInstance, method, url string, body io.Reader) (*http.Response, error) {
-	token, err := c.getToken(inst)
+func (c *RemoteClient) do(ctx context.Context, inst *remotes.RemoteInstance, method, url string, body io.Reader) (*http.Response, error) {
+	token, err := c.getToken(ctx, inst)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get auth token for remote")
 	}
 
-	req, err := http.NewRequest(method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -71,11 +72,11 @@ func (c *RemoteClient) do(inst *remotes.RemoteInstance, method, url string, body
 		delete(c.tokens, inst.ID)
 		c.mu.Unlock()
 
-		token, err = c.getToken(inst)
+		token, err = c.getToken(ctx, inst)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not re-authenticate with remote")
 		}
-		req2, err := http.NewRequest(method, url, body)
+		req2, err := http.NewRequestWithContext(ctx, method, url, body)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +87,7 @@ func (c *RemoteClient) do(inst *remotes.RemoteInstance, method, url string, body
 	return resp, nil
 }
 
-func (c *RemoteClient) getToken(inst *remotes.RemoteInstance) (string, error) {
+func (c *RemoteClient) getToken(ctx context.Context, inst *remotes.RemoteInstance) (string, error) {
 	c.mu.Lock()
 	token, ok := c.tokens[inst.ID]
 	c.mu.Unlock()
@@ -94,7 +95,7 @@ func (c *RemoteClient) getToken(inst *remotes.RemoteInstance) (string, error) {
 		return token, nil
 	}
 
-	token, err := c.login(inst)
+	token, err := c.login(ctx, inst)
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +107,7 @@ func (c *RemoteClient) getToken(inst *remotes.RemoteInstance) (string, error) {
 	return token, nil
 }
 
-func (c *RemoteClient) login(inst *remotes.RemoteInstance) (string, error) {
+func (c *RemoteClient) login(ctx context.Context, inst *remotes.RemoteInstance) (string, error) {
 	body, err := json.Marshal(map[string]string{
 		"username": inst.Username,
 		"password": inst.Password,
@@ -116,7 +117,12 @@ func (c *RemoteClient) login(inst *remotes.RemoteInstance) (string, error) {
 	}
 
 	loginURL := strings.TrimRight(inst.URL, "/") + "/api/auth/login"
-	resp, err := http.Post(loginURL, "application/json", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, loginURL, bytes.NewReader(body))
+	if err != nil {
+		return "", errors.Wrap(err, "could not create login request")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, "login request to remote failed")
 	}
@@ -341,7 +347,7 @@ func (h *Handler) remoteKeepAlive(w http.ResponseWriter, r *http.Request, ps htt
 	}
 	remoteURL := inst.URL + "/api/track/" + ps.ByName("trackid") +
 		"/stream/" + ps.ByName("streamid") + "/keepalive"
-	resp, err := h.remoteClient.do(inst, http.MethodPost, remoteURL, nil)
+	resp, err := h.remoteClient.do(r.Context(), inst, http.MethodPost, remoteURL, nil)
 	if err != nil {
 		h.log.Error("remote keepalive failed", "err", err)
 		w.WriteHeader(http.StatusBadGateway)
@@ -367,7 +373,7 @@ func (h *Handler) proxyJSONGet(r *http.Request, inst *remotes.RemoteInstance, re
 
 // proxyJSONDo proxies any method and forwards the JSON response.
 func (h *Handler) proxyJSONDo(r *http.Request, inst *remotes.RemoteInstance, method, remoteURL string, body io.Reader) rest.RestResponse {
-	resp, err := h.remoteClient.do(inst, method, remoteURL, body)
+	resp, err := h.remoteClient.do(r.Context(), inst, method, remoteURL, body)
 	if err != nil {
 		h.log.Error("remote request failed", "url", remoteURL, "err", err)
 		return rest.ErrBadGateway
@@ -388,7 +394,7 @@ func (h *Handler) proxyJSONDo(r *http.Request, inst *remotes.RemoteInstance, met
 
 // proxyBinary proxies a request forwarding binary response data directly.
 func (h *Handler) proxyBinary(w http.ResponseWriter, r *http.Request, inst *remotes.RemoteInstance, remoteURL string) {
-	resp, err := h.remoteClient.do(inst, http.MethodGet, remoteURL, nil)
+	resp, err := h.remoteClient.do(r.Context(), inst, http.MethodGet, remoteURL, nil)
 	if err != nil {
 		h.log.Error("remote binary request failed", "url", remoteURL, "err", err)
 		w.WriteHeader(http.StatusBadGateway)
