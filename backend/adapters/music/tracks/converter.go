@@ -29,7 +29,7 @@ const (
 	hlsSegmentSeconds    = 4
 	readinessTimeout     = 30 * time.Second
 	readinessPoll        = 50 * time.Millisecond
-	readinessFragments   = 5
+	readinessFragments   = 2
 	jobAcceptanceTimeout = 30 * time.Second
 
 	streamIdleTimeout = 5 * time.Minute
