@@ -7,6 +7,14 @@
     align-items: center;
     margin: 1em 0;
 
+    &.clickable {
+        cursor: pointer;
+
+        &:hover {
+            color: $primary-color;
+        }
+    }
+
     .text {
     }
 

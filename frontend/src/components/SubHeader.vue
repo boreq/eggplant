@@ -1,5 +1,5 @@
 <template>
-    <div class="subheader">
+    <div class="subheader" :class="{ clickable }" @click="$emit('click')">
         <div class="text">{{ text }}</div>
         <div class="line"></div>
         <div class="action" v-if="$slots.action">

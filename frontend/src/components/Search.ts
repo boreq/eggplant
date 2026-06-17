@@ -91,25 +91,25 @@ export default class Search extends Vue {
     }
 
     get displayedTracks(): TrackWithAlbum[] {
-        if (this.hasAlbums && !this.showAllTracks) {
+        if (!this.showAllTracks) {
             return this.tracks.slice(0, this.initialTrackLimit);
         }
         return this.tracks;
     }
 
     get canToggleTracks(): boolean {
-        return this.hasAlbums && this.tracks.length > this.initialTrackLimit;
+        return this.tracks.length > this.initialTrackLimit;
     }
 
     get displayedAlbums(): PartialAlbum[] {
-        if (this.hasTracks && !this.showAllAlbums) {
+        if (!this.showAllAlbums) {
             return this.albums.slice(0, this.initialAlbumLimit);
         }
         return this.albums;
     }
 
     get canToggleAlbums(): boolean {
-        return this.hasTracks && this.albums.length > this.initialAlbumLimit;
+        return this.albums.length > this.initialAlbumLimit;
     }
 
     selectAlbum(event: PartialAlbum): void {

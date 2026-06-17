@@ -7,4 +7,7 @@ export default class SubHeader extends Vue {
     @Prop()
     text: string;
 
+    @Prop({ default: false })
+    clickable: boolean;
+
 }

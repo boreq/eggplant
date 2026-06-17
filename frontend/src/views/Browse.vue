@@ -75,9 +75,10 @@
                 </div>
 
                 <div class="section bleed" v-if="album && album.tracks && album.tracks.length > 0">
-                    <SubHeader text="Tracks">
+                    <SubHeader text="Tracks" :clickable="canToggleTracks"
+                        @click="canToggleTracks && (showAllTracks = !showAllTracks)">
                         <template v-slot:action v-if="canToggleTracks">
-                            <a @click="showAllTracks = !showAllTracks">
+                            <a>
                                 {{ showAllTracks ? 'Show fewer' : 'View all ' + entries.length }}
                             </a>
                         </template>
@@ -86,9 +87,10 @@
                 </div>
 
                 <div class="section" v-if="albums && albums.length > 0">
-                    <SubHeader text="Albums">
+                    <SubHeader text="Albums" :clickable="canToggleAlbums"
+                        @click="canToggleAlbums && (showAllAlbums = !showAllAlbums)">
                         <template v-slot:action v-if="canToggleAlbums">
-                            <a @click="showAllAlbums = !showAllAlbums">
+                            <a>
                                 {{ showAllAlbums ? 'Show fewer' : 'View all ' + albums.length }}
                             </a>
                         </template>

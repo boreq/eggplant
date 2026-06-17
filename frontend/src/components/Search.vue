@@ -4,9 +4,10 @@
 
         <div class="results" v-if="result">
             <div class="section bleed">
-                <SubHeader text="Tracks">
+                <SubHeader text="Tracks" :clickable="canToggleTracks"
+                    @click="canToggleTracks && (showAllTracks = !showAllTracks)">
                     <template v-slot:action v-if="canToggleTracks">
-                        <a @click="showAllTracks = !showAllTracks">
+                        <a>
                             {{ showAllTracks ? 'Show fewer' : 'View all ' + tracks.length }}
                         </a>
                     </template>
@@ -18,9 +19,10 @@
             </div>
 
             <div class="section">
-                <SubHeader text="Albums">
+                <SubHeader text="Albums" :clickable="canToggleAlbums"
+                    @click="canToggleAlbums && (showAllAlbums = !showAllAlbums)">
                     <template v-slot:action v-if="canToggleAlbums">
-                        <a @click="showAllAlbums = !showAllAlbums">
+                        <a>
                             {{ showAllAlbums ? 'Show fewer' : 'View all ' + albums.length }}
                         </a>
                     </template>
