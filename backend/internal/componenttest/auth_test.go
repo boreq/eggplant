@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/internal/fixture"
@@ -15,7 +16,7 @@ import (
 
 var (
 	adminCtx = fixture.AdminAccessContext()
-	anonCtx  = auth.NewAnonymousAccessContext()
+	anonCtx  = accessctx.NewAnonymousAccessContext()
 )
 
 func TestRegisterInitial(t *testing.T) {
@@ -242,7 +243,7 @@ func TestLogout(t *testing.T) {
 	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
 	require.NoError(t, err)
 
-	authCtx, ok := ctx.(auth.AuthenticatedAccessContext)
+	authCtx, ok := ctx.(accessctx.UserAccessContext)
 	require.True(t, ok)
 
 	err = a.Logout.Execute(authCtx)
@@ -605,15 +606,15 @@ var registerTestCases = []struct {
 	},
 }
 
-func userFromCtx(t *testing.T, a *auth.Auth, ctx auth.AccessContext) authdomain.User {
-	ac, ok := ctx.(auth.AuthenticatedAccessContext)
+func userFromCtx(t *testing.T, a *auth.Auth, ctx accessctx.AccessContext) authdomain.User {
+	ac, ok := ctx.(accessctx.UserAccessContext)
 	require.True(t, ok)
 	u, err := a.GetCurrentUser.Execute(ac)
 	require.NoError(t, err)
 	return u
 }
 
-func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, password authdomain.Password) auth.AuthenticatedAccessContext {
+func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, password authdomain.Password) accessctx.UserAccessContext {
 	err := a.RegisterInitial.Execute(auth.RegisterInitial{
 		Username: username,
 		Password: password,
@@ -629,7 +630,7 @@ func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, p
 	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
 	require.NoError(t, err)
 
-	authCtx, ok := ctx.(auth.AuthenticatedAccessContext)
+	authCtx, ok := ctx.(accessctx.UserAccessContext)
 	require.True(t, ok)
 	return authCtx
 }

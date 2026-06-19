@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -19,9 +20,9 @@ func NewCreateInvitationHandler(
 	}
 }
 
-func (h *CreateInvitationHandler) Execute(accessCtx AccessContext) (authdomain.InvitationToken, error) {
-	if !accessCtx.Can(PermissionCreateInvitations) {
-		return authdomain.InvitationToken{}, ErrPermissionDenied
+func (h *CreateInvitationHandler) Execute(accessCtx accessctx.AccessContext) (authdomain.InvitationToken, error) {
+	if !accessCtx.Can(accessctx.PermissionManageInvitations) {
+		return authdomain.InvitationToken{}, accessctx.ErrPermissionDenied
 	}
 
 	token, err := authdomain.NewInvitationToken()

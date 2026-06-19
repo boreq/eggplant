@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -15,9 +16,9 @@ func NewListHandler(transactionProvider TransactionProvider) *ListHandler {
 	}
 }
 
-func (h *ListHandler) Execute(accessCtx AccessContext) ([]authdomain.User, error) {
-	if !accessCtx.Can(PermissionManageUsers) {
-		return nil, ErrPermissionDenied
+func (h *ListHandler) Execute(accessCtx accessctx.AccessContext) ([]authdomain.User, error) {
+	if !accessCtx.Can(accessctx.PermissionManageUsers) {
+		return nil, accessctx.ErrPermissionDenied
 	}
 
 	var users []authdomain.User

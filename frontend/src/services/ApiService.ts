@@ -13,6 +13,8 @@ import { Invitation } from '@/dto/Invitation';
 import { RegisterCommand } from '@/dto/RegisterCommand';
 import { StreamStartResponse } from '@/dto/StreamStartResponse';
 import { TrackDuration } from '@/dto/TrackDuration';
+import { RemoteInstance } from '@/dto/RemoteInstance';
+import { AddRemoteResult } from '@/dto/AddRemoteResult';
 
 /*
 declare module 'vue-property-decorator' {
@@ -181,6 +183,21 @@ export class ApiService {
         username = encodeURIComponent(username);
         const url = `auth/users/${username}/remove`;
         return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
+    listRemotes(): Promise<AxiosResponse<RemoteInstance[]>> {
+        const url = `remote`;
+        return this.axios.get<RemoteInstance[]>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
+    addRemote(remoteUrl: string): Promise<AxiosResponse<AddRemoteResult>> {
+        const url = `remote`;
+        return this.axios.post<AddRemoteResult>(import.meta.env.VUE_APP_API_PREFIX + url, { url: remoteUrl });
+    }
+
+    setRemotePairingToken(id: string, peerToken: string): Promise<AxiosResponse<void>> {
+        const url = `remote/${encodeURIComponent(id)}/pairing-token`;
+        return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url, { peer_token: peerToken });
     }
 
 }

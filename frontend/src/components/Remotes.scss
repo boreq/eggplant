@@ -1,0 +1,87 @@
+.remotes {
+
+    .add {
+        display: flex;
+        align-items: center;
+        gap: 1em;
+        margin-bottom: 1em;
+
+        .input {
+            flex: 1;
+            margin: 0;
+        }
+
+        .button {
+            max-width: 200px;
+            margin: 0;
+        }
+    }
+
+    .list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        .remote {
+            padding: 1em;
+            border: 1px solid $box-normal-border-color;
+
+            & + .remote {
+                border-top: none;
+            }
+
+            .address {
+                font-weight: bold;
+                word-break: break-all;
+            }
+
+            .details {
+                margin-top: 0.75em;
+            }
+        }
+    }
+
+    .local-token,
+    .peer-token {
+        margin-bottom: 0.75em;
+
+        .label {
+            display: block;
+            margin-bottom: 0.5em;
+        }
+    }
+
+    .local-token .token {
+        cursor: pointer;
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin: 0;
+    }
+
+    .peer-token .row {
+        display: flex;
+        align-items: center;
+        gap: 1em;
+
+        .input {
+            flex: 1;
+            margin: 0;
+        }
+
+        .button {
+            max-width: 150px;
+            margin: 0;
+        }
+    }
+
+    .status {
+        &.bad,
+        &.pending {
+            opacity: 0.7;
+        }
+    }
+
+    .empty {
+        text-align: center;
+    }
+}

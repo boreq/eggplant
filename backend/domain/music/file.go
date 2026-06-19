@@ -5,6 +5,8 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+
+	"github.com/boreq/eggplant/domain/crockford"
 )
 
 type FilePath struct {
@@ -82,7 +84,7 @@ func NewFileId(path FilePath) (FileId, error) {
 		return FileId{}, errors.New("file path must not be empty")
 	}
 	sum := sha256.Sum256([]byte(path.value))
-	return FileId{value: encodeCrockford(sum[:])}, nil
+	return FileId{value: crockford.Encode(sum[:])}, nil
 }
 
 func (f FileId) String() string {

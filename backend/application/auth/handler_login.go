@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -27,8 +28,8 @@ func NewLoginHandler(
 	}
 }
 
-func (h *LoginHandler) Execute(accessCtx AccessContext, cmd Login) (authdomain.AccessToken, error) {
-	if _, ok := accessCtx.(AuthenticatedAccessContext); ok {
+func (h *LoginHandler) Execute(accessCtx accessctx.AccessContext, cmd Login) (authdomain.AccessToken, error) {
+	if _, ok := accessCtx.(accessctx.UserAccessContext); ok {
 		return authdomain.AccessToken{}, ErrAlreadyAuthenticated
 	}
 

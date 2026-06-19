@@ -11,10 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/entrypoints/http/openapi"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/internal/wire"
 	"github.com/stretchr/testify/require"
+	bolt "go.etcd.io/bbolt"
 )
 
 func TestServiceInitialSetup(t *testing.T) {
@@ -274,6 +276,8 @@ func TestServiceDocs(t *testing.T) {
 type testService struct {
 	baseURL string
 	client  *openapi.ClientWithResponses
+	app     *application.Application
+	db      *bolt.DB
 }
 
 func newTestService(t *testing.T) *testService {
@@ -297,18 +301,27 @@ func newTestService(t *testing.T) *testService {
 	// Scan the fixture library synchronously so the music endpoints have data.
 	require.NoError(t, svc.App.Music.LoadLibrary.Execute(ctx))
 
+	pubSubDone := make(chan struct{})
+	go func() {
+		defer close(pubSubDone)
+		if err := svc.OutboxListener.Run(ctx); err != nil {
+			t.Logf("pub/sub stopped: %v", err)
+		}
+	}()
+
 	server := httptest.NewServer(svc.Handler)
 
 	t.Cleanup(func() {
 		server.Close()
 		cancel()
+		<-pubSubDone
 		_ = svc.DB.Close()
 	})
 
 	client, err := openapi.NewClientWithResponses(server.URL)
 	require.NoError(t, err)
 
-	return &testService{baseURL: server.URL, client: client}
+	return &testService{baseURL: server.URL, client: client, app: svc.App, db: svc.DB}
 }
 
 func authedAs(token string) openapi.RequestEditorFn {

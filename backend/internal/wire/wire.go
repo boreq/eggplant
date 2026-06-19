@@ -8,6 +8,7 @@ import (
 
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/queries"
+	"github.com/boreq/eggplant/application/remote"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/internal/service"
 	"github.com/google/wire"
@@ -47,6 +48,14 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	return nil, nil
 }
 
+func BuildTransactableRemoteRepositories(tx *bolt.Tx) (*remote.TransactableRepositories, error) {
+	wire.Build(
+		remoteSet,
+	)
+
+	return nil, nil
+}
+
 func BuildService(ctx context.Context, conf *config.Config) (*service.Service, error) {
 	wire.Build(
 		service.NewService,
@@ -54,6 +63,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		filesystemSet,
 		appSet,
 		musicSet,
+		remoteSet,
 		boltSet,
 	)
 
@@ -66,6 +76,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		httpSet,
 		appSet,
 		musicSet,
+		remoteSet,
 		boltSet,
 	)
 

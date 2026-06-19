@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -15,7 +16,7 @@ func NewGetCurrentUserHandler(transactionProvider TransactionProvider) *GetCurre
 	}
 }
 
-func (h *GetCurrentUserHandler) Execute(accessCtx AuthenticatedAccessContext) (authdomain.User, error) {
+func (h *GetCurrentUserHandler) Execute(accessCtx accessctx.UserAccessContext) (authdomain.User, error) {
 	var user authdomain.User
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
 		u, err := r.Users.Get(accessCtx.Username())

@@ -1,13 +1,13 @@
 package fixture
 
-import "github.com/boreq/eggplant/application/auth"
+import "github.com/boreq/eggplant/application/accessctx"
 
 type adminAccessContext struct{}
 
-func (adminAccessContext) Can(auth.Permission) bool {
+func (adminAccessContext) Can(accessctx.Permission) bool {
 	return true
 }
 
-func AdminAccessContext() auth.AccessContext {
+func AdminAccessContext() accessctx.AccessContext {
 	return adminAccessContext{}
 }

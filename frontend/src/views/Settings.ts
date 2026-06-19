@@ -10,6 +10,7 @@ import Notifications from '@/components/Notifications';
 import { User } from '@/dto/User';
 import Users from '@/components/Users.vue';
 import Invitations from '@/components/Invitations.vue';
+import Remotes from '@/components/Remotes.vue';
 import Version from '@/components/Version.vue';
 import Spinner from '@/components/Spinner.vue';
 
@@ -24,6 +25,7 @@ import Spinner from '@/components/Spinner.vue';
         ActionBarButton,
         Users,
         Invitations,
+        Remotes,
         Version,
         Spinner,
     },
