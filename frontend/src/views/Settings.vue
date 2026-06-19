@@ -10,11 +10,14 @@
         <spinner v-if="user === undefined"></spinner>
 
         <template v-else-if="user && user.administrator">
-            <sub-header text="Invitations"></sub-header>
+            <sub-header text="User invitations"></sub-header>
             <Invitations></Invitations>
 
             <sub-header text="Users"></sub-header>
             <Users></Users>
+
+            <sub-header text="Connected instances"></sub-header>
+            <Remotes></Remotes>
 
             <sub-header text="API"></sub-header>
             <p class="api-docs">

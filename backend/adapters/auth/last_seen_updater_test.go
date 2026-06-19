@@ -1,79 +1,72 @@
 package auth_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/boreq/eggplant/adapters/auth"
-	app "github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
-	"github.com/boreq/eggplant/internal/fixture"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLastSeenUpdater(t *testing.T) {
-	transactionProvider, cleanup := fixture.AuthTransactionProvider(t)
-	defer cleanup()
+func TestLastSeenUpdater_PopUpdatesReturnsBufferedUpdates(t *testing.T) {
+	u := auth.NewLastSeenUpdater()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	username := mustUsername(t, "username")
+	tokenA := mustToken(t, "a")
+	tokenB := mustToken(t, "b")
 
-	u, err := auth.NewLastSeenUpdater(transactionProvider)
+	t1 := time.Now()
+	t2 := t1.Add(time.Second)
+
+	u.Update(username, tokenA, t1)
+	u.Update(username, tokenB, t2)
+
+	updates := u.PopUpdates()
+	require.Len(t, updates, 1)
+
+	update := updates[0]
+	require.Equal(t, username, update.Username)
+	require.True(t, update.LastSeen.Equal(t2))
+	require.True(t, update.Sessions[tokenA].Equal(t1))
+	require.True(t, update.Sessions[tokenB].Equal(t2))
+}
+
+func TestLastSeenUpdater_KeepsLatestTimestamp(t *testing.T) {
+	u := auth.NewLastSeenUpdater()
+
+	username := mustUsername(t, "username")
+	token := mustToken(t, "a")
+
+	newer := time.Now()
+	older := newer.Add(-time.Second)
+
+	u.Update(username, token, newer)
+	u.Update(username, token, older)
+
+	updates := u.PopUpdates()
+	require.Len(t, updates, 1)
+	require.True(t, updates[0].LastSeen.Equal(newer))
+	require.True(t, updates[0].Sessions[token].Equal(newer))
+}
+
+func TestLastSeenUpdater_PopUpdatesClearsBuffer(t *testing.T) {
+	u := auth.NewLastSeenUpdater()
+
+	u.Update(mustUsername(t, "username"), mustToken(t, "a"), time.Now())
+
+	require.Len(t, u.PopUpdates(), 1)
+	require.Nil(t, u.PopUpdates())
+}
+
+func mustUsername(t *testing.T, s string) authdomain.Username {
+	username, err := authdomain.NewUsernameFromString(s)
 	require.NoError(t, err)
+	return username
+}
 
-	username, err := authdomain.NewUsernameFromString("username")
+func mustToken(t *testing.T, s string) authdomain.AccessToken {
+	token, err := authdomain.NewAccessTokenFromString(s)
 	require.NoError(t, err)
-
-	tokenA, err := authdomain.NewAccessTokenFromString("a")
-	require.NoError(t, err)
-	tokenB, err := authdomain.NewAccessTokenFromString("b")
-	require.NoError(t, err)
-
-	session1Time := time.Now().Add(-10 * time.Second)
-	session2Time := time.Now().Add(-10 * time.Second)
-	session1 := authdomain.NewSession(tokenA, session1Time)
-	session2 := authdomain.NewSession(tokenB, session2Time)
-
-	password, err := authdomain.NewPasswordHash([]byte("hash"))
-	require.NoError(t, err)
-
-	now := time.Now()
-	user := authdomain.NewUserFromDatabase(
-		username,
-		password,
-		false,
-		&now,
-		&now,
-		[]authdomain.Session{session1, session2},
-	)
-
-	err = transactionProvider.Write(func(adapters *app.TransactableRepositories) error {
-		return adapters.Users.Put(user)
-	})
-	require.NoError(t, err)
-
-	newValue := time.Now()
-	u.Update(username, tokenA, newValue)
-
-	go func() {
-		u.Run(ctx, time.Second)
-	}()
-	<-time.After(2 * time.Second)
-
-	err = transactionProvider.Read(func(adapters *app.TransactableRepositories) error {
-		u, err := adapters.Users.Get(username)
-		require.NoError(t, err)
-
-		require.Len(t, u.Sessions(), 2)
-
-		require.Equal(t, tokenA, u.Sessions()[0].Token())
-		require.True(t, u.Sessions()[0].LastSeen().Equal(newValue))
-
-		require.Equal(t, tokenB, u.Sessions()[1].Token())
-		require.True(t, u.Sessions()[1].LastSeen().Equal(session2Time))
-
-		return nil
-	})
-	require.NoError(t, err)
+	return token
 }

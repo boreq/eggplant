@@ -4,26 +4,14 @@ import (
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
+	"github.com/boreq/eggplant/application/remote"
 )
 
 type Application struct {
 	Auth    auth.Auth
-	Music   Music
+	Music   music.Music
 	Queries Queries
-}
-
-type Music struct {
-	Thumbnail        *music.LoggingThumbnailHandler
-	StartStreaming   *music.LoggingStartStreamingHandler
-	StreamPlaylist   *music.LoggingStreamPlaylistHandler
-	StreamInit       *music.LoggingStreamInitHandler
-	StreamFragment   *music.LoggingStreamFragmentHandler
-	KeepAliveStream  *music.LoggingKeepAliveStreamHandler
-	GetRootAlbum     *music.LoggingGetRootAlbumHandler
-	GetAlbum         *music.LoggingGetAlbumHandler
-	GetTrackDuration *music.LoggingGetTrackDurationHandler
-	Search           *music.LoggingSearchHandler
-	LoadLibrary      *music.LoggingLoadLibraryHandler
+	Remote  remote.Remote
 }
 
 type Queries struct {

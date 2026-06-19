@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/application"
-	"github.com/boreq/eggplant/application/auth"
+	"github.com/boreq/eggplant/application/accessctx"
 	appmusic "github.com/boreq/eggplant/application/music"
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/hls"
@@ -67,7 +67,7 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 		fakeTrackConverter{playlist: testPlaylist(t)},
 	)
 	app := &application.Application{
-		Music: application.Music{
+		Music: appmusic.Music{
 			StreamPlaylist: appmusic.NewLoggingStreamPlaylistHandler(inner, logging.New("test")),
 		},
 	}
@@ -130,5 +130,5 @@ func (c fakeTrackConverter) GetPlaylist(musicdomain.FileId, musicdomain.StreamId
 type anonymousAuthProvider struct{}
 
 func (anonymousAuthProvider) Get(*http.Request) (httpentrypoint.AccessContext, error) {
-	return httpentrypoint.NewAccessContext(auth.NewAnonymousAccessContext()), nil
+	return httpentrypoint.NewAccessContext(accessctx.NewAnonymousAccessContext()), nil
 }

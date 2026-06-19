@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -25,9 +26,9 @@ func NewSetPasswordHandler(
 	}
 }
 
-func (h *SetPasswordHandler) Execute(accessCtx AccessContext, cmd SetPassword) error {
-	if !accessCtx.Can(PermissionManageUsers) {
-		return ErrPermissionDenied
+func (h *SetPasswordHandler) Execute(accessCtx accessctx.AccessContext, cmd SetPassword) error {
+	if !accessCtx.Can(accessctx.PermissionManageUsers) {
+		return accessctx.ErrPermissionDenied
 	}
 
 	passwordHash, err := h.passwordHasher.Hash(cmd.Password)

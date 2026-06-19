@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/boreq/eggplant/application"
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/domain/music/library"
@@ -11,18 +12,18 @@ import (
 )
 
 type AccessContext struct {
-	auth    auth.AccessContext
+	auth    accessctx.AccessContext
 	library library.AccessContext
 }
 
-func NewAccessContext(authCtx auth.AccessContext) AccessContext {
+func NewAccessContext(authCtx accessctx.AccessContext) AccessContext {
 	return AccessContext{
 		auth:    authCtx,
 		library: libraryAccessFor(authCtx),
 	}
 }
 
-func (c AccessContext) Auth() auth.AccessContext {
+func (c AccessContext) Auth() accessctx.AccessContext {
 	return c.auth
 }
 
@@ -30,8 +31,8 @@ func (c AccessContext) Library() library.AccessContext {
 	return c.library
 }
 
-func libraryAccessFor(authCtx auth.AccessContext) library.AccessContext {
-	if _, ok := authCtx.(auth.AuthenticatedAccessContext); ok {
+func libraryAccessFor(authCtx accessctx.AccessContext) library.AccessContext {
+	if _, ok := authCtx.(accessctx.UserAccessContext); ok {
 		return library.NewLoggedInAccessContext()
 	}
 	return library.NewAnonymousAccessContext()
@@ -50,13 +51,13 @@ func NewAccessContextProvider(app *application.Application) *AccessContextProvid
 func (h *AccessContextProvider) Get(r *http.Request) (AccessContext, error) {
 	token, ok := h.getToken(r)
 	if !ok {
-		return NewAccessContext(auth.NewAnonymousAccessContext()), nil
+		return NewAccessContext(accessctx.NewAnonymousAccessContext()), nil
 	}
 
 	authCtx, err := h.app.Auth.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
 	if err != nil {
 		if errors.Is(err, auth.ErrUnauthorized) {
-			return NewAccessContext(auth.NewAnonymousAccessContext()), nil
+			return NewAccessContext(accessctx.NewAnonymousAccessContext()), nil
 		}
 		return AccessContext{}, errors.Wrap(err, "could not check the access token")
 	}

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/pkg/errors"
 )
 
@@ -16,7 +17,7 @@ func NewLogoutHandler(
 	}
 }
 
-func (h *LogoutHandler) Execute(accessCtx AuthenticatedAccessContext) error {
+func (h *LogoutHandler) Execute(accessCtx accessctx.UserAccessContext) error {
 	token := accessCtx.Token()
 	username := accessCtx.Username()
 

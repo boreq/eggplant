@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 )
 
@@ -18,9 +19,9 @@ func NewRemoveHandler(transactionProvider TransactionProvider) *RemoveHandler {
 	}
 }
 
-func (h *RemoveHandler) Execute(accessCtx AuthenticatedAccessContext, cmd Remove) error {
-	if !accessCtx.Can(PermissionManageUsers) {
-		return ErrPermissionDenied
+func (h *RemoveHandler) Execute(accessCtx accessctx.UserAccessContext, cmd Remove) error {
+	if !accessCtx.Can(accessctx.PermissionManageUsers) {
+		return accessctx.ErrPermissionDenied
 	}
 
 	if accessCtx.Username() == cmd.Username {

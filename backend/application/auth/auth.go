@@ -9,7 +9,6 @@ import (
 
 var (
 	ErrUnauthorized         = errors.New("unauthorized")
-	ErrPermissionDenied     = errors.New("permission denied")
 	ErrUsernameTaken        = errors.New("username taken")
 	ErrNotFound             = errors.New("not found")
 	ErrAlreadyAuthenticated = errors.New("already authenticated")
@@ -59,8 +58,15 @@ type InvitationRepository interface {
 	Remove(token authdomain.InvitationToken) error
 }
 
+type LastSeenUpdate struct {
+	Username authdomain.Username
+	LastSeen time.Time
+	Sessions map[authdomain.AccessToken]time.Time
+}
+
 type LastSeenUpdater interface {
 	Update(username authdomain.Username, token authdomain.AccessToken, t time.Time)
+	PopUpdates() []LastSeenUpdate
 }
 
 type TransactionProvider interface {

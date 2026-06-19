@@ -2,18 +2,13 @@ package music
 
 import (
 	"crypto/sha256"
-	"encoding/base32"
 	"fmt"
 
+	"github.com/boreq/eggplant/domain/crockford"
 	"github.com/boreq/errors"
 )
 
-const (
-	crockfordBase32Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-	idHashBytes             = 10
-)
-
-var crockfordBase32 = base32.NewEncoding(crockfordBase32Alphabet).WithPadding(base32.NoPadding)
+const idHashBytes = 10
 
 type idForHumans struct {
 	value string
@@ -22,14 +17,14 @@ type idForHumans struct {
 func newIdForHumans(parents []AlbumId, last fmt.Stringer) idForHumans {
 	s := parentsAsString(parents) + last.String()
 	sum := sha256.Sum256([]byte(s))
-	return idForHumans{value: encodeCrockford(sum[:idHashBytes])}
+	return idForHumans{value: crockford.Encode(sum[:idHashBytes])}
 }
 
 func newIdForHumansFromString(s string) (idForHumans, error) {
 	if s == "" {
 		return idForHumans{}, errors.New("id must not be empty")
 	}
-	decoded, err := decodeCrockford(s)
+	decoded, err := crockford.Decode(s)
 	if err != nil {
 		return idForHumans{}, errors.Wrap(err, "id must be a Crockford base32 string")
 	}
@@ -49,12 +44,4 @@ func parentsAsString(parents []AlbumId) string {
 		s += p.String()
 	}
 	return s
-}
-
-func encodeCrockford(b []byte) string {
-	return crockfordBase32.EncodeToString(b)
-}
-
-func decodeCrockford(s string) ([]byte, error) {
-	return crockfordBase32.DecodeString(s)
 }

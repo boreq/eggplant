@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/internal/config"
@@ -47,7 +48,7 @@ func runList(c guinea.Context) error {
 		return errors.Wrap(err, "failed to build the application")
 	}
 
-	users, err := a.List.Execute(auth.NewCommandLineAccessContext())
+	users, err := a.List.Execute(accessctx.NewCommandLineAccessContext())
 	if err != nil {
 		return errors.Wrap(err, "failed to list users")
 	}
@@ -121,7 +122,7 @@ func runResetPassword(c guinea.Context) error {
 		Password: rawPassword,
 	}
 
-	if err := a.SetPassword.Execute(auth.NewCommandLineAccessContext(), cmd); err != nil {
+	if err := a.SetPassword.Execute(accessctx.NewCommandLineAccessContext(), cmd); err != nil {
 		return errors.Wrap(err, "failed to set a password")
 	}
 

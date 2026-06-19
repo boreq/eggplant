@@ -32,7 +32,7 @@ var appSet = wire.NewSet(
 	auth.NewSetPasswordHandler,
 	auth.NewGetCurrentUserHandler,
 
-	wire.Struct(new(application.Music), "*"),
+	wire.Struct(new(music.Music), "*"),
 	newMusicHandlerLogger,
 	music.NewStartStreamingHandler,
 	music.NewStreamPlaylistHandler,
@@ -88,6 +88,7 @@ var appSet = wire.NewSet(
 
 	authAdapters.NewLastSeenUpdater,
 	wire.Bind(new(auth.LastSeenUpdater), new(*authAdapters.LastSeenUpdater)),
+	auth.NewPersistLastSeenHandler,
 )
 
 type authRepositoriesProvider struct {

@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -26,7 +27,7 @@ func NewCheckAccessTokenHandler(
 	}
 }
 
-func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, error) {
+func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (accessctx.AccessContext, error) {
 	var foundUser *authdomain.User
 	var foundSession *authdomain.Session
 
@@ -56,5 +57,5 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (AccessContext, 
 
 	h.lastSeenUpdater.Update(foundUser.Username(), foundSession.Token(), time.Now())
 
-	return NewAuthenticatedAccessContext(*foundUser, foundSession.Token()), nil
+	return accessctx.NewUserAccessContext(*foundUser, foundSession.Token()), nil
 }

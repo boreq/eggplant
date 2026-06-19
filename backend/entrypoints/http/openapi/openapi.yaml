@@ -16,6 +16,8 @@ tags:
     description: Authentication and user management.
   - name: meta
     description: Server metadata.
+  - name: remote
+    description: Pairing and communication between remote instances.
 security:
   - {}
   - cookieAuth: []
@@ -401,6 +403,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VersionResponse'
+  /api/remote:
+    get:
+      tags: [remote]
+      operationId: listRemotes
+      summary: List paired and pending remote instances (administrators only).
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: The known remote instances.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RemoteInstance'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [remote]
+      operationId: addRemote
+      summary: Begin pairing with a peer instance (administrators only).
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRemoteInput'
+      responses:
+        '200':
+          description: The local pairing identifiers to hand to the peer operator.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddRemoteResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/remote/{id}/pairing-token:
+    post:
+      tags: [remote]
+      operationId: setRemotePairingToken
+      summary: Set the peer's pairing token on a remote instance (administrators only).
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+          description: The remote instance id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetRemotePairingTokenInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/peer/health:
+    get:
+      tags: [remote]
+      operationId: peerHealth
+      summary: Peer-to-peer endpoint a peer calls to check that we are alive.
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+  /api/peer/auth-token:
+    post:
+      tags: [remote]
+      operationId: setRemoteAuthToken
+      summary: Peer-to-peer endpoint a peer calls to deliver our outbound token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetRemoteAuthTokenInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
     cookieAuth:
@@ -760,3 +859,73 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/ReadSessionResponse'
+    AddRemoteInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: The address of the peer instance to pair with.
+          example: https://music.0x46.net
+    RemoteInstance:
+      type: object
+      required: [id, address, status, remote_pairing_token_set]
+      properties:
+        id:
+          type: string
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+        address:
+          type: string
+          description: The address of the peer instance.
+          example: https://music.0x46.net
+        status:
+          type: string
+          enum: [PAIRING, HEALTHY, DEAD]
+          example: HEALTHY
+        remote_pairing_token_set:
+          type: boolean
+          description: Whether the peer's pairing token has already been provided.
+          example: true
+        last_healthcheck_status:
+          type: string
+          description: The result of the most recent healthcheck.
+          enum: [ALIVE, DEAD]
+          nullable: true
+          example: ALIVE
+        last_healthcheck_at:
+          type: string
+          format: date-time
+          description: When the most recent healthcheck was performed.
+          nullable: true
+          example: '2026-05-30T14:23:00Z'
+    AddRemoteResult:
+      type: object
+      required: [id, local_pairing_token]
+      properties:
+        id:
+          type: string
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+        local_pairing_token:
+          type: string
+          description: The pairing token to hand to the peer operator.
+          example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+    SetRemotePairingTokenInput:
+      type: object
+      required: [peer_token]
+      properties:
+        peer_token:
+          type: string
+          description: The pairing token obtained from the peer operator.
+          example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+    SetRemoteAuthTokenInput:
+      type: object
+      required: [token, outbound_token]
+      properties:
+        token:
+          type: string
+          description: The local pairing token we previously handed to the peer.
+          example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+        outbound_token:
+          type: string
+          description: The bearer token we must use for outbound calls to the peer.
+          example: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08

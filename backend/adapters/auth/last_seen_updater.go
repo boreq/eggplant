@@ -1,14 +1,11 @@
 package auth
 
 import (
-	"context"
 	"sync"
 	"time"
 
 	"github.com/boreq/eggplant/application/auth"
 	authdomain "github.com/boreq/eggplant/domain/auth"
-	"github.com/boreq/eggplant/internal/logging"
-	"github.com/boreq/errors"
 )
 
 type updateCache struct {
@@ -17,18 +14,14 @@ type updateCache struct {
 }
 
 type LastSeenUpdater struct {
-	log                 logging.Logger
-	transactionProvider auth.TransactionProvider
-	userUpdates         map[authdomain.Username]*updateCache
-	userUpdatesMutex    sync.Mutex
+	userUpdates      map[authdomain.Username]*updateCache
+	userUpdatesMutex sync.Mutex
 }
 
-func NewLastSeenUpdater(transactionProvider auth.TransactionProvider) (*LastSeenUpdater, error) {
+func NewLastSeenUpdater() *LastSeenUpdater {
 	return &LastSeenUpdater{
-		log:                 logging.New("adapters/auth.LastSeenUpdater"),
-		transactionProvider: transactionProvider,
-		userUpdates:         make(map[authdomain.Username]*updateCache),
-	}, nil
+		userUpdates: make(map[authdomain.Username]*updateCache),
+	}
 }
 
 func (u *LastSeenUpdater) Update(username authdomain.Username, token authdomain.AccessToken, t time.Time) {
@@ -54,23 +47,7 @@ func (u *LastSeenUpdater) Update(username authdomain.Username, token authdomain.
 	}
 }
 
-func (u *LastSeenUpdater) Run(ctx context.Context, interval time.Duration) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-t.C:
-			if err := u.flush(); err != nil {
-				u.log.Error("last seen updater error", "err", err)
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func (u *LastSeenUpdater) flush() error {
+func (u *LastSeenUpdater) PopUpdates() []auth.LastSeenUpdate {
 	u.userUpdatesMutex.Lock()
 	defer u.userUpdatesMutex.Unlock()
 
@@ -78,34 +55,16 @@ func (u *LastSeenUpdater) flush() error {
 		return nil
 	}
 
-	if err := u.transactionProvider.Write(
-		func(adapters *auth.TransactableRepositories) error {
-			for username, cache := range u.userUpdates {
-				user, err := adapters.Users.Get(username)
-				if err != nil {
-					if errors.Is(err, auth.ErrNotFound) {
-						continue
-					}
-					return errors.Wrap(err, "could not get the user")
-				}
-
-				user.UpdateLastSeen(cache.LastSeen)
-				for token, t := range cache.Sessions {
-					user.UpdateSessionLastSeen(token, t)
-				}
-
-				if err := adapters.Users.Put(*user); err != nil {
-					return errors.Wrap(err, "failed to put the user")
-				}
-			}
-
-			return nil
-		},
-	); err != nil {
-		return errors.Wrap(err, "transaction failed")
+	updates := make([]auth.LastSeenUpdate, 0, len(u.userUpdates))
+	for username, cache := range u.userUpdates {
+		updates = append(updates, auth.LastSeenUpdate{
+			Username: username,
+			LastSeen: cache.LastSeen,
+			Sessions: cache.Sessions,
+		})
 	}
 
 	u.userUpdates = make(map[authdomain.Username]*updateCache)
 
-	return nil
+	return updates
 }

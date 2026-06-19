@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/boreq/eggplant/application"
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	authdomain "github.com/boreq/eggplant/domain/auth"
@@ -65,6 +66,15 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
 	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.removeUser))
+
+	// Remote instances: pairing administration (operator, admin only)
+	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.remoteListRemotes))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.remoteAddRemote))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.remoteSetPairingToken))
+
+	// Peer-to-peer endpoints
+	h.router.HandlerFunc(http.MethodGet, "/api/peer/health", rest.Wrap(h.remotePeerHealth))
+	h.router.HandlerFunc(http.MethodPost, "/api/peer/auth-token", rest.Wrap(h.remoteSetAuthToken))
 
 	// API documentation
 	h.router.HandlerFunc(http.MethodGet, "/api/openapi.yaml", h.openapiSpec)
@@ -518,7 +528,7 @@ func (h *Handler) logout(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	authCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
+	authCtx, ok := accessCtx.Auth().(accessctx.UserAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
 	}
@@ -537,7 +547,7 @@ func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	authCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
+	authCtx, ok := accessCtx.Auth().(accessctx.UserAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
 	}
@@ -560,7 +570,7 @@ func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
 
 	users, err := h.app.Auth.List.Execute(accessCtx.Auth())
 	if err != nil {
-		if errors.Is(err, auth.ErrPermissionDenied) {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can list users.")
 		}
 		h.log.Error("could not list", "err", err)
@@ -579,7 +589,7 @@ func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 
 	token, err := h.app.Auth.CreateInvitation.Execute(accessCtx.Auth())
 	if err != nil {
-		if errors.Is(err, auth.ErrPermissionDenied) {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can create invites.")
 		}
 		h.log.Error("could not create an invitation", "err", err)
@@ -652,7 +662,7 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	authCtx, ok := accessCtx.Auth().(auth.AuthenticatedAccessContext)
+	authCtx, ok := accessCtx.Auth().(accessctx.UserAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
 	}
@@ -662,7 +672,7 @@ func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
 	}
 
 	if err := h.app.Auth.Remove.Execute(authCtx, cmd); err != nil {
-		if errors.Is(err, auth.ErrPermissionDenied) {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
 		}
 		if errors.Is(err, auth.ErrCannotRemoveSelf) {

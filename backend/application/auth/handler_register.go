@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/errors"
 )
@@ -28,8 +29,8 @@ func NewRegisterHandler(
 	}
 }
 
-func (h *RegisterHandler) Execute(accessCtx AccessContext, cmd Register) error {
-	if _, ok := accessCtx.(AuthenticatedAccessContext); ok {
+func (h *RegisterHandler) Execute(accessCtx accessctx.AccessContext, cmd Register) error {
+	if _, ok := accessCtx.(accessctx.UserAccessContext); ok {
 		return ErrAlreadyAuthenticated
 	}
 

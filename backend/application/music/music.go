@@ -23,6 +23,20 @@ var (
 	ErrStreamFragmentNotFound = errors.New("stream fragment not found")
 )
 
+type Music struct {
+	Thumbnail        *LoggingThumbnailHandler
+	StartStreaming   *LoggingStartStreamingHandler
+	StreamPlaylist   *LoggingStreamPlaylistHandler
+	StreamInit       *LoggingStreamInitHandler
+	StreamFragment   *LoggingStreamFragmentHandler
+	KeepAliveStream  *LoggingKeepAliveStreamHandler
+	GetRootAlbum     *LoggingGetRootAlbumHandler
+	GetAlbum         *LoggingGetAlbumHandler
+	GetTrackDuration *LoggingGetTrackDurationHandler
+	Search           *LoggingSearchHandler
+	LoadLibrary      *LoggingLoadLibraryHandler
+}
+
 type TrackConverter interface {
 	SetItems(items []TrackStoreItem)
 	StartStream(ctx context.Context, fileId music.FileId, seekPosition *music.SeekPosition) (music.StreamId, error)
