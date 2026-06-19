@@ -25,5 +25,13 @@ func decodeAndResize(inputPath string) (image.Image, error) {
 		return nil, errors.Wrap(err, "decoding failed")
 	}
 
-	return resize.Resize(thumbnailSize, thumbnailSize, img, resize.Lanczos3), nil
+	bounds := img.Bounds()
+	var width, height uint
+	if bounds.Dx() < bounds.Dy() {
+		width = thumbnailSize
+	} else {
+		height = thumbnailSize
+	}
+
+	return resize.Resize(width, height, img, resize.Lanczos3), nil
 }
