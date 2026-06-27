@@ -26,19 +26,26 @@ func NewCheckRemoteHandler(transactionProvider TransactionProvider, client Remot
 
 func (h *CheckRemoteHandler) Execute(ctx context.Context, cmd CheckRemote) error {
 	var address remotedomain.RemoteInstanceAddress
+	var authToken remotedomain.AuthToken
+	var hasAuthToken bool
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
 		instance, err := r.RemoteInstances.GetByID(cmd.ID)
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
 		address = instance.Address()
+		authToken, hasAuthToken = instance.RemoteAuthToken()
 		return nil
 	}); err != nil {
 		return errors.Wrap(err, "could not read the remote instance")
 	}
 
+	if !hasAuthToken {
+		return nil
+	}
+
 	status := remotedomain.HealthcheckStatusAlive
-	if err := h.client.Healthcheck(ctx, address); err != nil {
+	if err := h.client.Healthcheck(ctx, address, authToken); err != nil {
 		status = remotedomain.HealthcheckStatusDead
 	}
 

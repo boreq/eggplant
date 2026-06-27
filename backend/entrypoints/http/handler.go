@@ -44,36 +44,36 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	}
 
 	// API
-	h.router.HandlerFunc(http.MethodGet, "/api/browse", rest.Wrap(h.browse))
-	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.browseById))
+	h.router.HandlerFunc(http.MethodGet, "/api/browse", rest.Wrap(h.addAccessContextRest(h.browse)))
+	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.addAccessContextRest(h.browseById)))
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
-	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.search))
+	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.addAccessContextRest(h.search)))
 
-	h.router.HandlerFunc(http.MethodGet, "/api/track/:trackid/duration", rest.Wrap(h.getTrackDuration))
-	h.router.HandlerFunc(http.MethodPost, "/api/track/:trackid/stream", rest.Wrap(h.startTrackStream))
-	h.router.GET("/api/track/:trackid/stream/:streamid/playlist", h.streamPlaylist)
-	h.router.GET("/api/track/:trackid/stream/:streamid/init", h.streamInit)
-	h.router.GET("/api/track/:trackid/stream/:streamid/fragment/:number", h.streamFragment)
-	h.router.POST("/api/track/:trackid/stream/:streamid/keepalive", h.keepAliveStream)
-	h.router.GET("/api/thumbnail/:id", h.thumbnail)
+	h.router.HandlerFunc(http.MethodGet, "/api/track/:trackid/duration", rest.Wrap(h.addAccessContextRest(h.getTrackDuration)))
+	h.router.HandlerFunc(http.MethodPost, "/api/track/:trackid/stream", rest.Wrap(h.addAccessContextRest(h.startTrackStream)))
+	h.router.GET("/api/track/:trackid/stream/:streamid/playlist", h.addAccessContext(h.streamPlaylist))
+	h.router.GET("/api/track/:trackid/stream/:streamid/init", h.addAccessContext(h.streamInit))
+	h.router.GET("/api/track/:trackid/stream/:streamid/fragment/:number", h.addAccessContext(h.streamFragment))
+	h.router.POST("/api/track/:trackid/stream/:streamid/keepalive", h.addAccessContext(h.keepAliveStream))
+	h.router.GET("/api/thumbnail/:id", h.addAccessContext(h.thumbnail))
 
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/register-initial", rest.Wrap(h.registerInitial))
-	h.router.HandlerFunc(http.MethodPost, "/api/auth/register", rest.Wrap(h.register))
-	h.router.HandlerFunc(http.MethodPost, "/api/auth/login", rest.Wrap(h.login))
-	h.router.HandlerFunc(http.MethodPost, "/api/auth/logout", rest.Wrap(h.logout))
-	h.router.HandlerFunc(http.MethodPost, "/api/auth/create-invitation", rest.Wrap(h.createInvitation))
-	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.getCurrentUser))
-	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.getUsers))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/register", rest.Wrap(h.addAccessContextRest(h.register)))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/login", rest.Wrap(h.addAccessContextRest(h.login)))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/logout", rest.Wrap(h.addAccessContextRest(h.logout)))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/create-invitation", rest.Wrap(h.addAccessContextRest(h.createInvitation)))
+	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.addAccessContextRest(h.getCurrentUser)))
+	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.addAccessContextRest(h.getUsers)))
 	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
-	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.removeUser))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.addAccessContextRest(h.removeUser)))
 
 	// Remote instances: pairing administration (operator, admin only)
-	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.remoteListRemotes))
-	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.remoteAddRemote))
-	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.remoteSetPairingToken))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteListRemotes)))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteAddRemote)))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.addAccessContextRest(h.remoteSetPairingToken)))
 
 	// Peer-to-peer endpoints
-	h.router.HandlerFunc(http.MethodGet, "/api/peer/health", rest.Wrap(h.remotePeerHealth))
+	h.router.HandlerFunc(http.MethodGet, "/api/peer/health", rest.Wrap(h.addAccessContextRest(h.remotePeerHealth)))
 	h.router.HandlerFunc(http.MethodPost, "/api/peer/auth-token", rest.Wrap(h.remoteSetAuthToken))
 
 	// API documentation
@@ -94,13 +94,39 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	h.router.ServeHTTP(rw, req)
 }
 
-func (h *Handler) browse(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
+func (h *Handler) addAccessContextRest(handler func(accessctx.AccessContext, *http.Request) rest.RestResponse) rest.HandlerFunc {
+	return func(r *http.Request) rest.RestResponse {
+		accessCtx, err := h.authProvider.Get(r)
+		if err != nil {
+			if errors.Is(err, auth.ErrUnauthorized) {
+				h.log.Debug("could not get the access context", "err", err)
+				return rest.ErrUnauthorized
+			}
+			h.log.Error("could not get the access context", "err", err)
+			return rest.ErrInternalServerError
+		}
+		return handler(accessCtx, r)
 	}
+}
 
+func (h *Handler) addAccessContext(handler func(accessctx.AccessContext, http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		accessCtx, err := h.authProvider.Get(r)
+		if err != nil {
+			if errors.Is(err, auth.ErrUnauthorized) {
+				h.log.Debug("could not get the access context", "err", err)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			h.log.Error("could not get the access context", "err", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		handler(accessCtx, w, r, ps)
+	}
+}
+
+func (h *Handler) browse(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx)
 	if err != nil {
 		return h.handleBrowseError(err)
@@ -108,15 +134,9 @@ func (h *Handler) browse(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(toRootAlbum(a))
 }
 
-func (h *Handler) browseById(r *http.Request) rest.RestResponse {
+func (h *Handler) browseById(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 	rawId := ps.ByName("id")
-
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
 
 	albumId, err := musicdomain.NewAlbumIdFromString(rawId)
 	if err != nil {
@@ -142,13 +162,7 @@ func (h *Handler) handleBrowseError(err error) rest.RestResponse {
 	return rest.ErrInternalServerError
 }
 
-func (h *Handler) search(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) search(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	query, err := music.NewQuery(r.URL.Query().Get("query"))
 	if err != nil {
 		return rest.ErrBadRequest.WithMessage("Invalid query.")
@@ -165,7 +179,7 @@ func (h *Handler) search(r *http.Request) rest.RestResponse {
 	)
 }
 
-func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
+func (h *Handler) startTrackStream(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 
 	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackid"))
@@ -178,12 +192,6 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	if err != nil {
 		h.log.Warn("invalid seek param", "err", err)
 		return rest.ErrBadRequest.WithMessage("Invalid seek param.")
-	}
-
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
 	}
 
 	h.log.Debug("calling StartStreaming handler", "trackId", trackId.String(), "seekPos", seekPos)
@@ -206,19 +214,13 @@ func (h *Handler) startTrackStream(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(openapi.StartStreamResponse{StreamId: streamId.String()})
 }
 
-func (h *Handler) getTrackDuration(r *http.Request) rest.RestResponse {
+func (h *Handler) getTrackDuration(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 
 	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		return rest.ErrBadRequest.WithMessage("Invalid track id.")
-	}
-
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
 	}
 
 	duration, err := h.app.Music.GetTrackDuration.Execute(r.Context(), accessCtx, music.GetTrackDuration{
@@ -253,8 +255,8 @@ func parseSeekParam(s string) (*musicdomain.RequestedSeekPosition, error) {
 	return &sp, nil
 }
 
-func (h *Handler) keepAliveStream(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+func (h *Handler) keepAliveStream(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, ok := h.parseStreamRequest(w, ps)
 	if !ok {
 		return
 	}
@@ -271,8 +273,8 @@ func (h *Handler) keepAliveStream(w http.ResponseWriter, r *http.Request, ps htt
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+func (h *Handler) streamPlaylist(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, ok := h.parseStreamRequest(w, ps)
 	if !ok {
 		return
 	}
@@ -298,8 +300,8 @@ func (h *Handler) streamPlaylist(w http.ResponseWriter, r *http.Request, ps http
 	http.ServeContent(w, r, "playlist.m3u8", time.Time{}, bytes.NewReader(res.Playlist.Bytes()))
 }
 
-func (h *Handler) streamInit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+func (h *Handler) streamInit(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, ok := h.parseStreamRequest(w, ps)
 	if !ok {
 		return
 	}
@@ -317,8 +319,8 @@ func (h *Handler) streamInit(w http.ResponseWriter, r *http.Request, ps httprout
 	h.serveConvertedFile(w, r, p, "video/mp4")
 }
 
-func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	trackId, streamId, accessCtx, ok := h.parseStreamRequest(w, r, ps)
+func (h *Handler) streamFragment(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	trackId, streamId, ok := h.parseStreamRequest(w, ps)
 	if !ok {
 		return
 	}
@@ -350,26 +352,20 @@ func (h *Handler) streamFragment(w http.ResponseWriter, r *http.Request, ps http
 	h.serveConvertedFile(w, r, p, "video/iso.segment")
 }
 
-func (h *Handler) parseStreamRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (musicdomain.TrackId, musicdomain.StreamId, library.AccessContext, bool) {
+func (h *Handler) parseStreamRequest(w http.ResponseWriter, ps httprouter.Params) (musicdomain.TrackId, musicdomain.StreamId, bool) {
 	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackid"))
 	if err != nil {
 		h.log.Warn("invalid track id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
+		return musicdomain.TrackId{}, musicdomain.StreamId{}, false
 	}
 	streamId, err := musicdomain.NewStreamIdFromString(ps.ByName("streamid"))
 	if err != nil {
 		h.log.Warn("invalid stream id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
+		return musicdomain.TrackId{}, musicdomain.StreamId{}, false
 	}
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return musicdomain.TrackId{}, musicdomain.StreamId{}, nil, false
-	}
-	return trackId, streamId, accessCtx, true
+	return trackId, streamId, true
 }
 
 var streamErrorMapping = []struct {
@@ -402,18 +398,11 @@ func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p m
 	http.ServeContent(w, r, "", p.Modtime, p.Content)
 }
 
-func (h *Handler) thumbnail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (h *Handler) thumbnail(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := musicdomain.NewThumbnailIdFromString(ps.ByName("id"))
 	if err != nil {
 		h.log.Warn("invalid thumbnail id", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -474,13 +463,7 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(nil)
 }
 
-func (h *Handler) login(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) login(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	var t openapi.LoginInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("login decoding failed", "err", err)
@@ -521,13 +504,7 @@ func (h *Handler) login(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(response)
 }
 
-func (h *Handler) logout(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) logout(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	authCtx, ok := accessCtx.(accessctx.UserAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
@@ -540,13 +517,7 @@ func (h *Handler) logout(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(nil)
 }
 
-func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) getCurrentUser(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	authCtx, ok := accessCtx.(accessctx.UserAccessContext)
 	if !ok {
 		return rest.ErrUnauthorized
@@ -561,13 +532,7 @@ func (h *Handler) getCurrentUser(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(toReadUserResponse(user))
 }
 
-func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) getUsers(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	users, err := h.app.Auth.List.Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
@@ -580,13 +545,7 @@ func (h *Handler) getUsers(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(toReadUserResponses(users))
 }
 
-func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) createInvitation(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	token, err := h.app.Auth.CreateInvitation.Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
@@ -603,15 +562,9 @@ func (h *Handler) createInvitation(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(response)
 }
 
-func (h *Handler) register(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) register(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	var t openapi.RegisterInput
-	if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("register decoding failed", "err", err)
 		return rest.ErrBadRequest.WithMessage("Malformed input.")
 	}
@@ -649,17 +602,11 @@ func (h *Handler) register(r *http.Request) rest.RestResponse {
 	return rest.NewResponse(nil)
 }
 
-func (h *Handler) removeUser(r *http.Request) rest.RestResponse {
+func (h *Handler) removeUser(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 	username, err := authdomain.NewUsernameFromString(ps.ByName("username"))
 	if err != nil {
 		return rest.ErrBadRequest.WithMessage("Invalid username.")
-	}
-
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
 	}
 
 	authCtx, ok := accessCtx.(accessctx.UserAccessContext)

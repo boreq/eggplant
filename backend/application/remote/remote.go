@@ -41,7 +41,7 @@ type TransactableRepositories struct {
 
 type RemoteClient interface {
 	SendLocalAuthToken(ctx context.Context, address remotedomain.RemoteInstanceAddress, remotePairingToken remotedomain.PairingToken, localAuthToken remotedomain.AuthToken) error
-	Healthcheck(ctx context.Context, address remotedomain.RemoteInstanceAddress) error
+	Healthcheck(ctx context.Context, address remotedomain.RemoteInstanceAddress, authToken remotedomain.AuthToken) error
 }
 
 type Remote struct {

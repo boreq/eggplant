@@ -37,8 +37,13 @@ func (h *CheckRemotesHandler) Execute(ctx context.Context) error {
 	}
 
 	for _, instance := range instances {
+		authToken, ok := instance.RemoteAuthToken()
+		if !ok {
+			continue
+		}
+
 		status := remotedomain.HealthcheckStatusAlive
-		if err := h.client.Healthcheck(ctx, instance.Address()); err != nil {
+		if err := h.client.Healthcheck(ctx, instance.Address(), authToken); err != nil {
 			h.log.Debug("healthcheck failed", "id", instance.Id().String(), "err", err)
 			status = remotedomain.HealthcheckStatusDead
 		}

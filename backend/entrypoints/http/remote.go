@@ -18,13 +18,7 @@ type addRemoteInput struct {
 	URL string `json:"url"`
 }
 
-func (h *Handler) remoteAddRemote(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) remoteAddRemote(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	var t addRemoteInput
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		h.log.Warn("add remote decoding failed", "err", err)
@@ -54,13 +48,7 @@ func (h *Handler) remoteAddRemote(r *http.Request) rest.RestResponse {
 	})
 }
 
-func (h *Handler) remoteListRemotes(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) remoteListRemotes(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	instances, err := h.app.Remote.ListRemotes.Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
@@ -119,7 +107,11 @@ func toRemoteInstanceStatus(status remotedomain.RemoteInstanceStatus) (openapi.R
 	}
 }
 
-func (h *Handler) remotePeerHealth(r *http.Request) rest.RestResponse {
+func (h *Handler) remotePeerHealth(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	if _, ok := accessCtx.(accessctx.RemoteInstanceAccessContext); !ok {
+		return rest.ErrUnauthorized
+	}
+
 	return rest.NewResponse(nil)
 }
 
@@ -127,13 +119,7 @@ type setRemotePairingTokenInput struct {
 	PeerToken string `json:"peer_token"`
 }
 
-func (h *Handler) remoteSetPairingToken(r *http.Request) rest.RestResponse {
-	accessCtx, err := h.authProvider.Get(r)
-	if err != nil {
-		h.log.Error("auth provider get failed", "err", err)
-		return rest.ErrInternalServerError
-	}
-
+func (h *Handler) remoteSetPairingToken(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	ps := httprouter.ParamsFromContext(r.Context())
 	id, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
 	if err != nil {

@@ -62,11 +62,12 @@ func (c *RemoteClient) SendLocalAuthToken(ctx context.Context, address remotedom
 	return nil
 }
 
-func (c *RemoteClient) Healthcheck(ctx context.Context, address remotedomain.RemoteInstanceAddress) error {
+func (c *RemoteClient) Healthcheck(ctx context.Context, address remotedomain.RemoteInstanceAddress, authToken remotedomain.AuthToken) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address.String()+"/api/peer/health", nil)
 	if err != nil {
 		return errors.Wrap(err, "could not create the request")
 	}
+	SetAuthToken(req, authToken)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
