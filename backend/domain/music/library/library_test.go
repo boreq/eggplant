@@ -499,9 +499,20 @@ func TestGetThumbnailNotFound(t *testing.T) {
 	require.ErrorIs(t, err, library.ErrThumbnailNotFound)
 }
 
+type testAccessContext struct {
+	canSeeAll bool
+}
+
+func (c testAccessContext) CanSee(v library.Visibility) bool {
+	if c.canSeeAll {
+		return true
+	}
+	return v.Public()
+}
+
 var (
-	anonymous library.AccessContext = library.NewAnonymousAccessContext()
-	loggedIn  library.AccessContext = library.NewLoggedInAccessContext()
+	anonymous library.AccessContext = testAccessContext{canSeeAll: false}
+	loggedIn  library.AccessContext = testAccessContext{canSeeAll: true}
 
 	visPublic  = vis(true)
 	visPrivate = vis(false)

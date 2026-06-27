@@ -17,23 +17,3 @@ func (v Visibility) Public() bool {
 type AccessContext interface {
 	CanSee(v Visibility) bool
 }
-
-type LoggedInAccessContext struct{}
-
-func NewLoggedInAccessContext() LoggedInAccessContext {
-	return LoggedInAccessContext{}
-}
-
-func (LoggedInAccessContext) CanSee(Visibility) bool {
-	return true
-}
-
-type AnonymousAccessContext struct{}
-
-func NewAnonymousAccessContext() AnonymousAccessContext {
-	return AnonymousAccessContext{}
-}
-
-func (AnonymousAccessContext) CanSee(v Visibility) bool {
-	return v.Public()
-}

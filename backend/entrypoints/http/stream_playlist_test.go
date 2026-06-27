@@ -129,6 +129,6 @@ func (c fakeTrackConverter) GetPlaylist(musicdomain.FileId, musicdomain.StreamId
 
 type anonymousAuthProvider struct{}
 
-func (anonymousAuthProvider) Get(*http.Request) (httpentrypoint.AccessContext, error) {
-	return httpentrypoint.NewAccessContext(accessctx.NewAnonymousAccessContext()), nil
+func (anonymousAuthProvider) Get(*http.Request) (accessctx.AccessContext, error) {
+	return accessctx.NewAnonymousAccessContext(), nil
 }

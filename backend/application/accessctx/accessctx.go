@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	authdomain "github.com/boreq/eggplant/domain/auth"
+	"github.com/boreq/eggplant/domain/music/library"
 	remotedomain "github.com/boreq/eggplant/domain/remote"
 )
 
@@ -24,6 +25,7 @@ var (
 )
 
 type AccessContext interface {
+	library.AccessContext
 	Can(p Permission) bool
 }
 
@@ -43,6 +45,10 @@ func NewUserAccessContext(u authdomain.User, t authdomain.AccessToken) UserAcces
 
 func (c UserAccessContext) Can(Permission) bool {
 	return c.administrator
+}
+
+func (c UserAccessContext) CanSee(library.Visibility) bool {
+	return true
 }
 
 func (c UserAccessContext) Username() authdomain.Username {
@@ -65,6 +71,10 @@ func (c RemoteInstanceAccessContext) Can(Permission) bool {
 	return false
 }
 
+func (c RemoteInstanceAccessContext) CanSee(library.Visibility) bool {
+	return true
+}
+
 func (c RemoteInstanceAccessContext) RemoteInstanceID() remotedomain.RemoteInstanceID {
 	return c.remoteInstanceID
 }
@@ -79,6 +89,10 @@ func (CommandLineAccessContext) Can(Permission) bool {
 	return true
 }
 
+func (CommandLineAccessContext) CanSee(library.Visibility) bool {
+	return true
+}
+
 type AnonymousAccessContext struct{}
 
 func NewAnonymousAccessContext() AnonymousAccessContext {
@@ -87,4 +101,8 @@ func NewAnonymousAccessContext() AnonymousAccessContext {
 
 func (AnonymousAccessContext) Can(Permission) bool {
 	return false
+}
+
+func (AnonymousAccessContext) CanSee(v library.Visibility) bool {
+	return v.Public()
 }

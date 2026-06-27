@@ -36,7 +36,7 @@ func (h *Handler) remoteAddRemote(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid address.")
 	}
 
-	result, err := h.app.Remote.AddRemote.Execute(accessCtx.Auth(), remote.AddRemote{Address: address})
+	result, err := h.app.Remote.AddRemote.Execute(accessCtx, remote.AddRemote{Address: address})
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
@@ -61,7 +61,7 @@ func (h *Handler) remoteListRemotes(r *http.Request) rest.RestResponse {
 		return rest.ErrInternalServerError
 	}
 
-	instances, err := h.app.Remote.ListRemotes.Execute(accessCtx.Auth())
+	instances, err := h.app.Remote.ListRemotes.Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
@@ -151,7 +151,7 @@ func (h *Handler) remoteSetPairingToken(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid peer token.")
 	}
 
-	if err := h.app.Remote.SetRemotePairingToken.Execute(accessCtx.Auth(), remote.SetRemotePairingToken{ID: id, RemotePairingToken: peerToken}); err != nil {
+	if err := h.app.Remote.SetRemotePairingToken.Execute(accessCtx, remote.SetRemotePairingToken{ID: id, RemotePairingToken: peerToken}); err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
 		}
