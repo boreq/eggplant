@@ -60,21 +60,44 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 	}
 }
 
-type SearchResults struct {
-	albums []music.PartialAlbum
-	tracks []TrackWithAlbum
+type FoundAlbum struct {
+	Album music.PartialAlbum
+	Dist  int
 }
 
-func NewSearchResults(albums []music.PartialAlbum, tracks []TrackWithAlbum) SearchResults {
+type FoundTrack struct {
+	Track TrackWithAlbum
+	Dist  int
+}
+
+type SearchResults struct {
+	albums []FoundAlbum
+	tracks []FoundTrack
+}
+
+func NewSearchResults(albums []FoundAlbum, tracks []FoundTrack) SearchResults {
 	return SearchResults{albums: albums, tracks: tracks}
 }
 
-func (s SearchResults) Albums() []music.PartialAlbum {
+func (s SearchResults) Albums() []FoundAlbum {
 	return s.albums
 }
 
-func (s SearchResults) Tracks() []TrackWithAlbum {
+func (s SearchResults) Tracks() []FoundTrack {
 	return s.tracks
+}
+
+func MergeResults(results ...SearchResults) SearchResults {
+	b := newSearchBuilder()
+	for _, r := range results {
+		for _, h := range r.albums {
+			b.addAlbum(h.Album, h.Dist)
+		}
+		for _, h := range r.tracks {
+			b.addTrack(h.Track, h.Dist)
+		}
+	}
+	return b.build()
 }
 
 type TrackWithAlbum struct {
@@ -181,13 +204,13 @@ func (b *searchBuilder) build() SearchResults {
 		trackHits = trackHits[:maxSearchItems]
 	}
 
-	albums := make([]music.PartialAlbum, 0, len(albumHits))
+	albums := make([]FoundAlbum, 0, len(albumHits))
 	for _, h := range albumHits {
-		albums = append(albums, h.album)
+		albums = append(albums, FoundAlbum{Album: h.album, Dist: h.dist})
 	}
-	tracks := make([]TrackWithAlbum, 0, len(trackHits))
+	tracks := make([]FoundTrack, 0, len(trackHits))
 	for _, h := range trackHits {
-		tracks = append(tracks, h.track)
+		tracks = append(tracks, FoundTrack{Track: h.track, Dist: h.dist})
 	}
 	return NewSearchResults(albums, tracks)
 }

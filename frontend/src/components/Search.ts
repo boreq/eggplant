@@ -79,7 +79,7 @@ export default class Search extends Vue {
             return [];
         }
 
-        return this.result.albums;
+        return this.result.albums.map(a => a.album);
     }
 
     get hasTracks(): boolean {

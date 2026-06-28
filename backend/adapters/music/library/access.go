@@ -53,7 +53,10 @@ func (l *DelimiterAccessLoader) Load(file string) (library.Visibility, error) {
 		return library.Visibility{}, errors.New("access file is empty")
 	}
 
-	return library.NewVisibility(*public), nil
+	if *public {
+		return library.VisibilityPublic, nil
+	}
+	return library.VisibilityPrivate, nil
 }
 
 func (l *DelimiterAccessLoader) loadLine(line string) (string, bool, error) {

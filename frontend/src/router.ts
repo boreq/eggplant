@@ -14,8 +14,13 @@ export default new Router({
     base: import.meta.env.BASE_URL,
     routes: [
         {
-            path: '/browse/:id',
+            path: '/browse/:albumId',
             name: 'browse-children',
+            component: Browse,
+        },
+        {
+            path: '/remote/:instanceId/browse/:albumId',
+            name: 'remote-browse-children',
             component: Browse,
         },
         {

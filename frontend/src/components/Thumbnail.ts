@@ -29,7 +29,7 @@ export default class Thumbnail extends Vue {
 
     get thumbnailUrl(): string {
         if (this.album) {
-            return this.apiService.thumbnailUrl(this.album.thumbnail);
+            return this.apiService.thumbnailUrl(this.album.thumbnail, this.album.remoteInstanceId);
         }
         return null;
     }

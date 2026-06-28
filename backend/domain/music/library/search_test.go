@@ -91,8 +91,8 @@ func TestSearchContent(t *testing.T) {
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Albums(), 1)
-		require.Equal(t, "findme", result.Albums()[0].Title().String())
-		require.Equal(t, albumIdFor(t, "findme"), result.Albums()[0].Id())
+		require.Equal(t, "findme", result.Albums()[0].Album.Title().String())
+		require.Equal(t, albumIdFor(t, "findme"), result.Albums()[0].Album.Id())
 	})
 
 	t.Run("track_hit_carries_containing_album_ref", func(t *testing.T) {
@@ -105,9 +105,9 @@ func TestSearchContent(t *testing.T) {
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Tracks(), 1)
-		require.NotNil(t, result.Tracks()[0].Album())
-		require.Equal(t, "parent", result.Tracks()[0].Album().Title().String())
-		require.Equal(t, albumIdFor(t, "parent"), result.Tracks()[0].Album().Id())
+		require.NotNil(t, result.Tracks()[0].Track.Album())
+		require.Equal(t, "parent", result.Tracks()[0].Track.Album().Title().String())
+		require.Equal(t, albumIdFor(t, "parent"), result.Tracks()[0].Track.Album().Id())
 	})
 
 	t.Run("root_track_hit_has_no_album_ref", func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestSearchContent(t *testing.T) {
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Tracks(), 1)
-		require.Nil(t, result.Tracks()[0].Album())
+		require.Nil(t, result.Tracks()[0].Track.Album())
 	})
 
 	t.Run("no_matches_returns_empty_result", func(t *testing.T) {
@@ -155,7 +155,7 @@ func TestSearchContent(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "band_a")
 		require.NoError(t, err)
-		require.ElementsMatch(t, []string{"band_a", "sub_album"}, childAlbumTitles(result.Albums()))
+		require.ElementsMatch(t, []string{"band_a", "sub_album"}, searchAlbumTitles(result.Albums()))
 		require.ElementsMatch(t, []string{"track_one", "track_two", "sub_track"}, trackTitles(result.Tracks()))
 	})
 }
@@ -183,7 +183,7 @@ func TestSearchDistance(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
-		require.Equal(t, []string{"needle", "middle", "deep"}, childAlbumTitles(result.Albums()))
+		require.Equal(t, []string{"needle", "middle", "deep"}, searchAlbumTitles(result.Albums()))
 		require.Equal(t, []string{"leaf_track", "deep_track"}, trackTitles(result.Tracks()))
 	})
 
@@ -200,7 +200,7 @@ func TestSearchDistance(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
-		require.Equal(t, "needle_own", result.Tracks()[0].Track().Title().String())
+		require.Equal(t, "needle_own", result.Tracks()[0].Track.Track().Title().String())
 	})
 
 	t.Run("album_distances_ordered", func(t *testing.T) {
@@ -225,7 +225,7 @@ func TestSearchDistance(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
-		titles := childAlbumTitles(result.Albums())
+		titles := searchAlbumTitles(result.Albums())
 		require.Equal(t, []string{"needle_grandparent", "needle_own", "parent", "leaf_a"}, titles)
 	})
 
@@ -256,7 +256,7 @@ func TestSearchCaseInsensitive(t *testing.T) {
 	})
 	result, err := lib.Search(anonymous, "mIxEdCaSe")
 	require.NoError(t, err)
-	require.Equal(t, []string{"MixedCase"}, childAlbumTitles(result.Albums()))
+	require.Equal(t, []string{"MixedCase"}, searchAlbumTitles(result.Albums()))
 }
 
 func TestSearchSubstringMatch(t *testing.T) {
@@ -269,7 +269,7 @@ func TestSearchSubstringMatch(t *testing.T) {
 	result, err := lib.Search(anonymous, "compound_album")
 	require.NoError(t, err)
 	require.Len(t, result.Albums(), 1)
-	require.True(t, strings.Contains(result.Albums()[0].Title().String(), "compound_album"))
+	require.True(t, strings.Contains(result.Albums()[0].Album.Title().String(), "compound_album"))
 }
 
 func TestSearchCap(t *testing.T) {
@@ -296,7 +296,7 @@ func TestSearchCap(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, result.Albums(), 20)
 		require.Len(t, result.Tracks(), 20)
-		require.Equal(t, "needle_parent", result.Albums()[0].Title().String())
+		require.Equal(t, "needle_parent", result.Albums()[0].Album.Title().String())
 	})
 
 	t.Run("own_matches_not_dropped_by_cap", func(t *testing.T) {
@@ -321,7 +321,7 @@ func TestSearchCap(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
-		titles := childAlbumTitles(result.Albums())
+		titles := searchAlbumTitles(result.Albums())
 		require.Contains(t, titles, "needle_self")
 		require.Equal(t, "needle_parent", titles[0])
 	})
@@ -344,7 +344,7 @@ func TestSearchVisibilityBlocksAncestorPropagation(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
-		require.NotContains(t, childAlbumTitles(result.Albums()), "private_child")
+		require.NotContains(t, searchAlbumTitles(result.Albums()), "private_child")
 		require.NotContains(t, trackTitles(result.Tracks()), "hidden_track")
 		require.Contains(t, trackTitles(result.Tracks()), "visible_track")
 	})
@@ -377,8 +377,8 @@ func TestSearchRootBehavior(t *testing.T) {
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
 		for _, twa := range result.Tracks() {
-			if twa.Track().Title().String() == "needle_song" {
-				require.Nil(t, twa.Album())
+			if twa.Track.Track().Title().String() == "needle_song" {
+				require.Nil(t, twa.Track.Album())
 				return
 			}
 		}

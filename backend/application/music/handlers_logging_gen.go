@@ -4,8 +4,10 @@ package music
 
 import (
 	"context"
+	"io"
 	"time"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/internal/logging"
@@ -49,9 +51,9 @@ func NewLoggingGetRootAlbumHandler(inner *GetRootAlbumHandler, logger logging.Lo
 	return &LoggingGetRootAlbumHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library.AccessContext) (music.RootAlbum, error) {
+func (h *LoggingGetRootAlbumHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd GetRootAlbum) (music.RootAlbum, error) {
 	start := time.Now()
-	ret0, ret1 := h.inner.Execute(accessCtx)
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
 	logFn := h.logger.Debug
 	msg := "handler executed"
 	if ret1 != nil && !isNonLoggableError(ret1) {
@@ -61,6 +63,7 @@ func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library.AccessContext) (m
 	logFn(msg,
 		"handler", "GetRootAlbum",
 		"accessCtx", accessCtx,
+		"cmd", cmd,
 		"ret0", ret0,
 		"err", ret1,
 		"duration", time.Since(start),
@@ -151,6 +154,237 @@ func (h *LoggingLoadLibraryHandler) Execute(ctx context.Context) error {
 	return ret0
 }
 
+type LoggingRemoteGetAlbumHandler struct {
+	inner  *RemoteGetAlbumHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteGetAlbumHandler(inner *RemoteGetAlbumHandler, logger logging.Logger) *LoggingRemoteGetAlbumHandler {
+	return &LoggingRemoteGetAlbumHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteGetAlbumHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteGetAlbum) (music.Album, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteGetAlbum",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteGetThumbnailHandler struct {
+	inner  *RemoteGetThumbnailHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteGetThumbnailHandler(inner *RemoteGetThumbnailHandler, logger logging.Logger) *LoggingRemoteGetThumbnailHandler {
+	return &LoggingRemoteGetThumbnailHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteGetThumbnailHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteGetThumbnail) (io.ReadCloser, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteGetThumbnail",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteGetTrackDurationHandler struct {
+	inner  *RemoteGetTrackDurationHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteGetTrackDurationHandler(inner *RemoteGetTrackDurationHandler, logger logging.Logger) *LoggingRemoteGetTrackDurationHandler {
+	return &LoggingRemoteGetTrackDurationHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteGetTrackDurationHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteGetTrackDuration) (music.TrackDuration, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteGetTrackDuration",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteKeepAliveStreamHandler struct {
+	inner  *RemoteKeepAliveStreamHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteKeepAliveStreamHandler(inner *RemoteKeepAliveStreamHandler, logger logging.Logger) *LoggingRemoteKeepAliveStreamHandler {
+	return &LoggingRemoteKeepAliveStreamHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteKeepAliveStreamHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteKeepAliveStream) error {
+	start := time.Now()
+	ret0 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret0 != nil && !isNonLoggableError(ret0) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteKeepAliveStream",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"err", ret0,
+		"duration", time.Since(start),
+	)
+	return ret0
+}
+
+type LoggingRemoteStartStreamingHandler struct {
+	inner  *RemoteStartStreamingHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteStartStreamingHandler(inner *RemoteStartStreamingHandler, logger logging.Logger) *LoggingRemoteStartStreamingHandler {
+	return &LoggingRemoteStartStreamingHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteStartStreamingHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteStartStreaming) (music.StreamId, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteStartStreaming",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteStreamFragmentHandler struct {
+	inner  *RemoteStreamFragmentHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteStreamFragmentHandler(inner *RemoteStreamFragmentHandler, logger logging.Logger) *LoggingRemoteStreamFragmentHandler {
+	return &LoggingRemoteStreamFragmentHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteStreamFragmentHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteStreamFragment) (io.ReadCloser, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteStreamFragment",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteStreamInitHandler struct {
+	inner  *RemoteStreamInitHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteStreamInitHandler(inner *RemoteStreamInitHandler, logger logging.Logger) *LoggingRemoteStreamInitHandler {
+	return &LoggingRemoteStreamInitHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteStreamInitHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteStreamInit) (io.ReadCloser, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteStreamInit",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteStreamPlaylistHandler struct {
+	inner  *RemoteStreamPlaylistHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteStreamPlaylistHandler(inner *RemoteStreamPlaylistHandler, logger logging.Logger) *LoggingRemoteStreamPlaylistHandler {
+	return &LoggingRemoteStreamPlaylistHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteStreamPlaylistHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteStreamPlaylist) (io.ReadCloser, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteStreamPlaylist",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
 type LoggingSearchHandler struct {
 	inner  *SearchHandler
 	logger logging.Logger
@@ -160,9 +394,9 @@ func NewLoggingSearchHandler(inner *SearchHandler, logger logging.Logger) *Loggi
 	return &LoggingSearchHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingSearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (library.SearchResults, error) {
+func (h *LoggingSearchHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd Search) (library.SearchResults, error) {
 	start := time.Now()
-	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
 	logFn := h.logger.Debug
 	msg := "handler executed"
 	if ret1 != nil && !isNonLoggableError(ret1) {

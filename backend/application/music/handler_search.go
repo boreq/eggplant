@@ -1,9 +1,12 @@
 package music
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/domain/music/library"
+	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 )
 
@@ -48,14 +51,20 @@ type Search struct {
 }
 
 type SearchHandler struct {
-	repo LibraryRepository
+	repo          LibraryRepository
+	remoteLibrary RemoteLibrary
+	log           logging.Logger
 }
 
-func NewSearchHandler(repo LibraryRepository) *SearchHandler {
-	return &SearchHandler{repo: repo}
+func NewSearchHandler(repo LibraryRepository, remoteLibrary RemoteLibrary) *SearchHandler {
+	return &SearchHandler{
+		repo:          repo,
+		remoteLibrary: remoteLibrary,
+		log:           logging.New("music.SearchHandler"),
+	}
 }
 
-func (h *SearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (library.SearchResults, error) {
+func (h *SearchHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd Search) (library.SearchResults, error) {
 	if cmd.Query.IsZero() {
 		return library.SearchResults{}, errors.New("zero value of query")
 	}
@@ -63,5 +72,21 @@ func (h *SearchHandler) Execute(accessCtx library.AccessContext, cmd Search) (li
 	if err != nil {
 		return library.SearchResults{}, errors.Wrap(err, "could not get the library")
 	}
-	return lib.Search(accessCtx, cmd.Query.String())
+
+	localResults, err := lib.Search(accessCtx, cmd.Query.String())
+	if err != nil {
+		return library.SearchResults{}, errors.Wrap(err, "local search failed")
+	}
+
+	if !accessCtx.Can(accessctx.PermissionSeeRemoteLibraryContent) {
+		return localResults, nil
+	}
+
+	remoteResults, err := h.remoteLibrary.Search(ctx, cmd.Query.String())
+	if err != nil {
+		h.log.Error("remote search failed", "err", err)
+		return localResults, nil
+	}
+
+	return library.MergeResults(localResults, remoteResults), nil
 }

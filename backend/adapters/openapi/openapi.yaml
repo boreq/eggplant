@@ -452,13 +452,7 @@ paths:
       security:
         - cookieAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
-          description: The remote instance id.
+        - $ref: '#/components/parameters/RemoteInstanceId'
       requestBody:
         required: true
         content:
@@ -474,15 +468,184 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/peer/health:
+  /api/remote/{id}/track/{trackId}/duration:
     get:
       tags: [remote]
-      operationId: peerHealth
+      operationId: getRemoteTrackDuration
+      summary: Return the duration of a track on a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/TrackId'
+      responses:
+        '200':
+          description: The track duration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackDuration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/remote/{id}/track/{trackId}/stream:
+    post:
+      tags: [remote]
+      operationId: startRemoteTrackStream
+      summary: Start an HLS stream for a track on a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/TrackId'
+        - name: seek
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+            example: 42.5
+          description: Seek position in seconds.
+      responses:
+        '200':
+          description: The created stream.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartStreamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/remote/{id}/track/{trackId}/stream/{streamId}/playlist:
+    get:
+      tags: [remote]
+      operationId: getRemoteStreamPlaylist
+      summary: Return the HLS playlist for a stream on a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '200':
+          description: The HLS playlist.
+          content:
+            application/vnd.apple.mpegurl:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '403':
+          $ref: '#/components/responses/ForbiddenEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+  /api/remote/{id}/track/{trackId}/stream/{streamId}/init:
+    get:
+      tags: [remote]
+      operationId: getRemoteStreamInit
+      summary: Return the HLS init segment for a stream on a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '200':
+          description: The init segment.
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '403':
+          $ref: '#/components/responses/ForbiddenEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+  /api/remote/{id}/track/{trackId}/stream/{streamId}/fragment/{number}:
+    get:
+      tags: [remote]
+      operationId: getRemoteStreamFragment
+      summary: Return a single HLS fragment for a stream on a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The fragment number.
+      responses:
+        '200':
+          description: The fragment.
+          content:
+            video/iso.segment:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '403':
+          $ref: '#/components/responses/ForbiddenEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+  /api/remote/{id}/track/{trackId}/stream/{streamId}/keepalive:
+    post:
+      tags: [remote]
+      operationId: keepAliveRemoteStream
+      summary: Keep a stream alive on a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '204':
+          description: The stream was kept alive.
+        '400':
+          $ref: '#/components/responses/BadRequestEmpty'
+        '403':
+          $ref: '#/components/responses/ForbiddenEmpty'
+        '404':
+          $ref: '#/components/responses/NotFoundEmpty'
+  /api/remote/{id}/browse/{albumId}:
+    get:
+      tags: [remote]
+      operationId: remoteAlbum
+      summary: Return a single album fetched from a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 8X4F2K9MNPQRSTVW
+          description: The album id on the remote instance.
+      responses:
+        '200':
+          description: The requested remote album.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/health:
+    get:
+      tags: [remote]
+      operationId: health
       summary: Peer-to-peer endpoint a peer calls to check that we are alive.
       responses:
         '200':
           $ref: '#/components/responses/Empty'
-  /api/peer/auth-token:
+  /api/auth-token:
     post:
       tags: [remote]
       operationId: setRemoteAuthToken
@@ -507,6 +670,14 @@ components:
       in: cookie
       name: auth-token
   parameters:
+    RemoteInstanceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+      description: The remote instance id.
     AlbumId:
       name: id
       in: path
@@ -582,6 +753,8 @@ components:
             $ref: '#/components/schemas/Error'
     BadRequestEmpty:
       description: The request was malformed.
+    ForbiddenEmpty:
+      description: The caller is not allowed to perform this action.
     NotFoundEmpty:
       description: The resource was not found.
     ServiceUnavailableEmpty:
@@ -615,6 +788,11 @@ components:
         title:
           type: string
           example: The Eggplant Song
+        remoteInstanceId:
+          type: string
+          nullable: true
+          description: Set when the track belongs to a paired remote instance.
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     PartialAlbum:
       type: object
       required: [id, title]
@@ -629,6 +807,11 @@ components:
           allOf:
             - $ref: '#/components/schemas/Thumbnail'
           nullable: true
+        remoteInstanceId:
+          type: string
+          nullable: true
+          description: Set when the album belongs to a paired remote instance.
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     RootAlbum:
       type: object
       required: [albums, tracks]
@@ -671,9 +854,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Track'
+        remoteInstanceId:
+          type: string
+          nullable: true
+          description: Set when the album belongs to a paired remote instance.
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     TrackWithAlbum:
       type: object
-      required: [track]
+      required: [track, score]
       properties:
         track:
           $ref: '#/components/schemas/Track'
@@ -681,6 +869,18 @@ components:
           allOf:
             - $ref: '#/components/schemas/PartialAlbum'
           nullable: true
+        score:
+          type: integer
+          description: Relevance score (lower is better; 0 means the title directly matched the query).
+    AlbumSearchResult:
+      type: object
+      required: [album, score]
+      properties:
+        album:
+          $ref: '#/components/schemas/PartialAlbum'
+        score:
+          type: integer
+          description: Relevance score (lower is better; 0 means the title directly matched the query).
     SearchResults:
       type: object
       required: [albums, tracks]
@@ -688,7 +888,7 @@ components:
         albums:
           type: array
           items:
-            $ref: '#/components/schemas/PartialAlbum'
+            $ref: '#/components/schemas/AlbumSearchResult'
         tracks:
           type: array
           items:

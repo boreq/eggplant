@@ -11,6 +11,7 @@ import (
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/hls"
 	"github.com/boreq/eggplant/domain/music/library"
+	"github.com/boreq/eggplant/domain/remote"
 )
 
 var (
@@ -24,17 +25,25 @@ var (
 )
 
 type Music struct {
-	Thumbnail        *LoggingThumbnailHandler
-	StartStreaming   *LoggingStartStreamingHandler
-	StreamPlaylist   *LoggingStreamPlaylistHandler
-	StreamInit       *LoggingStreamInitHandler
-	StreamFragment   *LoggingStreamFragmentHandler
-	KeepAliveStream  *LoggingKeepAliveStreamHandler
-	GetRootAlbum     *LoggingGetRootAlbumHandler
-	GetAlbum         *LoggingGetAlbumHandler
-	GetTrackDuration *LoggingGetTrackDurationHandler
-	Search           *LoggingSearchHandler
-	LoadLibrary      *LoggingLoadLibraryHandler
+	Thumbnail              *LoggingThumbnailHandler
+	StartStreaming         *LoggingStartStreamingHandler
+	StreamPlaylist         *LoggingStreamPlaylistHandler
+	StreamInit             *LoggingStreamInitHandler
+	StreamFragment         *LoggingStreamFragmentHandler
+	KeepAliveStream        *LoggingKeepAliveStreamHandler
+	GetRootAlbum           *LoggingGetRootAlbumHandler
+	GetAlbum               *LoggingGetAlbumHandler
+	RemoteGetAlbum         *LoggingRemoteGetAlbumHandler
+	RemoteGetThumbnail     *LoggingRemoteGetThumbnailHandler
+	RemoteGetTrackDuration *LoggingRemoteGetTrackDurationHandler
+	RemoteStartStreaming   *LoggingRemoteStartStreamingHandler
+	RemoteStreamPlaylist   *LoggingRemoteStreamPlaylistHandler
+	RemoteStreamInit       *LoggingRemoteStreamInitHandler
+	RemoteStreamFragment   *LoggingRemoteStreamFragmentHandler
+	RemoteKeepAliveStream  *LoggingRemoteKeepAliveStreamHandler
+	GetTrackDuration       *LoggingGetTrackDurationHandler
+	Search                 *LoggingSearchHandler
+	LoadLibrary            *LoggingLoadLibraryHandler
 }
 
 type TrackConverter interface {
@@ -97,6 +106,19 @@ type AccessLoader interface {
 type LibraryRepository interface {
 	Get() (*library.Library, error)
 	Save(library *library.Library)
+}
+
+type RemoteLibrary interface {
+	GetRootAlbums(ctx context.Context) ([]music.PartialAlbum, error)
+	GetAlbum(ctx context.Context, instanceId remote.RemoteInstanceID, albumId music.AlbumId) (music.Album, error)
+	GetThumbnail(ctx context.Context, instanceId remote.RemoteInstanceID, thumbnailId music.ThumbnailId) (io.ReadCloser, error)
+	GetTrackDuration(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId) (music.TrackDuration, error)
+	StartTrackStream(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId, seekPosition *music.RequestedSeekPosition) (music.StreamId, error)
+	GetStreamPlaylist(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId) (io.ReadCloser, error)
+	GetStreamInit(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId) (io.ReadCloser, error)
+	GetStreamFragment(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId, fragmentId music.FragmentId) (io.ReadCloser, error)
+	KeepAliveStream(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId) error
+	Search(ctx context.Context, query string) (library.SearchResults, error)
 }
 
 type Playlist struct {

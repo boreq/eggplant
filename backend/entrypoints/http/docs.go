@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/boreq/eggplant/entrypoints/http/openapi"
+	"github.com/boreq/eggplant/adapters/openapi"
 )
 
 // redocPage renders the API reference using Redoc. The Redoc bundle is loaded

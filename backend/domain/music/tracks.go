@@ -1,6 +1,7 @@
 package music
 
 import (
+	"slices"
 	"sort"
 )
 
@@ -9,7 +10,7 @@ type Tracks struct {
 }
 
 func NewTracks(tracks []Track) Tracks {
-	sorted := append([]Track(nil), tracks...)
+	sorted := slices.Clone(tracks)
 	sortTracks(sorted)
 	return Tracks{items: sorted}
 }

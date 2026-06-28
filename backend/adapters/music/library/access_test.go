@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/boreq/eggplant/adapters/music/library"
+	domainlibrary "github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/internal/fixture"
 	"github.com/stretchr/testify/require"
 )
@@ -83,7 +84,7 @@ func TestAccessLoaderYes(t *testing.T) {
 				require.EqualError(t, err, testCase.ExpectedError)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, testCase.ResultPublic, access.Public())
+				require.Equal(t, testCase.ResultPublic, access == domainlibrary.VisibilityPublic)
 			}
 		})
 	}
