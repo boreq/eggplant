@@ -65,7 +65,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.addAccessContextRest(h.getCurrentUser)))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.addAccessContextRest(h.getUsers)))
 	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
-	h.router.HandlerFunc(http.MethodPost, "/api/auth/users/:username/remove", rest.Wrap(h.addAccessContextRest(h.removeUser)))
+	h.router.HandlerFunc(http.MethodDelete, "/api/auth/users/:username", rest.Wrap(h.addAccessContextRest(h.removeUser)))
 
 	// Remote instances: pairing administration (operator, admin only)
 	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteListRemotes)))

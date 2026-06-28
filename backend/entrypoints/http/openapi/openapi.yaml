@@ -368,8 +368,8 @@ paths:
                   $ref: '#/components/schemas/ReadUserResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /api/auth/users/{username}/remove:
-    post:
+  /api/auth/users/{username}:
+    delete:
       tags: [auth]
       operationId: removeUser
       summary: Remove a user (administrators only).

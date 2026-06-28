@@ -1109,7 +1109,7 @@ func NewRemoveUserRequest(server string, username string) (*http.Request, error)
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/auth/users/%s/remove", pathParam0)
+	operationPath := fmt.Sprintf("/api/auth/users/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1119,7 +1119,7 @@ func NewRemoveUserRequest(server string, username string) (*http.Request, error)
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}

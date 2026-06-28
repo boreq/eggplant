@@ -181,8 +181,8 @@ export class ApiService {
 
     remove(username: string): Promise<AxiosResponse<void>> {
         username = encodeURIComponent(username);
-        const url = `auth/users/${username}/remove`;
-        return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url);
+        const url = `auth/users/${username}`;
+        return this.axios.delete<void>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     listRemotes(): Promise<AxiosResponse<RemoteInstance[]>> {
