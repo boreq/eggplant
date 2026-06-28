@@ -2,13 +2,17 @@ package http
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"strconv"
 
+	"github.com/boreq/eggplant/adapters/openapi"
 	"github.com/boreq/eggplant/application/accessctx"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/remote"
 	"github.com/boreq/eggplant/domain/crockford"
+	musicdomain "github.com/boreq/eggplant/domain/music"
 	remotedomain "github.com/boreq/eggplant/domain/remote"
-	"github.com/boreq/eggplant/entrypoints/http/openapi"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
@@ -113,6 +117,326 @@ func (h *Handler) remotePeerHealth(accessCtx accessctx.AccessContext, r *http.Re
 	}
 
 	return rest.NewResponse(nil)
+}
+
+func (h *Handler) remoteTrackDuration(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+	}
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid track id.")
+	}
+
+	duration, err := h.app.Music.RemoteGetTrackDuration.Execute(r.Context(), accessCtx, music.RemoteGetTrackDuration{InstanceId: instanceId, TrackId: trackId})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+		}
+		h.log.Error("could not get the remote track duration", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(openapi.TrackDuration{Duration: duration.Seconds()})
+}
+
+func (h *Handler) remoteAlbum(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+	}
+
+	albumId, err := musicdomain.NewAlbumIdFromString(ps.ByName("albumId"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid album id.")
+	}
+
+	album, err := h.app.Music.RemoteGetAlbum.Execute(r.Context(), accessCtx, music.RemoteGetAlbum{InstanceId: instanceId, AlbumId: albumId})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+		}
+		h.log.Error("could not get the remote album", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(toAlbum(album))
+}
+
+func (h *Handler) remoteStartStream(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+	}
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid track id.")
+	}
+
+	seekPos, err := parseSeekParam(r.URL.Query().Get("seek"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid seek param.")
+	}
+
+	streamId, err := h.app.Music.RemoteStartStreaming.Execute(r.Context(), accessCtx, music.RemoteStartStreaming{
+		InstanceId:   instanceId,
+		TrackId:      trackId,
+		SeekPosition: seekPos,
+	})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+		}
+		h.log.Error("could not start the remote stream", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(openapi.StartStreamResponse{StreamId: streamId.String()})
+}
+
+func (h *Handler) remoteStreamPlaylist(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	streamId, err := musicdomain.NewStreamIdFromString(ps.ByName("streamId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := h.app.Music.RemoteStreamPlaylist.Execute(r.Context(), accessCtx, music.RemoteStreamPlaylist{
+		InstanceId: instanceId,
+		TrackId:    trackId,
+		StreamId:   streamId,
+	})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.log.Error("could not get the remote stream playlist", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer body.Close()
+
+	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+	if _, err := io.Copy(w, body); err != nil {
+		h.log.Warn("remote stream playlist copy failed", "err", err)
+	}
+}
+
+func (h *Handler) remoteStreamInit(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	streamId, err := musicdomain.NewStreamIdFromString(ps.ByName("streamId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := h.app.Music.RemoteStreamInit.Execute(r.Context(), accessCtx, music.RemoteStreamInit{
+		InstanceId: instanceId,
+		TrackId:    trackId,
+		StreamId:   streamId,
+	})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.log.Error("could not get the remote stream init", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer body.Close()
+
+	w.Header().Set("Content-Type", "video/mp4")
+	if _, err := io.Copy(w, body); err != nil {
+		h.log.Warn("remote stream init copy failed", "err", err)
+	}
+}
+
+func (h *Handler) remoteStreamFragment(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	streamId, err := musicdomain.NewStreamIdFromString(ps.ByName("streamId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	n, err := strconv.Atoi(ps.ByName("number"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	fragmentId, err := musicdomain.NewFragmentId(n)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := h.app.Music.RemoteStreamFragment.Execute(r.Context(), accessCtx, music.RemoteStreamFragment{
+		InstanceId: instanceId,
+		TrackId:    trackId,
+		StreamId:   streamId,
+		FragmentId: fragmentId,
+	})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.log.Error("could not get the remote stream fragment", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer body.Close()
+
+	w.Header().Set("Content-Type", "video/iso.segment")
+	if _, err := io.Copy(w, body); err != nil {
+		h.log.Warn("remote stream fragment copy failed", "err", err)
+	}
+}
+
+func (h *Handler) remoteKeepAliveStream(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	streamId, err := musicdomain.NewStreamIdFromString(ps.ByName("streamId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := h.app.Music.RemoteKeepAliveStream.Execute(r.Context(), accessCtx, music.RemoteKeepAliveStream{
+		InstanceId: instanceId,
+		TrackId:    trackId,
+		StreamId:   streamId,
+	}); err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.log.Error("could not keep alive the remote stream", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) remoteThumbnail(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	thumbnailId, err := musicdomain.NewThumbnailIdFromString(ps.ByName("thumbnailId"))
+	if err != nil {
+		h.log.Warn("invalid remote thumbnail id", "err", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := h.app.Music.RemoteGetThumbnail.Execute(r.Context(), accessCtx, music.RemoteGetThumbnail{
+		InstanceId:  instanceId,
+		ThumbnailId: thumbnailId,
+	})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.log.Error("could not get the remote thumbnail", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer body.Close()
+
+	w.Header().Set("Content-Type", "image/webp")
+	if _, err := io.Copy(w, body); err != nil {
+		h.log.Warn("remote thumbnail copy failed", "err", err)
+	}
 }
 
 type setRemotePairingTokenInput struct {

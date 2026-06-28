@@ -8,10 +8,12 @@ export class Album {
     parents?: PartialAlbum[];
     albums: PartialAlbum[];
     tracks: Track[];
+    remoteInstanceId?: string;
 }
 
 export class PartialAlbum {
     id: string;
     title: string;
     thumbnail?: Thumbnail;
+    remoteInstanceId?: string;
 }

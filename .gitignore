@@ -1,4 +1,5 @@
-_misc
 .idea
 backend/_build
 /eggplant
+_*
+.DS_store

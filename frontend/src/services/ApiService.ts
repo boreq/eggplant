@@ -43,8 +43,13 @@ export class ApiService {
             });
     }
 
-    browse(id?: string): Promise<AxiosResponse<Album>> {
-        const url = id ? `browse/${id}` : 'browse';
+    browse(id?: string, instanceId?: string): Promise<AxiosResponse<Album>> {
+        let url: string;
+        if (instanceId && id) {
+            url = `remote/${encodeURIComponent(instanceId)}/browse/${id}`;
+        } else {
+            url = id ? `browse/${id}` : 'browse';
+        }
         return this.axios.get<Album>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
@@ -65,13 +70,23 @@ export class ApiService {
         return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
+    // trackBase returns the API path prefix for a track. Remote tracks are
+    // proxied through this instance under the remote-instance prefix; local
+    // tracks use the plain track path.
+    private trackBase(track: Track): string {
+        if (track.remoteInstanceId) {
+            return `remote/${encodeURIComponent(track.remoteInstanceId)}/track/${track.id}`;
+        }
+        return `track/${track.id}`;
+    }
+
     getTrackDuration(track: Track): Promise<AxiosResponse<TrackDuration>> {
-        const url = `track/${track.id}/duration`;
+        const url = `${this.trackBase(track)}/duration`;
         return this.axios.get<TrackDuration>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     startStream(track: Track, seekSeconds?: number): Promise<AxiosResponse<StreamStartResponse>> {
-        let url = `track/${track.id}/stream`;
+        let url = `${this.trackBase(track)}/stream`;
         if (seekSeconds !== undefined && seekSeconds > 0) {
             url += `?seek=${encodeURIComponent(seekSeconds.toString())}`;
         }
@@ -79,17 +94,19 @@ export class ApiService {
     }
 
     keepStreamAlive(track: Track, streamId: string): Promise<void> {
-        const url = `track/${track.id}/stream/${streamId}/keepalive`;
+        const url = `${this.trackBase(track)}/stream/${streamId}/keepalive`;
         return this.axios.post(import.meta.env.VUE_APP_API_PREFIX + url).then(() => {});
     }
 
     streamPlaylistUrl(track: Track, streamId: string): string {
-        const url = `track/${track.id}/stream/${streamId}/playlist`;
+        const url = `${this.trackBase(track)}/stream/${streamId}/playlist`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
-    thumbnailUrl(thumbnail: Thumbnail): string {
-        const url = `thumbnail/${thumbnail.id}`;
+    thumbnailUrl(thumbnail: Thumbnail, instanceId?: string): string {
+        const url = instanceId
+            ? `remote/${encodeURIComponent(instanceId)}/thumbnail/${thumbnail.id}`
+            : `thumbnail/${thumbnail.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 

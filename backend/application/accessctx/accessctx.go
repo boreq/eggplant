@@ -19,9 +19,10 @@ func (p Permission) String() string {
 }
 
 var (
-	PermissionManageUsers       = Permission{value: "manage_users"}
-	PermissionManageInvitations = Permission{value: "manage_invitations"}
-	PermissionManageRemotes     = Permission{value: "manage_remotes"}
+	PermissionManageUsers             = Permission{value: "manage_users"}
+	PermissionManageInvitations       = Permission{value: "manage_invitations"}
+	PermissionManageRemotes           = Permission{value: "manage_remotes"}
+	PermissionSeeRemoteLibraryContent = Permission{value: "see_remote_library_content"}
 )
 
 type AccessContext interface {
@@ -43,8 +44,13 @@ func NewUserAccessContext(u authdomain.User, t authdomain.AccessToken) UserAcces
 	}
 }
 
-func (c UserAccessContext) Can(Permission) bool {
-	return c.administrator
+func (c UserAccessContext) Can(p Permission) bool {
+	switch p {
+	case PermissionSeeRemoteLibraryContent:
+		return true
+	default:
+		return c.administrator
+	}
 }
 
 func (c UserAccessContext) CanSee(library.Visibility) bool {
@@ -104,5 +110,5 @@ func (AnonymousAccessContext) Can(Permission) bool {
 }
 
 func (AnonymousAccessContext) CanSee(v library.Visibility) bool {
-	return v.Public()
+	return v == library.VisibilityPublic
 }

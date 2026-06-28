@@ -5,19 +5,12 @@ type Visibility struct {
 }
 
 var (
-	VisibilityPublic  = Visibility{"public"}
-	VisibilityPrivate = Visibility{"private"}
+	VisibilityPublic  = Visibility{s: "public"}
+	VisibilityPrivate = Visibility{s: "private"}
 )
 
-func NewVisibility(public bool) Visibility {
-	if public {
-		return VisibilityPublic
-	}
-	return VisibilityPrivate
-}
-
-func (v Visibility) Public() bool {
-	return v == VisibilityPublic
+func (v Visibility) String() string {
+	return v.s
 }
 
 type AccessContext interface {

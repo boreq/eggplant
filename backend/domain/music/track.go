@@ -3,14 +3,16 @@ package music
 import (
 	"time"
 
+	"github.com/boreq/eggplant/domain/remote"
 	"github.com/boreq/errors"
 )
 
 type Track struct {
-	id     TrackId
-	fileId FileId
-	number *TrackNumber
-	title  TrackTitle
+	id               TrackId
+	fileId           FileId
+	number           *TrackNumber
+	title            TrackTitle
+	remoteInstanceId *remote.RemoteInstanceID
 }
 
 func NewTrack(id TrackId, fileId FileId, title TrackTitle) Track {
@@ -31,6 +33,16 @@ func NewTrackWithNumber(id TrackId, fileId FileId, number TrackNumber, title Tra
 	}
 }
 
+func NewRemoteTrack(id TrackId, fileId FileId, title TrackTitle, remoteInstanceId remote.RemoteInstanceID) Track {
+	return Track{
+		id:               id,
+		fileId:           fileId,
+		number:           nil,
+		title:            title,
+		remoteInstanceId: &remoteInstanceId,
+	}
+}
+
 func (t Track) Id() TrackId {
 	return t.id
 }
@@ -45,6 +57,10 @@ func (t Track) Title() TrackTitle {
 
 func (t Track) Number() *TrackNumber {
 	return t.number
+}
+
+func (t Track) RemoteInstanceId() *remote.RemoteInstanceID {
+	return t.remoteInstanceId
 }
 
 type TrackId struct {

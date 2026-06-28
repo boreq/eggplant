@@ -1,6 +1,10 @@
 package music
 
 import (
+	"slices"
+	"sort"
+
+	"github.com/boreq/eggplant/domain/remote"
 	"github.com/boreq/errors"
 )
 
@@ -11,9 +15,11 @@ type RootAlbum struct {
 }
 
 func NewRootAlbum(thumbnail *Thumbnail, albums []PartialAlbum, tracks []Track) (RootAlbum, error) {
+	sorted := slices.Clone(albums)
+	sortAlbums(sorted)
 	return RootAlbum{
 		thumbnail: thumbnail,
-		albums:    albums,
+		albums:    sorted,
 		tracks:    NewTracks(tracks),
 	}, nil
 }
@@ -31,15 +37,24 @@ func (r RootAlbum) Tracks() Tracks {
 }
 
 type Album struct {
-	id        AlbumId
-	title     AlbumTitle
-	thumbnail *Thumbnail
-	parents   []PartialAlbum
-	albums    []PartialAlbum
-	tracks    Tracks
+	id               AlbumId
+	title            AlbumTitle
+	thumbnail        *Thumbnail
+	parents          []PartialAlbum
+	albums           []PartialAlbum
+	tracks           Tracks
+	remoteInstanceId *remote.RemoteInstanceID
 }
 
 func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []PartialAlbum, albums []PartialAlbum, tracks []Track) (Album, error) {
+	return newAlbum(id, title, thumbnail, parents, albums, tracks, nil)
+}
+
+func NewRemoteAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []PartialAlbum, albums []PartialAlbum, tracks []Track, remoteInstanceId remote.RemoteInstanceID) (Album, error) {
+	return newAlbum(id, title, thumbnail, parents, albums, tracks, &remoteInstanceId)
+}
+
+func newAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []PartialAlbum, albums []PartialAlbum, tracks []Track, remoteInstanceId *remote.RemoteInstanceID) (Album, error) {
 	for _, p := range parents {
 		if p.id == id {
 			return Album{}, errors.New("parents must not contain the album itself")
@@ -53,13 +68,16 @@ func NewAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, parents []Part
 	if len(albums) == 0 && len(tracks) == 0 {
 		return Album{}, errors.New("album must have at least one child album or track")
 	}
+	sortedAlbums := slices.Clone(albums)
+	sortAlbums(sortedAlbums)
 	return Album{
-		id:        id,
-		title:     title,
-		thumbnail: thumbnail,
-		parents:   parents,
-		albums:    albums,
-		tracks:    NewTracks(tracks),
+		id:               id,
+		title:            title,
+		thumbnail:        thumbnail,
+		parents:          parents,
+		albums:           sortedAlbums,
+		tracks:           NewTracks(tracks),
+		remoteInstanceId: remoteInstanceId,
 	}, nil
 }
 
@@ -87,10 +105,15 @@ func (a Album) Tracks() Tracks {
 	return a.tracks
 }
 
+func (a Album) RemoteInstanceId() *remote.RemoteInstanceID {
+	return a.remoteInstanceId
+}
+
 type PartialAlbum struct {
-	id        AlbumId
-	title     AlbumTitle
-	thumbnail *Thumbnail
+	id               AlbumId
+	title            AlbumTitle
+	thumbnail        *Thumbnail
+	remoteInstanceId *remote.RemoteInstanceID
 }
 
 func NewPartialAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail) PartialAlbum {
@@ -98,6 +121,15 @@ func NewPartialAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail) Partial
 		id:        id,
 		title:     title,
 		thumbnail: thumbnail,
+	}
+}
+
+func NewRemotePartialAlbum(id AlbumId, title AlbumTitle, thumbnail *Thumbnail, remoteInstanceId remote.RemoteInstanceID) PartialAlbum {
+	return PartialAlbum{
+		id:               id,
+		title:            title,
+		thumbnail:        thumbnail,
+		remoteInstanceId: &remoteInstanceId,
 	}
 }
 
@@ -111,6 +143,10 @@ func (a PartialAlbum) Title() AlbumTitle {
 
 func (a PartialAlbum) Thumbnail() *Thumbnail {
 	return a.thumbnail
+}
+
+func (a PartialAlbum) RemoteInstanceId() *remote.RemoteInstanceID {
+	return a.remoteInstanceId
 }
 
 type AlbumId struct {
@@ -146,4 +182,10 @@ func NewAlbumTitle(s string) (AlbumTitle, error) {
 
 func (t AlbumTitle) String() string {
 	return t.value
+}
+
+func sortAlbums(albums []PartialAlbum) {
+	sort.Slice(albums, func(i, j int) bool {
+		return albums[i].Title().String() < albums[j].Title().String()
+	})
 }

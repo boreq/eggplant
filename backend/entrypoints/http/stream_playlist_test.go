@@ -58,7 +58,7 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 	require.NoError(t, err)
 	track := musicdomain.NewTrack(testTrackId(t), fileId, title)
 
-	visibility := library.NewVisibility(true)
+	visibility := library.VisibilityPublic
 	root, err := library.NewRootAlbum(nil, &visibility, nil, []musicdomain.Track{track})
 	require.NoError(t, err)
 

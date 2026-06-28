@@ -1,8 +1,6 @@
 package library
 
 import (
-	"sort"
-
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/errors"
 )
@@ -251,7 +249,6 @@ func buildChildren(albums []Album, parentVis Visibility, ctx AccessContext) []mu
 		}
 		out = append(out, music.NewPartialAlbum(a.id, a.title, a.thumbnail))
 	}
-	sortChildren(out)
 	return out
 }
 
@@ -273,10 +270,4 @@ func findAlbumPathRec(albums []Album, id music.AlbumId, path []Album) ([]Album, 
 		path = path[:len(path)-1]
 	}
 	return nil, false
-}
-
-func sortChildren(albums []music.PartialAlbum) {
-	sort.Slice(albums, func(i, j int) bool {
-		return albums[i].Title().String() < albums[j].Title().String()
-	})
 }

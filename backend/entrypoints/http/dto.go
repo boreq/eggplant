@@ -1,35 +1,48 @@
 package http
 
 import (
+	"github.com/boreq/eggplant/adapters/openapi"
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
-	"github.com/boreq/eggplant/entrypoints/http/openapi"
+	"github.com/boreq/eggplant/domain/remote"
 )
 
 func toSearchResults(result library.SearchResults) openapi.SearchResults {
 	return openapi.SearchResults{
-		Albums: toPartialAlbums(result.Albums()),
+		Albums: toAlbumSearchResults(result.Albums()),
 		Tracks: toTrackWithAlbums(result.Tracks()),
 	}
 }
 
-func toTrackWithAlbums(tracks []library.TrackWithAlbum) []openapi.TrackWithAlbum {
-	result := make([]openapi.TrackWithAlbum, 0, len(tracks))
-	for _, t := range tracks {
-		result = append(result, toTrackWithAlbum(t))
+func toAlbumSearchResults(hits []library.FoundAlbum) []openapi.AlbumSearchResult {
+	result := make([]openapi.AlbumSearchResult, 0, len(hits))
+	for _, h := range hits {
+		result = append(result, openapi.AlbumSearchResult{
+			Album: toPartialAlbum(h.Album),
+			Score: h.Dist,
+		})
 	}
 	return result
 }
 
-func toTrackWithAlbum(t library.TrackWithAlbum) openapi.TrackWithAlbum {
+func toTrackWithAlbums(hits []library.FoundTrack) []openapi.TrackWithAlbum {
+	result := make([]openapi.TrackWithAlbum, 0, len(hits))
+	for _, h := range hits {
+		result = append(result, toTrackWithAlbum(h))
+	}
+	return result
+}
+
+func toTrackWithAlbum(h library.FoundTrack) openapi.TrackWithAlbum {
 	var alb *openapi.PartialAlbum
-	if a := t.Album(); a != nil {
+	if a := h.Track.Album(); a != nil {
 		v := toPartialAlbum(*a)
 		alb = &v
 	}
 	return openapi.TrackWithAlbum{
-		Track: toTrack(t.Track()),
+		Track: toTrack(h.Track.Track()),
 		Album: alb,
+		Score: h.Dist,
 	}
 }
 
@@ -49,20 +62,30 @@ func toTrack(t music.Track) openapi.Track {
 		number = &v
 	}
 	return openapi.Track{
-		Id:     t.Id().String(),
-		Number: number,
-		Title:  t.Title().String(),
+		Id:               t.Id().String(),
+		Number:           number,
+		Title:            t.Title().String(),
+		RemoteInstanceId: remoteInstanceId(t.RemoteInstanceId()),
 	}
+}
+
+func remoteInstanceId(id *remote.RemoteInstanceID) *string {
+	if id == nil {
+		return nil
+	}
+	s := id.String()
+	return &s
 }
 
 func toAlbum(a music.Album) openapi.Album {
 	return openapi.Album{
-		Id:        a.Id().String(),
-		Title:     a.Title().String(),
-		Thumbnail: toThumbnail(a.Thumbnail()),
-		Parents:   toPartialAlbums(a.Parents()),
-		Albums:    toPartialAlbums(a.Albums()),
-		Tracks:    toTracks(a.Tracks().Items()),
+		Id:               a.Id().String(),
+		Title:            a.Title().String(),
+		Thumbnail:        toThumbnail(a.Thumbnail()),
+		Parents:          toPartialAlbums(a.Parents()),
+		Albums:           toPartialAlbums(a.Albums()),
+		Tracks:           toTracks(a.Tracks().Items()),
+		RemoteInstanceId: remoteInstanceId(a.RemoteInstanceId()),
 	}
 }
 
@@ -84,9 +107,10 @@ func toPartialAlbums(albums []music.PartialAlbum) []openapi.PartialAlbum {
 
 func toPartialAlbum(a music.PartialAlbum) openapi.PartialAlbum {
 	return openapi.PartialAlbum{
-		Id:        a.Id().String(),
-		Title:     a.Title().String(),
-		Thumbnail: toThumbnail(a.Thumbnail()),
+		Id:               a.Id().String(),
+		Title:            a.Title().String(),
+		Thumbnail:        toThumbnail(a.Thumbnail()),
+		RemoteInstanceId: remoteInstanceId(a.RemoteInstanceId()),
 	}
 }
 

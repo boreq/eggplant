@@ -4,6 +4,7 @@ import (
 	"github.com/boreq/eggplant/adapters"
 	"github.com/boreq/eggplant/adapters/pubsub"
 	remoteAdapters "github.com/boreq/eggplant/adapters/remote"
+	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/remote"
 	outboxEntrypoint "github.com/boreq/eggplant/entrypoints/outbox"
 	"github.com/google/wire"
@@ -27,6 +28,9 @@ var remoteSet = wire.NewSet(
 
 	remoteAdapters.NewRemoteClient,
 	wire.Bind(new(remote.RemoteClient), new(*remoteAdapters.RemoteClient)),
+
+	remoteAdapters.NewRemoteLibrary,
+	wire.Bind(new(music.RemoteLibrary), new(*remoteAdapters.RemoteLibrary)),
 
 	newRemoteRepositoriesProvider,
 	wire.Bind(new(remoteAdapters.RemoteRepositoriesProvider), new(*remoteRepositoriesProvider)),

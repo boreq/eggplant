@@ -118,15 +118,15 @@ export default class Browse extends Vue {
     }
 
     parentUrl(album: PartialAlbum): Location {
-        return this.navigationService.getBrowse(album.id);
+        return this.navigationService.getBrowse(album.id, album.remoteInstanceId);
     }
 
     selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
-        if (this.$route.params.id === album.id) {
+        if (this.$route.params.albumId === album.id) {
             return;
         }
-        const location = this.navigationService.getBrowse(album.id);
+        const location = this.navigationService.getBrowse(album.id, album.remoteInstanceId);
         this.$router.push(location);
     }
 
@@ -333,7 +333,7 @@ export default class Browse extends Vue {
 
     private load(): void {
         this.clearTimeout();
-        this.apiService.browse(this.getIdFromRoute())
+        this.apiService.browse(this.getIdFromRoute(), this.getInstanceFromRoute())
             .then(
                 response => {
                     this.album = response.data;
@@ -374,7 +374,12 @@ export default class Browse extends Vue {
     }
 
     private getIdFromRoute(): string | undefined {
-        return this.$route.params.id;
+        return this.$route.params.albumId;
+    }
+
+    private getInstanceFromRoute(): string | undefined {
+        const instance = this.$route.params.instanceId;
+        return typeof instance === 'string' ? instance : undefined;
     }
 
     private scrollContentToTop(): void {
@@ -386,6 +391,7 @@ export default class Browse extends Vue {
             title: album.title,
             id: album.id,
             thumbnail: album.thumbnail,
+            remoteInstanceId: album.remoteInstanceId,
         };
     }
 

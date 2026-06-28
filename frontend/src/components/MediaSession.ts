@@ -47,7 +47,7 @@ export default class MediaSession extends Vue {
             };
 
             if (album && album.thumbnail) {
-                const url = this.apiService.thumbnailUrl(album.thumbnail);
+                const url = this.apiService.thumbnailUrl(album.thumbnail, album.remoteInstanceId);
                 metadata.artwork = [
                     {
                         src: url,

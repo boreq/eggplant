@@ -507,7 +507,7 @@ func (c testAccessContext) CanSee(v library.Visibility) bool {
 	if c.canSeeAll {
 		return true
 	}
-	return v.Public()
+	return v == library.VisibilityPublic
 }
 
 var (
@@ -534,8 +534,11 @@ type rootSpec struct {
 	albums     []albumSpec
 }
 
-func vis(v bool) *library.Visibility {
-	out := library.NewVisibility(v)
+func vis(public bool) *library.Visibility {
+	out := library.VisibilityPrivate
+	if public {
+		out = library.VisibilityPublic
+	}
 	return &out
 }
 
@@ -644,10 +647,18 @@ func mkThumb(t *testing.T, filename string) music.Thumbnail {
 	return music.NewThumbnail(id, fileId)
 }
 
-func trackTitles(tracks []library.TrackWithAlbum) []string {
+func trackTitles(tracks []library.FoundTrack) []string {
 	titles := make([]string, 0, len(tracks))
 	for _, t := range tracks {
-		titles = append(titles, t.Track().Title().String())
+		titles = append(titles, t.Track.Track().Title().String())
+	}
+	return titles
+}
+
+func searchAlbumTitles(hits []library.FoundAlbum) []string {
+	titles := make([]string, 0, len(hits))
+	for _, h := range hits {
+		titles = append(titles, h.Album.Title().String())
 	}
 	return titles
 }

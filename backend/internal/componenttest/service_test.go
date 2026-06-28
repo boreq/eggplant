@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boreq/eggplant/adapters/openapi"
 	"github.com/boreq/eggplant/application"
-	"github.com/boreq/eggplant/entrypoints/http/openapi"
 	"github.com/boreq/eggplant/internal/config"
 	"github.com/boreq/eggplant/internal/wire"
 	"github.com/stretchr/testify/require"

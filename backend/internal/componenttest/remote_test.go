@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boreq/eggplant/adapters/openapi"
 	remoteadapter "github.com/boreq/eggplant/adapters/remote"
 	remotedomain "github.com/boreq/eggplant/domain/remote"
-	"github.com/boreq/eggplant/entrypoints/http/openapi"
 	"github.com/stretchr/testify/require"
 	bolt "go.etcd.io/bbolt"
 )

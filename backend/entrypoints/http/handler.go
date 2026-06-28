@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/boreq/eggplant/adapters/openapi"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/application/auth"
@@ -15,7 +16,6 @@ import (
 	musicdomain "github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/entrypoints/http/frontend"
-	"github.com/boreq/eggplant/entrypoints/http/openapi"
 	"github.com/boreq/eggplant/internal/logging"
 	"github.com/boreq/errors"
 	"github.com/boreq/rest"
@@ -48,6 +48,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.addAccessContextRest(h.browseById)))
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.addAccessContextRest(h.search)))
+	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
 
 	h.router.HandlerFunc(http.MethodGet, "/api/track/:trackid/duration", rest.Wrap(h.addAccessContextRest(h.getTrackDuration)))
 	h.router.HandlerFunc(http.MethodPost, "/api/track/:trackid/stream", rest.Wrap(h.addAccessContextRest(h.startTrackStream)))
@@ -64,19 +65,22 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodPost, "/api/auth/create-invitation", rest.Wrap(h.addAccessContextRest(h.createInvitation)))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth", rest.Wrap(h.addAccessContextRest(h.getCurrentUser)))
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.addAccessContextRest(h.getUsers)))
-	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
 	h.router.HandlerFunc(http.MethodDelete, "/api/auth/users/:username", rest.Wrap(h.addAccessContextRest(h.removeUser)))
 
-	// Remote instances: pairing administration (operator, admin only)
 	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteListRemotes)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteAddRemote)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.addAccessContextRest(h.remoteSetPairingToken)))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/browse/:albumId", rest.Wrap(h.addAccessContextRest(h.remoteAlbum)))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/track/:trackId/duration", rest.Wrap(h.addAccessContextRest(h.remoteTrackDuration)))
+	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/track/:trackId/stream", rest.Wrap(h.addAccessContextRest(h.remoteStartStream)))
+	h.router.GET("/api/remote/:id/track/:trackId/stream/:streamId/playlist", h.addAccessContext(h.remoteStreamPlaylist))
+	h.router.GET("/api/remote/:id/track/:trackId/stream/:streamId/init", h.addAccessContext(h.remoteStreamInit))
+	h.router.GET("/api/remote/:id/track/:trackId/stream/:streamId/fragment/:number", h.addAccessContext(h.remoteStreamFragment))
+	h.router.POST("/api/remote/:id/track/:trackId/stream/:streamId/keepalive", h.addAccessContext(h.remoteKeepAliveStream))
+	h.router.GET("/api/remote/:id/thumbnail/:thumbnailId", h.addAccessContext(h.remoteThumbnail))
+	h.router.HandlerFunc(http.MethodGet, "/api/health", rest.Wrap(h.addAccessContextRest(h.remotePeerHealth)))
+	h.router.HandlerFunc(http.MethodPost, "/api/auth-token", rest.Wrap(h.remoteSetAuthToken))
 
-	// Peer-to-peer endpoints
-	h.router.HandlerFunc(http.MethodGet, "/api/peer/health", rest.Wrap(h.addAccessContextRest(h.remotePeerHealth)))
-	h.router.HandlerFunc(http.MethodPost, "/api/peer/auth-token", rest.Wrap(h.remoteSetAuthToken))
-
-	// API documentation
 	h.router.HandlerFunc(http.MethodGet, "/api/openapi.yaml", h.openapiSpec)
 	h.router.HandlerFunc(http.MethodGet, "/api", h.docs)
 
@@ -127,7 +131,7 @@ func (h *Handler) addAccessContext(handler func(accessctx.AccessContext, http.Re
 }
 
 func (h *Handler) browse(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx)
+	a, err := h.app.Music.GetRootAlbum.Execute(r.Context(), accessCtx, music.GetRootAlbum{})
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
@@ -168,7 +172,7 @@ func (h *Handler) search(accessCtx accessctx.AccessContext, r *http.Request) res
 		return rest.ErrBadRequest.WithMessage("Invalid query.")
 	}
 
-	result, err := h.app.Music.Search.Execute(accessCtx, music.Search{Query: query})
+	result, err := h.app.Music.Search.Execute(r.Context(), accessCtx, music.Search{Query: query})
 	if err != nil {
 		h.log.Error("search error", "err", err)
 		return rest.ErrInternalServerError
