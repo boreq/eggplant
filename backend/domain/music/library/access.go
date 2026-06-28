@@ -1,17 +1,23 @@
 package library
 
-var defaultVisibility = NewVisibility(false)
-
 type Visibility struct {
-	public bool
+	s string
 }
 
+var (
+	VisibilityPublic  = Visibility{"public"}
+	VisibilityPrivate = Visibility{"private"}
+)
+
 func NewVisibility(public bool) Visibility {
-	return Visibility{public: public}
+	if public {
+		return VisibilityPublic
+	}
+	return VisibilityPrivate
 }
 
 func (v Visibility) Public() bool {
-	return v.public
+	return v == VisibilityPublic
 }
 
 type AccessContext interface {

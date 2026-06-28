@@ -227,14 +227,14 @@ func (a Album) Tracks() []music.Track {
 
 func ifNotSetPrivate(v *Visibility) Visibility {
 	if v == nil {
-		return defaultVisibility
+		return VisibilityPrivate
 	}
 	return *v
 }
 
 func ifNotSetPublic(v *Visibility) Visibility {
 	if v == nil {
-		return NewVisibility(true)
+		return VisibilityPublic
 	}
 	return *v
 }
