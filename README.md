@@ -158,6 +158,15 @@ files inside of them.
 - `.aiff`
 - `.opus`
 
+## Connecting instances
+
+Two Eggplant instances can be linked together so that logged in users of each
+instance can see the combined music library of both instances. You can connect
+instances together using the settings page and the interface will guide you
+through a sequence of steps; to start both you and your friend should paste the
+address of the other instance into the box and click the button to begin
+pairing.
+
 ## Development
 
 ### Dependencies
