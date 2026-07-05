@@ -1,8 +1,10 @@
 # Eggplant [![CI][ci-badge]][ci]
 
-Eggplant is a self-hosted music streaming service. Do you have a large music collection that you want to be able to
-listen to from anywhere? Simply point Eggplant at your music directory and it will make it available via your web
-browser. This is similar to what Jellyfin is except for music and with way fewer features.
+Eggplant is a self-hosted music streaming service. Do you have a large music
+collection that you want to be able to listen to from anywhere? Simply point
+Eggplant at your music directory and it will make it available via your web
+browser. You may also connect your instance with other instances to easily
+share music with your friends.
 
 ![Eggplant][screenshot]
 
