@@ -109,7 +109,7 @@ type LibraryRepository interface {
 }
 
 type RemoteLibrary interface {
-	GetRootAlbums(ctx context.Context) ([]music.PartialAlbum, error)
+	GetRootAlbums(ctx context.Context) ([]music.RootAlbum, error)
 	GetAlbum(ctx context.Context, instanceId remote.RemoteInstanceID, albumId music.AlbumId) (music.Album, error)
 	GetThumbnail(ctx context.Context, instanceId remote.RemoteInstanceID, thumbnailId music.ThumbnailId) (io.ReadCloser, error)
 	GetTrackDuration(ctx context.Context, instanceId remote.RemoteInstanceID, trackId music.TrackId) (music.TrackDuration, error)

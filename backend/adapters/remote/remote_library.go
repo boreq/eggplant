@@ -34,13 +34,13 @@ type remoteTarget struct {
 	token   remotedomain.AuthToken
 }
 
-func (l *RemoteLibrary) GetRootAlbums(ctx context.Context) ([]musicdomain.PartialAlbum, error) {
+func (l *RemoteLibrary) GetRootAlbums(ctx context.Context) ([]musicdomain.RootAlbum, error) {
 	targets, err := l.pairedTargets()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get the paired targets")
 	}
 
-	var out []musicdomain.PartialAlbum
+	var out []musicdomain.RootAlbum
 	for _, t := range targets {
 		resp, err := l.client.GetRootAlbum(ctx, t.address, t.token)
 		if err != nil {
@@ -48,14 +48,32 @@ func (l *RemoteLibrary) GetRootAlbums(ctx context.Context) ([]musicdomain.Partia
 			continue
 		}
 
+		var albums []musicdomain.PartialAlbum
 		for _, a := range resp.Albums {
 			album, err := toRemotePartialAlbum(a, t.id)
 			if err != nil {
 				l.log.Error("could not convert the remote album", "instance", t.id.String(), "err", err)
 				continue
 			}
-			out = append(out, album)
+			albums = append(albums, album)
 		}
+
+		var tracks []musicdomain.Track
+		for _, tr := range resp.Tracks {
+			track, err := toRemoteTrack(tr, t.id)
+			if err != nil {
+				l.log.Error("could not convert the remote track", "instance", t.id.String(), "err", err)
+				continue
+			}
+			tracks = append(tracks, track)
+		}
+
+		rootAlbum, err := musicdomain.NewRootAlbum(nil, albums, tracks)
+		if err != nil {
+			l.log.Error("could not build remote root album", "instance", t.id.String(), "err", err)
+			continue
+		}
+		out = append(out, rootAlbum)
 	}
 
 	return out, nil

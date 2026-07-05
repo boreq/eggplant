@@ -47,8 +47,7 @@ func (h *GetRootAlbumHandler) Execute(ctx context.Context, accessCtx accessctx.A
 		return album, nil
 	}
 
-	albums := append(append([]music.PartialAlbum(nil), album.Albums()...), remoteAlbums...)
-	joined, err := music.NewRootAlbum(album.Thumbnail(), albums, album.Tracks().Items())
+	joined, err := music.MergeRootAlbums(album, remoteAlbums)
 	if err != nil {
 		return music.RootAlbum{}, errors.Wrap(err, "could not build the joined root album")
 	}
