@@ -100,7 +100,7 @@ export default class Browse extends Vue {
         this.showAllTracks = false;
         this.showAllAlbums = false;
         this.load();
-        this.scrollContentToTop();
+        this.scrollToTop();
         this.switchView(View.Browse);
     }
 
@@ -120,10 +120,12 @@ export default class Browse extends Vue {
     created(): void {
         this.load();
         this.$root.$on('revealNowPlaying', this.revealNowPlaying);
+        this.$root.$on('scrollToTop', this.scrollToTop);
     }
 
     destroyed(): void {
         this.$root.$off('revealNowPlaying', this.revealNowPlaying);
+        this.$root.$off('scrollToTop', this.scrollToTop);
         this.clearTimeout();
         this.durationLoader.cancel();
     }
@@ -189,7 +191,7 @@ export default class Browse extends Vue {
     }
 
     onSearchNavigation(): void {
-        this.scrollContentToTop();
+        this.scrollToTop();
         this.searchQuery = null;
     }
 
@@ -413,8 +415,8 @@ export default class Browse extends Vue {
         return typeof instance === 'string' ? instance : undefined;
     }
 
-    private scrollContentToTop(): void {
-        this.contentDiv.scrollTop = 0;
+    scrollToTop(smooth: boolean = false): void {
+        this.contentDiv.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
     }
 
     private toPartialAlbum(album: Album): PartialAlbum {

@@ -32,14 +32,14 @@ export default class NowPlaying extends Vue {
     }
 
     goToNowPlayingSong(): void {
-        this.navigateToNowPlaying();
+        this.navigateToNowPlaying(true);
     }
 
     goToNowPlayingAlbum(): void {
-        this.navigateToNowPlaying();
+        this.navigateToNowPlaying(false);
     }
 
-    private navigateToNowPlaying(): void {
+    private navigateToNowPlaying(reveal: boolean): void {
         const { id: albumId, remoteInstanceId } = this.nowPlaying.album;
         const trackId = this.nowPlaying.track.id;
         const location = this.navigationService.getBrowse(albumId, remoteInstanceId);
@@ -48,10 +48,18 @@ export default class NowPlaying extends Vue {
 
         const alreadyOnPage = currentAlbumId === albumId && currentInstanceId === (remoteInstanceId || undefined);
         if (alreadyOnPage) {
-            this.$root.$emit('revealNowPlaying', trackId);
+            if (reveal) {
+                this.$root.$emit('revealNowPlaying', trackId);
+            } else {
+                this.$root.$emit('scrollToTop');
+            }
         } else {
             this.$router.push(location).then(() => {
-                this.$root.$emit('revealNowPlaying', trackId);
+                if (reveal) {
+                    this.$root.$emit('revealNowPlaying', trackId);
+                } else {
+                    this.$root.$emit('scrollToTop');
+                }
             });
         }
     }
