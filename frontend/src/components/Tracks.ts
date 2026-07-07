@@ -36,10 +36,17 @@ export default class Tracks extends Vue {
     @Prop({ default: false })
     hideNumber: boolean;
 
+    @Prop({ default: null })
+    highlightTrackId: string | null;
+
     @Ref('dropdowns')
     dropdowns: Dropdown[];
 
     private readonly textService = new TextService();
+
+    isHighlighted(track: Track): boolean {
+        return this.highlightTrackId === track.id;
+    }
 
     isNowPlaying(index: number, track: Track): boolean {
         const nowPlaying: TrackWithAlbum = this.$store.getters.nowPlaying;

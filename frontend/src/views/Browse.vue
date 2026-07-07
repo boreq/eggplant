@@ -83,7 +83,7 @@
                             </a>
                         </template>
                     </SubHeader>
-                    <Tracks :entries="displayedEntries" :allEntries="entries"></Tracks>
+                    <Tracks :entries="displayedEntries" :allEntries="entries" :highlightTrackId="highlightTrackId"></Tracks>
                 </div>
 
                 <div class="section" v-if="albums && albums.length > 0">

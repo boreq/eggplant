@@ -66,6 +66,8 @@ export default class Browse extends Vue {
 
     view: View = View.Browse;
 
+    highlightTrackId: string | null = null;
+
     showAllTracks: boolean = false;
     showAllAlbums: boolean = false;
 
@@ -83,6 +85,13 @@ export default class Browse extends Vue {
     private readonly apiService = new ApiService(this);
     private readonly navigationService = new NavigationService();
     private readonly durationLoader = new DurationLoader(this);
+
+    @Watch('album')
+    onAlbumLoaded(): void {
+        if (this.highlightTrackId) {
+            this.doReveal();
+        }
+    }
 
     @Watch('$route')
     onRouteChanged(): void {
@@ -110,9 +119,11 @@ export default class Browse extends Vue {
 
     created(): void {
         this.load();
+        this.$root.$on('revealNowPlaying', this.revealNowPlaying);
     }
 
     destroyed(): void {
+        this.$root.$off('revealNowPlaying', this.revealNowPlaying);
         this.clearTimeout();
         this.durationLoader.cancel();
     }
@@ -180,6 +191,26 @@ export default class Browse extends Vue {
     onSearchNavigation(): void {
         this.scrollContentToTop();
         this.searchQuery = null;
+    }
+
+    private revealNowPlaying(trackId: string): void {
+        this.highlightTrackId = trackId;
+        if (this.album) {
+            this.doReveal();
+        }
+    }
+
+    private doReveal(): void {
+        this.showAllTracks = true;
+        this.$nextTick(() => {
+            const playingEl = this.contentDiv.querySelector('.track.playing > :first-child') as HTMLElement | null;
+            if (playingEl) {
+                playingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            window.setTimeout(() => {
+                this.highlightTrackId = null;
+            }, 2500);
+        });
     }
 
     get showSearch(): boolean {

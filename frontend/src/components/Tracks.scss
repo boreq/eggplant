@@ -1,3 +1,8 @@
+@keyframes track-highlight {
+    0% { background-color: rgba($primary-color, 0.25); }
+    100% { background-color: rgba($primary-color, 0); }
+}
+
 .tracks {
     padding: 0;
     margin: 0;
@@ -6,9 +11,13 @@
     align-items: center;
 
     .track {
-        display: contents;
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: subgrid;
+        align-items: center;
+        list-style: none;
 
-        &:nth-child(even) > * {
+        &:nth-child(even) {
             background-color: $box-normal-background-color-alt;
         }
 
@@ -22,6 +31,10 @@
 
         > :last-child {
             padding-right: 2em;
+        }
+
+        &.highlight {
+            animation: track-highlight 2.5s ease-out forwards;
         }
 
         .play {
@@ -106,6 +119,10 @@
                     .number {
                         color: transparent;
                     }
+                }
+
+                &.highlight {
+                    background-color: rgba($primary-color, 0.15);
                 }
             }
 

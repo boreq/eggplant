@@ -32,15 +32,28 @@ export default class NowPlaying extends Vue {
     }
 
     goToNowPlayingSong(): void {
-        this.goToNowPlayingAlbum();
+        this.navigateToNowPlaying();
     }
 
     goToNowPlayingAlbum(): void {
-        const albumId = this.nowPlaying.album.id;
-        if (this.$route.params.id === albumId) {
-            return;
+        this.navigateToNowPlaying();
+    }
+
+    private navigateToNowPlaying(): void {
+        const { id: albumId, remoteInstanceId } = this.nowPlaying.album;
+        const trackId = this.nowPlaying.track.id;
+        const location = this.navigationService.getBrowse(albumId, remoteInstanceId);
+        const currentAlbumId = this.$route.params.albumId;
+        const currentInstanceId = this.$route.params.instanceId;
+
+        const alreadyOnPage = currentAlbumId === albumId && currentInstanceId === (remoteInstanceId || undefined);
+        if (alreadyOnPage) {
+            this.$root.$emit('revealNowPlaying', trackId);
+        } else {
+            this.$router.push(location).then(() => {
+                this.$root.$emit('revealNowPlaying', trackId);
+            });
         }
-        this.$router.push(this.navigationService.getBrowse(albumId));
     }
 
 }
