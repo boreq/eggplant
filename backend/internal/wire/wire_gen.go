@@ -258,8 +258,10 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
 	statsHandler := queries.NewStatsHandler(converter, thumbnailStore, queryTransactionProvider)
+	versionHandler := newVersionHandler()
 	applicationQueries := application.Queries{
-		Stats: statsHandler,
+		Stats:   statsHandler,
+		Version: versionHandler,
 	}
 	addRemoteHandler := remote.NewAddRemoteHandler(remoteTransactionProvider)
 	setRemotePairingTokenHandler := remote.NewSetRemotePairingTokenHandler(remoteTransactionProvider)
@@ -427,8 +429,10 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
 	statsHandler := queries.NewStatsHandler(converter, thumbnailStore, queryTransactionProvider)
+	versionHandler := newVersionHandler()
 	applicationQueries := application.Queries{
-		Stats: statsHandler,
+		Stats:   statsHandler,
+		Version: versionHandler,
 	}
 	addRemoteHandler := remote.NewAddRemoteHandler(remoteTransactionProvider)
 	setRemotePairingTokenHandler := remote.NewSetRemotePairingTokenHandler(remoteTransactionProvider)

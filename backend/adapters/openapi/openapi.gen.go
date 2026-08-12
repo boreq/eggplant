@@ -19,6 +19,7 @@ import (
 
 const (
 	CookieAuthScopes cookieAuthContextKey = "cookieAuth.Scopes"
+	PeerAuthScopes   peerAuthContextKey   = "peerAuth.Scopes"
 )
 
 // Defines values for RemoteInstanceLastHealthcheckStatus.
@@ -330,6 +331,9 @@ type Unauthorized = Error
 
 // cookieAuthContextKey is the context key for cookieAuth security scheme
 type cookieAuthContextKey string
+
+// peerAuthContextKey is the context key for peerAuth security scheme
+type peerAuthContextKey string
 
 // StartRemoteTrackStreamParams defines parameters for StartRemoteTrackStream.
 type StartRemoteTrackStreamParams struct {
@@ -3379,6 +3383,7 @@ type GetVersionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *VersionResponse
+	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
@@ -4757,6 +4762,13 @@ func ParseGetVersionResponse(rsp *http.Response) (*GetVersionResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 

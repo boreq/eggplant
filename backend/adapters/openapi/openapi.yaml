@@ -395,7 +395,10 @@ paths:
     get:
       tags: [meta]
       operationId: getVersion
-      summary: Return the server version.
+      summary: Return the server version (administrators and paired remote instances only).
+      security:
+        - cookieAuth: []
+        - peerAuth: []
       responses:
         '200':
           description: The server version.
@@ -403,6 +406,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VersionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/remote:
     get:
       tags: [remote]
@@ -642,6 +647,8 @@ paths:
       tags: [remote]
       operationId: health
       summary: Peer-to-peer endpoint a peer calls to check that we are alive.
+      security:
+        - peerAuth: []
       responses:
         '200':
           description: The peer is alive.
@@ -673,6 +680,10 @@ components:
       type: apiKey
       in: cookie
       name: auth-token
+    peerAuth:
+      type: http
+      scheme: bearer
+      description: The auth token a paired remote instance was given during pairing.
   parameters:
     RemoteInstanceId:
       name: id

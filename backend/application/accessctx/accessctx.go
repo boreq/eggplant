@@ -23,6 +23,7 @@ var (
 	PermissionManageInvitations       = Permission{value: "manage_invitations"}
 	PermissionManageRemotes           = Permission{value: "manage_remotes"}
 	PermissionSeeRemoteLibraryContent = Permission{value: "see_remote_library_content"}
+	PermissionSeeVersion              = Permission{value: "see_version"}
 )
 
 type AccessContext interface {
@@ -73,8 +74,13 @@ func NewRemoteInstanceAccessContext(remoteInstanceID remotedomain.RemoteInstance
 	return RemoteInstanceAccessContext{remoteInstanceID: remoteInstanceID}
 }
 
-func (c RemoteInstanceAccessContext) Can(Permission) bool {
-	return false
+func (c RemoteInstanceAccessContext) Can(p Permission) bool {
+	switch p {
+	case PermissionSeeVersion:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c RemoteInstanceAccessContext) CanSee(library.Visibility) bool {

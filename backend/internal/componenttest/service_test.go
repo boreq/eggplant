@@ -133,12 +133,19 @@ func TestServiceMeta(t *testing.T) {
 
 	token := registerAdminAndLogin(t, ts)
 
-	t.Run("version", func(t *testing.T) {
-		resp, err := ts.client.GetVersionWithResponse(ctx)
+	t.Run("version is returned to an administrator", func(t *testing.T) {
+		resp, err := ts.client.GetVersionWithResponse(ctx, authedAs(token))
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.NotNil(t, resp.JSON200)
 		require.NotEmpty(t, resp.JSON200.Version)
+	})
+
+	t.Run("version is hidden from an anonymous caller", func(t *testing.T) {
+		resp, err := ts.client.GetVersionWithResponse(ctx)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusForbidden, resp.StatusCode())
+		require.Nil(t, resp.JSON200)
 	})
 
 	t.Run("stats reflect the registered user", func(t *testing.T) {
@@ -149,8 +156,6 @@ func TestServiceMeta(t *testing.T) {
 		require.Equal(t, 1, resp.JSON200.Users)
 		require.Equal(t, int64(1), resp.JSON200.Tracks.NumberOfTracks)
 	})
-
-	_ = token
 }
 
 func TestServiceBrowseAndStream(t *testing.T) {

@@ -22,8 +22,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-var Version = "unknown"
-
 type AuthProvider interface {
 	Get(r *http.Request) (accessctx.AccessContext, error)
 }
@@ -48,7 +46,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/browse/:id", rest.Wrap(h.addAccessContextRest(h.browseById)))
 	h.router.HandlerFunc(http.MethodGet, "/api/stats", rest.Wrap(Cache(30*time.Second, h.stats)))
 	h.router.HandlerFunc(http.MethodGet, "/api/search", rest.Wrap(h.addAccessContextRest(h.search)))
-	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.getVersion))
+	h.router.HandlerFunc(http.MethodGet, "/api/version", rest.Wrap(h.addAccessContextRest(h.getVersion)))
 
 	h.router.HandlerFunc(http.MethodGet, "/api/track/:trackid/duration", rest.Wrap(h.addAccessContextRest(h.getTrackDuration)))
 	h.router.HandlerFunc(http.MethodPost, "/api/track/:trackid/stream", rest.Wrap(h.addAccessContextRest(h.startTrackStream)))
@@ -636,8 +634,17 @@ func (h *Handler) removeUser(accessCtx accessctx.AccessContext, r *http.Request)
 	return rest.NewResponse(nil)
 }
 
-func (h *Handler) getVersion(r *http.Request) rest.RestResponse {
-	return rest.NewResponse(openapi.VersionResponse{Version: Version})
+func (h *Handler) getVersion(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	version, err := h.app.Queries.Version.Execute(accessCtx)
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden
+		}
+		h.log.Error("version query error", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(openapi.VersionResponse{Version: version.String()})
 }
 
 func toReadUserResponse(u authdomain.User) openapi.ReadUserResponse {

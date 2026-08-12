@@ -15,5 +15,6 @@ type Application struct {
 }
 
 type Queries struct {
-	Stats *queries.StatsHandler
+	Stats   *queries.StatsHandler
+	Version *queries.VersionHandler
 }

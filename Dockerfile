@@ -12,7 +12,7 @@ WORKDIR /eggplant
 COPY . .
 RUN make version > /version.txt
 COPY --from=frontend /eggplant/frontend/dist/ ./backend/entrypoints/http/frontend/
-RUN mkdir -p backend/_build && CGO_ENABLED=0 go build -C backend -tags withfrontend -ldflags "-X github.com/boreq/eggplant/entrypoints/http.Version=$(cat /version.txt)" -o ./_build/eggplant ./cmd/eggplant
+RUN mkdir -p backend/_build && CGO_ENABLED=0 go build -C backend -tags withfrontend -ldflags "-X github.com/boreq/eggplant/internal/version.Current=$(cat /version.txt)" -o ./_build/eggplant ./cmd/eggplant
 
 FROM alpine
 RUN apk add ffmpeg

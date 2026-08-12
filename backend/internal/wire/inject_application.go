@@ -8,6 +8,7 @@ import (
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/entrypoints/filesystem"
 	"github.com/boreq/eggplant/internal/logging"
+	"github.com/boreq/eggplant/internal/version"
 	"github.com/google/wire"
 	bolt "go.etcd.io/bbolt"
 )
@@ -76,6 +77,7 @@ var appSet = wire.NewSet(
 
 	wire.Struct(new(application.Queries), "*"),
 	queries.NewStatsHandler,
+	newVersionHandler,
 
 	authAdapters.NewAuthTransactionProvider,
 	wire.Bind(new(auth.TransactionProvider), new(*authAdapters.AuthTransactionProvider)),
@@ -116,6 +118,10 @@ func newAuthRepositoriesProvider() *authRepositoriesProvider {
 
 func (p *authRepositoriesProvider) Provide(tx *bolt.Tx) (*auth.TransactableRepositories, error) {
 	return BuildTransactableAuthRepositories(tx)
+}
+
+func newVersionHandler() *queries.VersionHandler {
+	return queries.NewVersionHandler(version.Current)
 }
 
 type queryRepositoriesProvider struct {

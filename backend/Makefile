@@ -21,7 +21,7 @@ build-without-frontend: build-directory
 .PHONY: build-with-frontend
 build-with-frontend: build-directory
 	CGO_ENABLED=0 go build -tags withfrontend \
-		-ldflags "-X github.com/boreq/eggplant/entrypoints/http.Version=${VERSION}" \
+		-ldflags "-X github.com/boreq/eggplant/internal/version.Current=${VERSION}" \
 		-o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
 
 .PHONY: run
