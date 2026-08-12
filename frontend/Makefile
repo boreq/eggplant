@@ -25,4 +25,5 @@ type-check:
 
 .PHONY: build
 build:
-	VUE_APP_VERSION=$(VUE_APP_VERSION) $(YARN) build
+	$(YARN) build
+	echo "$(VERSION)" > dist/version.txt

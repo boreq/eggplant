@@ -3,6 +3,7 @@ import axios, { AxiosResponse } from 'axios'; // do not add { }, some webshit bs
 import { Track } from '@/dto/Track';
 import { Stats } from '@/dto/Stats';
 import { Thumbnail } from '@/dto/Thumbnail';
+import { Version } from '@/dto/Version';
 import { CommandInitialize } from '@/dto/CommandInitialize';
 import { LoginCommand } from '@/dto/LoginCommand';
 import { LoginResponse } from '@/dto/LoginResponse';
@@ -176,9 +177,9 @@ export class ApiService {
         });
     }
 
-    getVersion(): Promise<AxiosResponse<{ version: string }>> {
+    getVersion(): Promise<AxiosResponse<Version>> {
         const url = `version`;
-        return this.axios.get<{ version: string }>(import.meta.env.VUE_APP_API_PREFIX + url);
+        return this.axios.get<Version>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     register(cmd: RegisterCommand): Promise<AxiosResponse<void>> {

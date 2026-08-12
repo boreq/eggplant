@@ -138,7 +138,8 @@ func TestServiceMeta(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.NotNil(t, resp.JSON200)
-		require.NotEmpty(t, resp.JSON200.Version)
+		require.NotEmpty(t, resp.JSON200.Backend)
+		require.NotEmpty(t, resp.JSON200.Frontend)
 	})
 
 	t.Run("version is hidden from an anonymous caller", func(t *testing.T) {

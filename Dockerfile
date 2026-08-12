@@ -4,7 +4,7 @@ WORKDIR /eggplant
 COPY . .
 RUN make version > /version.txt
 RUN cd frontend && yarn install --immutable
-RUN cd frontend && VUE_APP_VERSION=$(cat /version.txt) yarn build
+RUN make -C frontend build VERSION=$(cat /version.txt)
 
 FROM golang:1.26-alpine AS backend
 RUN apk add git make
@@ -12,7 +12,7 @@ WORKDIR /eggplant
 COPY . .
 RUN make version > /version.txt
 COPY --from=frontend /eggplant/frontend/dist/ ./backend/entrypoints/http/frontend/
-RUN mkdir -p backend/_build && CGO_ENABLED=0 go build -C backend -tags withfrontend -ldflags "-X github.com/boreq/eggplant/internal/version.Current=$(cat /version.txt)" -o ./_build/eggplant ./cmd/eggplant
+RUN mkdir -p backend/_build && CGO_ENABLED=0 go build -C backend -tags withfrontend -ldflags "-X github.com/boreq/eggplant/internal/version.Backend=$(cat /version.txt) -X github.com/boreq/eggplant/internal/version.Frontend=$(cat /eggplant/backend/entrypoints/http/frontend/version.txt)" -o ./_build/eggplant ./cmd/eggplant
 
 FROM alpine
 RUN apk add ffmpeg

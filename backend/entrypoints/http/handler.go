@@ -644,7 +644,10 @@ func (h *Handler) getVersion(accessCtx accessctx.AccessContext, r *http.Request)
 		return rest.ErrInternalServerError
 	}
 
-	return rest.NewResponse(openapi.VersionResponse{Version: version.String()})
+	return rest.NewResponse(openapi.VersionResponse{
+		Backend:  version.Backend(),
+		Frontend: version.Frontend(),
+	})
 }
 
 func toReadUserResponse(u authdomain.User) openapi.ReadUserResponse {

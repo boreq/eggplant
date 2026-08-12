@@ -290,7 +290,8 @@ type TrackWithAlbum struct {
 
 // VersionResponse defines model for VersionResponse.
 type VersionResponse struct {
-	Version string `json:"version"`
+	Backend  string `json:"backend"`
+	Frontend string `json:"frontend"`
 }
 
 // AlbumId defines model for AlbumId.

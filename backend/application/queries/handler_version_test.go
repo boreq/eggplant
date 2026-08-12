@@ -46,14 +46,16 @@ func TestVersion(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			version, err := queries.NewVersionHandler("v1.2.3").Execute(testCase.accessCtx)
+			version, err := queries.NewVersionHandler("backend-v1.2.3", "frontend-v1.2.3").Execute(testCase.accessCtx)
 			if testCase.expectErr != nil {
 				require.ErrorIs(t, err, testCase.expectErr)
-				require.Equal(t, "", version.String())
+				require.Equal(t, "", version.Backend())
+				require.Equal(t, "", version.Frontend())
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, "v1.2.3", version.String())
+			require.Equal(t, "backend-v1.2.3", version.Backend())
+			require.Equal(t, "frontend-v1.2.3", version.Frontend())
 		})
 	}
 }

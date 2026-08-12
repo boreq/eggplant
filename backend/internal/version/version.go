@@ -1,3 +1,6 @@
 package version
 
-var Current = "unknown"
+var (
+	Backend  = "unknown"
+	Frontend = "unknown"
+)

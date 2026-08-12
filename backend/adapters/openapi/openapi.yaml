@@ -1047,9 +1047,12 @@ components:
           example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
     VersionResponse:
       type: object
-      required: [version]
+      required: [backend, frontend]
       properties:
-        version:
+        backend:
+          type: string
+          example: 1.4.2
+        frontend:
           type: string
           example: 1.4.2
     ReadSessionResponse:

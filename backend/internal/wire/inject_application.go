@@ -121,7 +121,7 @@ func (p *authRepositoriesProvider) Provide(tx *bolt.Tx) (*auth.TransactableRepos
 }
 
 func newVersionHandler() *queries.VersionHandler {
-	return queries.NewVersionHandler(version.Current)
+	return queries.NewVersionHandler(version.Backend, version.Frontend)
 }
 
 type queryRepositoriesProvider struct {
