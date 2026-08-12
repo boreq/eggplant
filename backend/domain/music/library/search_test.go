@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/boreq/eggplant/domain/music/library"
+	remotedomain "github.com/boreq/eggplant/domain/remote"
 	"github.com/stretchr/testify/require"
 )
 
@@ -384,4 +385,108 @@ func TestSearchRootBehavior(t *testing.T) {
 		}
 		t.Fatal("needle_song not in results")
 	})
+}
+
+func TestMergeResultsKeepsItemsWithTheSameIdFromDifferentInstances(t *testing.T) {
+	instanceA := mkInstanceId(t)
+	instanceB := mkInstanceId(t)
+
+	t.Run("albums", func(t *testing.T) {
+		local := library.NewSearchResults(
+			[]library.FoundAlbum{{Album: mkPartialAlbum(t, "shared_album"), Dist: 0}},
+			nil,
+		)
+		remote := library.NewSearchResults(
+			[]library.FoundAlbum{
+				{Album: mkRemotePartialAlbum(t, "shared_album", instanceA), Dist: 0},
+				{Album: mkRemotePartialAlbum(t, "shared_album", instanceB), Dist: 1},
+			},
+			nil,
+		)
+
+		merged := library.MergeResults(local, remote)
+		require.Len(t, merged.Albums(), 3)
+		require.ElementsMatch(t,
+			[]string{"", instanceA.String(), instanceB.String()},
+			albumInstanceIds(merged.Albums()),
+		)
+	})
+
+	t.Run("tracks", func(t *testing.T) {
+		local := library.NewSearchResults(
+			nil,
+			[]library.FoundTrack{{Track: library.NewRootTrackWithAlbum(mkTrack(t, "shared_song")), Dist: 0}},
+		)
+		remote := library.NewSearchResults(
+			nil,
+			[]library.FoundTrack{
+				{Track: library.NewRootTrackWithAlbum(mkRemoteTrack(t, "shared_song", instanceA)), Dist: 0},
+				{Track: library.NewRootTrackWithAlbum(mkRemoteTrack(t, "shared_song", instanceB)), Dist: 1},
+			},
+		)
+
+		merged := library.MergeResults(local, remote)
+		require.Len(t, merged.Tracks(), 3)
+		require.ElementsMatch(t,
+			[]string{"", instanceA.String(), instanceB.String()},
+			trackInstanceIds(merged.Tracks()),
+		)
+	})
+}
+
+func TestMergeResultsDeduplicatesItemsFromTheSameInstance(t *testing.T) {
+	instance := mkInstanceId(t)
+
+	t.Run("albums_keep_the_lowest_distance", func(t *testing.T) {
+		far := library.NewSearchResults(
+			[]library.FoundAlbum{{Album: mkRemotePartialAlbum(t, "album", instance), Dist: 5}},
+			nil,
+		)
+		near := library.NewSearchResults(
+			[]library.FoundAlbum{{Album: mkRemotePartialAlbum(t, "album", instance), Dist: 1}},
+			nil,
+		)
+
+		merged := library.MergeResults(far, near)
+		require.Len(t, merged.Albums(), 1)
+		require.Equal(t, 1, merged.Albums()[0].Dist)
+	})
+
+	t.Run("tracks_keep_the_lowest_distance", func(t *testing.T) {
+		far := library.NewSearchResults(
+			nil,
+			[]library.FoundTrack{{Track: library.NewRootTrackWithAlbum(mkTrack(t, "song")), Dist: 5}},
+		)
+		near := library.NewSearchResults(
+			nil,
+			[]library.FoundTrack{{Track: library.NewRootTrackWithAlbum(mkTrack(t, "song")), Dist: 1}},
+		)
+
+		merged := library.MergeResults(far, near)
+		require.Len(t, merged.Tracks(), 1)
+		require.Equal(t, 1, merged.Tracks()[0].Dist)
+	})
+}
+
+func albumInstanceIds(hits []library.FoundAlbum) []string {
+	ids := make([]string, 0, len(hits))
+	for _, h := range hits {
+		ids = append(ids, instanceIdString(h.Album.RemoteInstanceId()))
+	}
+	return ids
+}
+
+func trackInstanceIds(hits []library.FoundTrack) []string {
+	ids := make([]string, 0, len(hits))
+	for _, h := range hits {
+		ids = append(ids, instanceIdString(h.Track.Track().RemoteInstanceId()))
+	}
+	return ids
+}
+
+func instanceIdString(id *remotedomain.RemoteInstanceID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
 }

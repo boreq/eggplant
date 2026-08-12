@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/boreq/eggplant/domain/music"
+	"github.com/boreq/eggplant/domain/remote"
 )
 
 const maxSearchItems = 20
@@ -159,7 +160,7 @@ func newSearchBuilder() *searchBuilder {
 }
 
 func (b *searchBuilder) addAlbum(a music.PartialAlbum, dist int) {
-	key := a.Id().String()
+	key := instanceKey(a.RemoteInstanceId()) + a.Id().String()
 	if existing, ok := b.albums[key]; ok && existing.dist <= dist {
 		return
 	}
@@ -167,11 +168,18 @@ func (b *searchBuilder) addAlbum(a music.PartialAlbum, dist int) {
 }
 
 func (b *searchBuilder) addTrack(t TrackWithAlbum, dist int) {
-	key := t.Track().Id().String()
+	key := instanceKey(t.Track().RemoteInstanceId()) + t.Track().Id().String()
 	if existing, ok := b.tracks[key]; ok && existing.dist <= dist {
 		return
 	}
 	b.tracks[key] = trackHit{track: t, dist: dist}
+}
+
+func instanceKey(id *remote.RemoteInstanceID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String() + "/"
 }
 
 func (b *searchBuilder) build() SearchResults {

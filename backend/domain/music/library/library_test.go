@@ -5,6 +5,7 @@ import (
 
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
+	remotedomain "github.com/boreq/eggplant/domain/remote"
 	"github.com/stretchr/testify/require"
 )
 
@@ -635,6 +636,34 @@ func mkTrack(t *testing.T, title string) music.Track {
 	fileId, err := music.NewFileId(p)
 	require.NoError(t, err)
 	return music.NewTrack(id, fileId, tt)
+}
+
+func mkRemoteTrack(t *testing.T, title string, instanceId remotedomain.RemoteInstanceID) music.Track {
+	t.Helper()
+	tt, err := music.NewTrackTitle(title)
+	require.NoError(t, err)
+	return music.NewRemoteTrack(trackIdFor(t, title), music.FileId{}, tt, instanceId)
+}
+
+func mkPartialAlbum(t *testing.T, title string) music.PartialAlbum {
+	t.Helper()
+	at, err := music.NewAlbumTitle(title)
+	require.NoError(t, err)
+	return music.NewPartialAlbum(albumIdFor(t, title), at, nil)
+}
+
+func mkRemotePartialAlbum(t *testing.T, title string, instanceId remotedomain.RemoteInstanceID) music.PartialAlbum {
+	t.Helper()
+	at, err := music.NewAlbumTitle(title)
+	require.NoError(t, err)
+	return music.NewRemotePartialAlbum(albumIdFor(t, title), at, nil, instanceId)
+}
+
+func mkInstanceId(t *testing.T) remotedomain.RemoteInstanceID {
+	t.Helper()
+	id, err := remotedomain.NewRemoteInstanceID()
+	require.NoError(t, err)
+	return id
 }
 
 func mkThumb(t *testing.T, filename string) music.Thumbnail {
