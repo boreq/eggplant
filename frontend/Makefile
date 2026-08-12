@@ -26,4 +26,4 @@ type-check:
 .PHONY: build
 build:
 	$(YARN) build
-	echo "$(VERSION)" > dist/version.txt
+	echo "$(VERSION)" > .version
