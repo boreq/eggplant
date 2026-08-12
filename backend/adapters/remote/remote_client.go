@@ -15,6 +15,8 @@ import (
 
 const requestTimeout = 30 * time.Second
 
+const PeerServiceMarker = "eggplant"
+
 type RemoteClient struct {
 	httpClient *http.Client
 }
@@ -55,7 +57,13 @@ func (c *RemoteClient) Healthcheck(ctx context.Context, address remotedomain.Rem
 	if err != nil {
 		return errors.Wrap(err, "request failed")
 	}
-	return expectOK(resp.StatusCode(), resp.Body)
+	if resp.JSON200 == nil {
+		return errors.New(unexpectedStatus(resp.StatusCode(), resp.Body))
+	}
+	if resp.JSON200.Service != PeerServiceMarker {
+		return fmt.Errorf("not an eggplant peer: service is %q", resp.JSON200.Service)
+	}
+	return nil
 }
 
 func (c *RemoteClient) GetRootAlbum(ctx context.Context, address remotedomain.RemoteInstanceAddress, authToken remotedomain.AuthToken) (openapi.RootAlbum, error) {

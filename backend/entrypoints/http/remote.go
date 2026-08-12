@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/boreq/eggplant/adapters/openapi"
+	remoteadapter "github.com/boreq/eggplant/adapters/remote"
 	"github.com/boreq/eggplant/application/accessctx"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/remote"
@@ -116,7 +117,7 @@ func (h *Handler) remotePeerHealth(accessCtx accessctx.AccessContext, r *http.Re
 		return rest.ErrUnauthorized
 	}
 
-	return rest.NewResponse(nil)
+	return rest.NewResponse(openapi.PeerHealth{Service: remoteadapter.PeerServiceMarker})
 }
 
 func (h *Handler) remoteTrackDuration(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {

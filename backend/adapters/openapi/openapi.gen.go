@@ -126,6 +126,12 @@ type PartialAlbum struct {
 	Title            string     `json:"title"`
 }
 
+// PeerHealth defines model for PeerHealth.
+type PeerHealth struct {
+	// Service Always "eggplant". A peer checks this instead of trusting the status code, because an instance which does not know this endpoint serves the frontend with a 200 for it.
+	Service string `json:"service"`
+}
+
 // ReadSessionResponse defines model for ReadSessionResponse.
 type ReadSessionResponse struct {
 	LastSeen time.Time `json:"lastSeen"`
@@ -2759,7 +2765,7 @@ func (r BrowseAlbumResponse) ContentType() string {
 type HealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Empty
+	JSON200      *PeerHealth
 }
 
 // Status returns HTTPResponse.Status
@@ -4162,7 +4168,7 @@ func ParseHealthResponse(rsp *http.Response) (*HealthResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Empty
+		var dest PeerHealth
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

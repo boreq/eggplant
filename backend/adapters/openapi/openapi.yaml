@@ -644,7 +644,11 @@ paths:
       summary: Peer-to-peer endpoint a peer calls to check that we are alive.
       responses:
         '200':
-          $ref: '#/components/responses/Empty'
+          description: The peer is alive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeerHealth'
   /api/auth-token:
     post:
       tags: [remote]
@@ -767,6 +771,17 @@ components:
         message:
           type: string
           example: Some kind of a message.
+    PeerHealth:
+      type: object
+      required: [service]
+      properties:
+        service:
+          type: string
+          description: >-
+            Always "eggplant". A peer checks this instead of trusting the status
+            code, because an instance which does not know this endpoint serves
+            the frontend with a 200 for it.
+          example: eggplant
     Thumbnail:
       type: object
       required: [id]
