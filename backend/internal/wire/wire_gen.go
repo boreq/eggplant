@@ -190,14 +190,16 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	loggingStreamFragmentHandler := music.NewLoggingStreamFragmentHandler(streamFragmentHandler, v)
 	keepAliveStreamHandler := music.NewKeepAliveStreamHandler(inMemoryRepository, converter)
 	loggingKeepAliveStreamHandler := music.NewLoggingKeepAliveStreamHandler(keepAliveStreamHandler, v)
+	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
+	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
+	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
+	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
 	wireRemoteRepositoriesProvider := newRemoteRepositoriesProvider()
 	remoteTransactionProvider := remote2.NewRemoteTransactionProvider(db, wireRemoteRepositoriesProvider)
 	remoteClient := remote2.NewRemoteClient()
 	remoteLibrary := remote2.NewRemoteLibrary(remoteTransactionProvider, remoteClient)
-	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository, remoteLibrary)
-	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
-	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
-	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
+	remoteGetRootAlbumHandler := music.NewRemoteGetRootAlbumHandler(remoteLibrary)
+	loggingRemoteGetRootAlbumHandler := music.NewLoggingRemoteGetRootAlbumHandler(remoteGetRootAlbumHandler, v)
 	remoteGetAlbumHandler := music.NewRemoteGetAlbumHandler(remoteLibrary)
 	loggingRemoteGetAlbumHandler := music.NewLoggingRemoteGetAlbumHandler(remoteGetAlbumHandler, v)
 	remoteGetThumbnailHandler := music.NewRemoteGetThumbnailHandler(remoteLibrary)
@@ -243,6 +245,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		KeepAliveStream:        loggingKeepAliveStreamHandler,
 		GetRootAlbum:           loggingGetRootAlbumHandler,
 		GetAlbum:               loggingGetAlbumHandler,
+		RemoteGetRootAlbum:     loggingRemoteGetRootAlbumHandler,
 		RemoteGetAlbum:         loggingRemoteGetAlbumHandler,
 		RemoteGetThumbnail:     loggingRemoteGetThumbnailHandler,
 		RemoteGetTrackDuration: loggingRemoteGetTrackDurationHandler,
@@ -269,6 +272,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	setRemoteAuthTokenHandler := remote.NewSetRemoteAuthTokenHandler(remoteTransactionProvider)
 	checkLocalAuthTokenHandler := remote.NewCheckLocalAuthTokenHandler(remoteTransactionProvider)
 	listRemotesHandler := remote.NewListRemotesHandler(remoteTransactionProvider)
+	listRemoteLibrariesHandler := remote.NewListRemoteLibrariesHandler(remoteTransactionProvider)
 	checkRemotesHandler := remote.NewCheckRemotesHandler(remoteTransactionProvider, remoteClient)
 	checkRemoteHandler := remote.NewCheckRemoteHandler(remoteTransactionProvider, remoteClient)
 	remoteRemote := remote.Remote{
@@ -278,6 +282,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		SetRemoteAuthToken:    setRemoteAuthTokenHandler,
 		CheckLocalAuthToken:   checkLocalAuthTokenHandler,
 		ListRemotes:           listRemotesHandler,
+		ListRemoteLibraries:   listRemoteLibrariesHandler,
 		CheckRemotes:          checkRemotesHandler,
 		CheckRemote:           checkRemoteHandler,
 	}
@@ -361,14 +366,16 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	loggingStreamFragmentHandler := music.NewLoggingStreamFragmentHandler(streamFragmentHandler, v)
 	keepAliveStreamHandler := music.NewKeepAliveStreamHandler(inMemoryRepository, converter)
 	loggingKeepAliveStreamHandler := music.NewLoggingKeepAliveStreamHandler(keepAliveStreamHandler, v)
+	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository)
+	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
+	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
+	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
 	wireRemoteRepositoriesProvider := newRemoteRepositoriesProvider()
 	remoteTransactionProvider := remote2.NewRemoteTransactionProvider(db, wireRemoteRepositoriesProvider)
 	remoteClient := remote2.NewRemoteClient()
 	remoteLibrary := remote2.NewRemoteLibrary(remoteTransactionProvider, remoteClient)
-	getRootAlbumHandler := music.NewGetRootAlbumHandler(inMemoryRepository, remoteLibrary)
-	loggingGetRootAlbumHandler := music.NewLoggingGetRootAlbumHandler(getRootAlbumHandler, v)
-	getAlbumHandler := music.NewGetAlbumHandler(inMemoryRepository)
-	loggingGetAlbumHandler := music.NewLoggingGetAlbumHandler(getAlbumHandler, v)
+	remoteGetRootAlbumHandler := music.NewRemoteGetRootAlbumHandler(remoteLibrary)
+	loggingRemoteGetRootAlbumHandler := music.NewLoggingRemoteGetRootAlbumHandler(remoteGetRootAlbumHandler, v)
 	remoteGetAlbumHandler := music.NewRemoteGetAlbumHandler(remoteLibrary)
 	loggingRemoteGetAlbumHandler := music.NewLoggingRemoteGetAlbumHandler(remoteGetAlbumHandler, v)
 	remoteGetThumbnailHandler := music.NewRemoteGetThumbnailHandler(remoteLibrary)
@@ -414,6 +421,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		KeepAliveStream:        loggingKeepAliveStreamHandler,
 		GetRootAlbum:           loggingGetRootAlbumHandler,
 		GetAlbum:               loggingGetAlbumHandler,
+		RemoteGetRootAlbum:     loggingRemoteGetRootAlbumHandler,
 		RemoteGetAlbum:         loggingRemoteGetAlbumHandler,
 		RemoteGetThumbnail:     loggingRemoteGetThumbnailHandler,
 		RemoteGetTrackDuration: loggingRemoteGetTrackDurationHandler,
@@ -440,6 +448,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	setRemoteAuthTokenHandler := remote.NewSetRemoteAuthTokenHandler(remoteTransactionProvider)
 	checkLocalAuthTokenHandler := remote.NewCheckLocalAuthTokenHandler(remoteTransactionProvider)
 	listRemotesHandler := remote.NewListRemotesHandler(remoteTransactionProvider)
+	listRemoteLibrariesHandler := remote.NewListRemoteLibrariesHandler(remoteTransactionProvider)
 	checkRemotesHandler := remote.NewCheckRemotesHandler(remoteTransactionProvider, remoteClient)
 	checkRemoteHandler := remote.NewCheckRemoteHandler(remoteTransactionProvider, remoteClient)
 	remoteRemote := remote.Remote{
@@ -449,6 +458,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		SetRemoteAuthToken:    setRemoteAuthTokenHandler,
 		CheckLocalAuthToken:   checkLocalAuthTokenHandler,
 		ListRemotes:           listRemotesHandler,
+		ListRemoteLibraries:   listRemoteLibrariesHandler,
 		CheckRemotes:          checkRemotesHandler,
 		CheckRemote:           checkRemoteHandler,
 	}

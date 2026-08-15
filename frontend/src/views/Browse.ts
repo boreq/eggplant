@@ -4,6 +4,8 @@ import { DurationLoader } from '@/services/DurationLoader';
 import { HttpStatus } from '@/services/HttpStatus';
 import { NavigationService } from '@/services/NavigationService';
 import { Album, PartialAlbum } from '@/dto/Album';
+import { Library } from '@/dto/Library';
+import { User } from '@/dto/User';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Track } from '@/dto/Track';
 import { Mutation, ReplaceCommand, AppendCommand } from '@/store';
@@ -13,6 +15,7 @@ import Notifications from '@/components/Notifications';
 import SubHeader from '@/components/SubHeader.vue';
 import MainHeader from '@/components/MainHeader.vue';
 import Albums from '@/components/Albums.vue';
+import RemoteLibraries from '@/components/RemoteLibraries.vue';
 import Tracks from '@/components/Tracks.vue';
 import Thumbnail from '@/components/Thumbnail.vue';
 import NowPlaying from '@/components/NowPlaying.vue';
@@ -42,6 +45,7 @@ enum BrowseState {
 @Component({
     components: {
         Albums,
+        RemoteLibraries,
         SubHeader,
         MainHeader,
         Tracks,
@@ -60,6 +64,7 @@ enum BrowseState {
 export default class Browse extends Vue {
 
     album: Album = null;
+    remoteLibraries: Library[] = null;
     state: BrowseState = BrowseState.Loading;
 
     searchQuery: string = null;
@@ -104,6 +109,11 @@ export default class Browse extends Vue {
         this.switchView(View.Browse);
     }
 
+    @Watch('user')
+    onUserChanged(): void {
+        this.loadRemoteLibraries();
+    }
+
     @Watch('searchQuery')
     onSearchQueryChanged(): void {
         if (this.searchQuery) {
@@ -119,6 +129,7 @@ export default class Browse extends Vue {
 
     created(): void {
         this.load();
+        this.loadRemoteLibraries();
         this.$root.$on('revealNowPlaying', this.revealNowPlaying);
         this.$root.$on('scrollToTop', this.scrollToTop);
     }
@@ -131,17 +142,23 @@ export default class Browse extends Vue {
     }
 
     parentUrl(album: PartialAlbum): Location {
-        return this.navigationService.getBrowse(album.id, album.remoteInstanceId);
+        return this.navigationService.getBrowse(album.id, album.remoteLibraryId);
     }
 
     selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
         const alreadyOnPage = this.$route.params.albumId === album.id
-            && this.$route.params.instanceId === (album.remoteInstanceId || undefined);
+            && this.$route.params.libraryId === (album.remoteLibraryId || undefined);
         if (alreadyOnPage) {
             return;
         }
-        const location = this.navigationService.getBrowse(album.id, album.remoteInstanceId);
+        const location = this.navigationService.getBrowse(album.id, album.remoteLibraryId);
+        this.$router.push(location);
+    }
+
+    selectRemoteLibrary(library: Library): void {
+        this.switchView(View.Browse);
+        const location = this.navigationService.getBrowse(undefined, library.id);
         this.$router.push(location);
     }
 
@@ -224,11 +241,48 @@ export default class Browse extends Vue {
     get showAlbum(): boolean {
         if (this.album) {
             if (!this.getIdFromRoute()) {
-                return !!this.album.thumbnail || (this.album.tracks && this.album.tracks.length > 0);
+                return !!this.getLibraryIdFromRoute()
+                    || !!this.album.thumbnail
+                    || (this.album.tracks && this.album.tracks.length > 0);
             }
             return true;
         }
         return false;
+    }
+
+    get title(): string {
+        if (this.album && this.album.title) {
+            return this.album.title;
+        }
+        if (this.remoteLibraryId) {
+            return this.remoteLibraryTitle;
+        }
+        return 'Eggplant';
+    }
+
+    get remoteLibraryId(): string {
+        return this.getLibraryIdFromRoute();
+    }
+
+    get remoteLibraryTitle(): string {
+        const library = (this.remoteLibraries || [])
+            .find(v => v.id === this.remoteLibraryId);
+        return library ? library.name : 'Remote library';
+    }
+
+    get remoteLibraryUrl(): Location {
+        return this.navigationService.getBrowse(undefined, this.remoteLibraryId);
+    }
+
+    get showRemoteLibraries(): boolean {
+        return !this.getIdFromRoute()
+            && !this.getLibraryIdFromRoute()
+            && !!this.remoteLibraries
+            && this.remoteLibraries.length > 0;
+    }
+
+    get user(): User {
+        return this.$store.state.user;
     }
 
     get showQueue(): boolean {
@@ -237,6 +291,10 @@ export default class Browse extends Vue {
 
     get noContent(): boolean {
         if (!this.album) {
+            return false;
+        }
+
+        if (this.showRemoteLibraries) {
             return false;
         }
 
@@ -368,7 +426,7 @@ export default class Browse extends Vue {
 
     private load(): void {
         this.clearTimeout();
-        this.apiService.browse(this.getIdFromRoute(), this.getInstanceFromRoute())
+        this.apiService.browse(this.getIdFromRoute(), this.getLibraryIdFromRoute())
             .then(
                 response => {
                     this.album = response.data;
@@ -386,13 +444,38 @@ export default class Browse extends Vue {
                     const status = error.response && error.response.status;
                     if (status === HttpStatus.ServiceUnavailable) {
                         this.state = BrowseState.LibraryNotReady;
-                    } else if (status === HttpStatus.NotFound) {
-                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
-                        Notifications.pushError(this, 'Could not list the tracks and albums.', error);
-                    } else {
-                        Notifications.pushError(this, 'Could not list the tracks and albums.', error);
+                        this.scheduleTimeout();
+                        return;
                     }
+
+                    Notifications.pushError(this, 'Could not list the tracks and albums.', error);
+
+                    if (status === HttpStatus.Forbidden || status === HttpStatus.NotFound) {
+                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
+                        return;
+                    }
+
                     this.scheduleTimeout();
+                });
+    }
+
+    private loadRemoteLibraries(): void {
+        if (!this.user) {
+            this.remoteLibraries = null;
+            return;
+        }
+
+        this.apiService.listLibraries()
+            .then(
+                response => {
+                    this.remoteLibraries = response.data;
+                    if (this.state === BrowseState.Empty && !this.noContent) {
+                        this.state = BrowseState.Ready;
+                    }
+                },
+                error => {
+                    this.remoteLibraries = null;
+                    Notifications.pushError(this, 'Could not list the remote libraries.', error);
                 });
     }
 
@@ -412,9 +495,9 @@ export default class Browse extends Vue {
         return this.$route.params.albumId;
     }
 
-    private getInstanceFromRoute(): string | undefined {
-        const instance = this.$route.params.instanceId;
-        return typeof instance === 'string' ? instance : undefined;
+    private getLibraryIdFromRoute(): string | undefined {
+        const libraryId = this.$route.params.libraryId;
+        return typeof libraryId === 'string' ? libraryId : undefined;
     }
 
     scrollToTop(smooth: boolean = false): void {
@@ -426,7 +509,7 @@ export default class Browse extends Vue {
             title: album.title,
             id: album.id,
             thumbnail: album.thumbnail,
-            remoteInstanceId: album.remoteInstanceId,
+            remoteLibraryId: album.remoteLibraryId,
         };
     }
 

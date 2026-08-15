@@ -62,10 +62,10 @@ func toTrack(t music.Track) openapi.Track {
 		number = &v
 	}
 	return openapi.Track{
-		Id:               t.Id().String(),
-		Number:           number,
-		Title:            t.Title().String(),
-		RemoteInstanceId: remoteInstanceId(t.RemoteInstanceId()),
+		Id:              t.Id().String(),
+		Number:          number,
+		Title:           t.Title().String(),
+		RemoteLibraryId: remoteInstanceId(t.RemoteInstanceId()),
 	}
 }
 
@@ -79,13 +79,13 @@ func remoteInstanceId(id *remote.RemoteInstanceID) *string {
 
 func toAlbum(a music.Album) openapi.Album {
 	return openapi.Album{
-		Id:               a.Id().String(),
-		Title:            a.Title().String(),
-		Thumbnail:        toThumbnail(a.Thumbnail()),
-		Parents:          toPartialAlbums(a.Parents()),
-		Albums:           toPartialAlbums(a.Albums()),
-		Tracks:           toTracks(a.Tracks().Items()),
-		RemoteInstanceId: remoteInstanceId(a.RemoteInstanceId()),
+		Id:              a.Id().String(),
+		Title:           a.Title().String(),
+		Thumbnail:       toThumbnail(a.Thumbnail()),
+		Parents:         toPartialAlbums(a.Parents()),
+		Albums:          toPartialAlbums(a.Albums()),
+		Tracks:          toTracks(a.Tracks().Items()),
+		RemoteLibraryId: remoteInstanceId(a.RemoteInstanceId()),
 	}
 }
 
@@ -107,10 +107,10 @@ func toPartialAlbums(albums []music.PartialAlbum) []openapi.PartialAlbum {
 
 func toPartialAlbum(a music.PartialAlbum) openapi.PartialAlbum {
 	return openapi.PartialAlbum{
-		Id:               a.Id().String(),
-		Title:            a.Title().String(),
-		Thumbnail:        toThumbnail(a.Thumbnail()),
-		RemoteInstanceId: remoteInstanceId(a.RemoteInstanceId()),
+		Id:              a.Id().String(),
+		Title:           a.Title().String(),
+		Thumbnail:       toThumbnail(a.Thumbnail()),
+		RemoteLibraryId: remoteInstanceId(a.RemoteInstanceId()),
 	}
 }
 

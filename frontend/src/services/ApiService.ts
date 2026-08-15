@@ -15,6 +15,7 @@ import { RegisterCommand } from '@/dto/RegisterCommand';
 import { StreamStartResponse } from '@/dto/StreamStartResponse';
 import { TrackDuration } from '@/dto/TrackDuration';
 import { RemoteInstance } from '@/dto/RemoteInstance';
+import { Library } from '@/dto/Library';
 import { AddRemoteResult } from '@/dto/AddRemoteResult';
 
 /*
@@ -44,10 +45,11 @@ export class ApiService {
             });
     }
 
-    browse(id?: string, instanceId?: string): Promise<AxiosResponse<Album>> {
+    browse(id?: string, libraryId?: string): Promise<AxiosResponse<Album>> {
         let url: string;
-        if (instanceId && id) {
-            url = `remote/${encodeURIComponent(instanceId)}/browse/${id}`;
+        if (libraryId) {
+            const library = `library/${encodeURIComponent(libraryId)}`;
+            url = id ? `${library}/browse/${id}` : `${library}/browse`;
         } else {
             url = id ? `browse/${id}` : 'browse';
         }
@@ -71,12 +73,9 @@ export class ApiService {
         return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
-    // trackBase returns the API path prefix for a track. Remote tracks are
-    // proxied through this instance under the remote-instance prefix; local
-    // tracks use the plain track path.
     private trackBase(track: Track): string {
-        if (track.remoteInstanceId) {
-            return `remote/${encodeURIComponent(track.remoteInstanceId)}/track/${track.id}`;
+        if (track.remoteLibraryId) {
+            return `library/${encodeURIComponent(track.remoteLibraryId)}/track/${track.id}`;
         }
         return `track/${track.id}`;
     }
@@ -104,9 +103,9 @@ export class ApiService {
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
-    thumbnailUrl(thumbnail: Thumbnail, instanceId?: string): string {
-        const url = instanceId
-            ? `remote/${encodeURIComponent(instanceId)}/thumbnail/${thumbnail.id}`
+    thumbnailUrl(thumbnail: Thumbnail, libraryId?: string): string {
+        const url = libraryId
+            ? `library/${encodeURIComponent(libraryId)}/thumbnail/${thumbnail.id}`
             : `thumbnail/${thumbnail.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
@@ -201,6 +200,11 @@ export class ApiService {
         username = encodeURIComponent(username);
         const url = `auth/users/${username}`;
         return this.axios.delete<void>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
+    listLibraries(): Promise<AxiosResponse<Library[]>> {
+        const url = `library`;
+        return this.axios.get<Library[]>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     listRemotes(): Promise<AxiosResponse<RemoteInstance[]>> {

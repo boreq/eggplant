@@ -408,6 +408,24 @@ paths:
                 $ref: '#/components/schemas/VersionResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/library:
+    get:
+      tags: [remote]
+      operationId: listLibraries
+      summary: List the libraries of paired remote instances which can be browsed.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: The libraries which can be browsed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Library'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/remote:
     get:
       tags: [remote]
@@ -473,13 +491,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/track/{trackId}/duration:
+  /api/library/{id}/track/{trackId}/duration:
     get:
       tags: [remote]
       operationId: getRemoteTrackDuration
       summary: Return the duration of a track on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
       responses:
         '200':
@@ -494,13 +512,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/track/{trackId}/stream:
+  /api/library/{id}/track/{trackId}/stream:
     post:
       tags: [remote]
       operationId: startRemoteTrackStream
       summary: Start an HLS stream for a track on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - name: seek
           in: query
@@ -523,13 +541,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/playlist:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/playlist:
     get:
       tags: [remote]
       operationId: getRemoteStreamPlaylist
       summary: Return the HLS playlist for a stream on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
       responses:
@@ -545,13 +563,13 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/init:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/init:
     get:
       tags: [remote]
       operationId: getRemoteStreamInit
       summary: Return the HLS init segment for a stream on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
       responses:
@@ -568,13 +586,13 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/fragment/{number}:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/fragment/{number}:
     get:
       tags: [remote]
       operationId: getRemoteStreamFragment
       summary: Return a single HLS fragment for a stream on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
         - name: number
@@ -597,13 +615,13 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/keepalive:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/keepalive:
     post:
       tags: [remote]
       operationId: keepAliveRemoteStream
       summary: Keep a stream alive on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
       responses:
@@ -615,13 +633,33 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/browse/{albumId}:
+  /api/library/{id}/browse:
+    get:
+      tags: [remote]
+      operationId: remoteRootAlbum
+      summary: Return the root of the library of a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/LibraryId'
+      responses:
+        '200':
+          description: The root album of the remote instance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RootAlbum'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/library/{id}/browse/{albumId}:
     get:
       tags: [remote]
       operationId: remoteAlbum
       summary: Return a single album fetched from a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - name: albumId
           in: path
           required: true
@@ -693,6 +731,14 @@ components:
         type: string
         example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
       description: The remote instance id.
+    LibraryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+      description: The remote library id.
     AlbumId:
       name: id
       in: path
@@ -814,10 +860,10 @@ components:
         title:
           type: string
           example: The Eggplant Song
-        remoteInstanceId:
+        remoteLibraryId:
           type: string
           nullable: true
-          description: Set when the track belongs to a paired remote instance.
+          description: Set when the track belongs to a remote library.
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     PartialAlbum:
       type: object
@@ -833,10 +879,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/Thumbnail'
           nullable: true
-        remoteInstanceId:
+        remoteLibraryId:
           type: string
           nullable: true
-          description: Set when the album belongs to a paired remote instance.
+          description: Set when the album belongs to a remote library.
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     RootAlbum:
       type: object
@@ -880,10 +926,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Track'
-        remoteInstanceId:
+        remoteLibraryId:
           type: string
           nullable: true
-          description: Set when the album belongs to a paired remote instance.
+          description: Set when the album belongs to a remote library.
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     TrackWithAlbum:
       type: object
@@ -1095,7 +1141,18 @@ components:
         url:
           type: string
           description: The address of the peer instance to pair with.
-          example: https://music.0x46.net
+          example: https://music.example.com
+    Library:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+        name:
+          type: string
+          description: A name of the library which can be displayed to the user.
+          example: https://music.example.com
     RemoteInstance:
       type: object
       required: [id, address, status, remote_pairing_token_set]
@@ -1106,7 +1163,7 @@ components:
         address:
           type: string
           description: The address of the peer instance.
-          example: https://music.0x46.net
+          example: https://music.example.com
         status:
           type: string
           enum: [PAIRING, HEALTHY, DEAD]

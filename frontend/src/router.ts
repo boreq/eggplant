@@ -19,8 +19,13 @@ export default new Router({
             component: Browse,
         },
         {
-            path: '/remote/:instanceId/browse/:albumId',
-            name: 'remote-browse-children',
+            path: '/library/:libraryId/browse/:albumId',
+            name: 'library-browse-children',
+            component: Browse,
+        },
+        {
+            path: '/library/:libraryId',
+            name: 'library-browse',
             component: Browse,
         },
         {

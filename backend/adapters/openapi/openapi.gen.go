@@ -81,11 +81,11 @@ type Album struct {
 	Id      string         `json:"id"`
 	Parents []PartialAlbum `json:"parents"`
 
-	// RemoteInstanceId Set when the album belongs to a paired remote instance.
-	RemoteInstanceId *string    `json:"remoteInstanceId,omitempty"`
-	Thumbnail        *Thumbnail `json:"thumbnail,omitempty"`
-	Title            string     `json:"title"`
-	Tracks           []Track    `json:"tracks"`
+	// RemoteLibraryId Set when the album belongs to a remote library.
+	RemoteLibraryId *string    `json:"remoteLibraryId,omitempty"`
+	Thumbnail       *Thumbnail `json:"thumbnail,omitempty"`
+	Title           string     `json:"title"`
+	Tracks          []Track    `json:"tracks"`
 }
 
 // AlbumSearchResult defines model for AlbumSearchResult.
@@ -106,6 +106,14 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Library defines model for Library.
+type Library struct {
+	Id string `json:"id"`
+
+	// Name A name of the library which can be displayed to the user.
+	Name string `json:"name"`
+}
+
 // LoginInput defines model for LoginInput.
 type LoginInput struct {
 	Password string `json:"password"`
@@ -121,10 +129,10 @@ type LoginResult struct {
 type PartialAlbum struct {
 	Id string `json:"id"`
 
-	// RemoteInstanceId Set when the album belongs to a paired remote instance.
-	RemoteInstanceId *string    `json:"remoteInstanceId,omitempty"`
-	Thumbnail        *Thumbnail `json:"thumbnail,omitempty"`
-	Title            string     `json:"title"`
+	// RemoteLibraryId Set when the album belongs to a remote library.
+	RemoteLibraryId *string    `json:"remoteLibraryId,omitempty"`
+	Thumbnail       *Thumbnail `json:"thumbnail,omitempty"`
+	Title           string     `json:"title"`
 }
 
 // PeerHealth defines model for PeerHealth.
@@ -253,9 +261,9 @@ type Track struct {
 	Id     string `json:"id"`
 	Number *int   `json:"number,omitempty"`
 
-	// RemoteInstanceId Set when the track belongs to a paired remote instance.
-	RemoteInstanceId *string `json:"remoteInstanceId,omitempty"`
-	Title            string  `json:"title"`
+	// RemoteLibraryId Set when the track belongs to a remote library.
+	RemoteLibraryId *string `json:"remoteLibraryId,omitempty"`
+	Title           string  `json:"title"`
 }
 
 // TrackDuration defines model for TrackDuration.
@@ -296,6 +304,9 @@ type VersionResponse struct {
 
 // AlbumId defines model for AlbumId.
 type AlbumId = string
+
+// LibraryId defines model for LibraryId.
+type LibraryId = string
 
 // RemoteInstanceId defines model for RemoteInstanceId.
 type RemoteInstanceId = string
@@ -489,6 +500,33 @@ type ClientInterface interface {
 	// Health request
 	Health(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListLibraries request
+	ListLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoteRootAlbum request
+	RemoteRootAlbum(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoteAlbum request
+	RemoteAlbum(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRemoteTrackDuration request
+	GetRemoteTrackDuration(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartRemoteTrackStream request
+	StartRemoteTrackStream(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRemoteStreamFragment request
+	GetRemoteStreamFragment(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRemoteStreamInit request
+	GetRemoteStreamInit(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// KeepAliveRemoteStream request
+	KeepAliveRemoteStream(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRemoteStreamPlaylist request
+	GetRemoteStreamPlaylist(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRemotes request
 	ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -497,31 +535,10 @@ type ClientInterface interface {
 
 	AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RemoteAlbum request
-	RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// SetRemotePairingTokenWithBody request with any body
 	SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SetRemotePairingToken(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRemoteTrackDuration request
-	GetRemoteTrackDuration(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StartRemoteTrackStream request
-	StartRemoteTrackStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRemoteStreamFragment request
-	GetRemoteStreamFragment(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRemoteStreamInit request
-	GetRemoteStreamInit(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// KeepAliveRemoteStream request
-	KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRemoteStreamPlaylist request
-	GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Search request
 	Search(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -746,6 +763,114 @@ func (c *Client) Health(ctx context.Context, reqEditors ...RequestEditorFn) (*ht
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLibrariesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoteRootAlbum(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoteRootAlbumRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoteAlbum(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoteAlbumRequest(c.Server, id, albumId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRemoteTrackDuration(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRemoteTrackDurationRequest(c.Server, id, trackId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartRemoteTrackStream(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartRemoteTrackStreamRequest(c.Server, id, trackId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRemoteStreamFragment(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRemoteStreamFragmentRequest(c.Server, id, trackId, streamId, number)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRemoteStreamInit(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRemoteStreamInitRequest(c.Server, id, trackId, streamId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) KeepAliveRemoteStream(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewKeepAliveRemoteStreamRequest(c.Server, id, trackId, streamId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRemoteStreamPlaylistRequest(c.Server, id, trackId, streamId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRemotesRequest(c.Server)
 	if err != nil {
@@ -782,18 +907,6 @@ func (c *Client) AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRemoteAlbumRequest(c.Server, id, albumId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetRemotePairingTokenRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
@@ -808,78 +921,6 @@ func (c *Client) SetRemotePairingTokenWithBody(ctx context.Context, id RemoteIns
 
 func (c *Client) SetRemotePairingToken(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetRemotePairingTokenRequest(c.Server, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRemoteTrackDuration(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRemoteTrackDurationRequest(c.Server, id, trackId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StartRemoteTrackStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartRemoteTrackStreamRequest(c.Server, id, trackId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRemoteStreamFragment(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRemoteStreamFragmentRequest(c.Server, id, trackId, streamId, number)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRemoteStreamInit(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRemoteStreamInitRequest(c.Server, id, trackId, streamId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewKeepAliveRemoteStreamRequest(c.Server, id, trackId, streamId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRemoteStreamPlaylistRequest(c.Server, id, trackId, streamId)
 	if err != nil {
 		return nil, err
 	}
@@ -1400,6 +1441,416 @@ func NewHealthRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListLibrariesRequest generates requests for ListLibraries
+func NewListLibrariesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRemoteRootAlbumRequest generates requests for RemoteRootAlbum
+func NewRemoteRootAlbumRequest(server string, id LibraryId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/browse", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRemoteAlbumRequest generates requests for RemoteAlbum
+func NewRemoteAlbumRequest(server string, id LibraryId, albumId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "albumId", albumId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/browse/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRemoteTrackDurationRequest generates requests for GetRemoteTrackDuration
+func NewGetRemoteTrackDurationRequest(server string, id LibraryId, trackId TrackId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/duration", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartRemoteTrackStreamRequest generates requests for StartRemoteTrackStream
+func NewStartRemoteTrackStreamRequest(server string, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Seek != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "seek", *params.Seek, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: "double"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRemoteStreamFragmentRequest generates requests for GetRemoteStreamFragment
+func NewGetRemoteStreamFragmentRequest(server string, id LibraryId, trackId TrackId, streamId StreamId, number int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam3 string
+
+	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "number", number, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/fragment/%s", pathParam0, pathParam1, pathParam2, pathParam3)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRemoteStreamInitRequest generates requests for GetRemoteStreamInit
+func NewGetRemoteStreamInitRequest(server string, id LibraryId, trackId TrackId, streamId StreamId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/init", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewKeepAliveRemoteStreamRequest generates requests for KeepAliveRemoteStream
+func NewKeepAliveRemoteStreamRequest(server string, id LibraryId, trackId TrackId, streamId StreamId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/keepalive", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRemoteStreamPlaylistRequest generates requests for GetRemoteStreamPlaylist
+func NewGetRemoteStreamPlaylistRequest(server string, id LibraryId, trackId TrackId, streamId StreamId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/playlist", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRemotesRequest generates requests for ListRemotes
 func NewListRemotesRequest(server string) (*http.Request, error) {
 	var err error
@@ -1467,47 +1918,6 @@ func NewAddRemoteRequestWithBody(server string, contentType string, body io.Read
 	return req, nil
 }
 
-// NewRemoteAlbumRequest generates requests for RemoteAlbum
-func NewRemoteAlbumRequest(server string, id RemoteInstanceId, albumId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "albumId", albumId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/browse/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewSetRemotePairingTokenRequest calls the generic SetRemotePairingToken builder with application/json body
 func NewSetRemotePairingTokenRequest(server string, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -1551,314 +1961,6 @@ func NewSetRemotePairingTokenRequestWithBody(server string, id RemoteInstanceId,
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetRemoteTrackDurationRequest generates requests for GetRemoteTrackDuration
-func NewGetRemoteTrackDurationRequest(server string, id RemoteInstanceId, trackId TrackId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/duration", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewStartRemoteTrackStreamRequest generates requests for StartRemoteTrackStream
-func NewStartRemoteTrackStreamRequest(server string, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Seek != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "seek", *params.Seek, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: "double"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetRemoteStreamFragmentRequest generates requests for GetRemoteStreamFragment
-func NewGetRemoteStreamFragmentRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam3 string
-
-	pathParam3, err = runtime.StyleParamWithOptions("simple", false, "number", number, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/fragment/%s", pathParam0, pathParam1, pathParam2, pathParam3)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetRemoteStreamInitRequest generates requests for GetRemoteStreamInit
-func NewGetRemoteStreamInitRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/init", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewKeepAliveRemoteStreamRequest generates requests for KeepAliveRemoteStream
-func NewKeepAliveRemoteStreamRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/keepalive", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetRemoteStreamPlaylistRequest generates requests for GetRemoteStreamPlaylist
-func NewGetRemoteStreamPlaylistRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "streamId", streamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/playlist", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -2354,6 +2456,33 @@ type ClientWithResponsesInterface interface {
 	// HealthWithResponse request
 	HealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthResponse, error)
 
+	// ListLibrariesWithResponse request
+	ListLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLibrariesResponse, error)
+
+	// RemoteRootAlbumWithResponse request
+	RemoteRootAlbumWithResponse(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error)
+
+	// RemoteAlbumWithResponse request
+	RemoteAlbumWithResponse(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error)
+
+	// GetRemoteTrackDurationWithResponse request
+	GetRemoteTrackDurationWithResponse(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error)
+
+	// StartRemoteTrackStreamWithResponse request
+	StartRemoteTrackStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error)
+
+	// GetRemoteStreamFragmentWithResponse request
+	GetRemoteStreamFragmentWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error)
+
+	// GetRemoteStreamInitWithResponse request
+	GetRemoteStreamInitWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error)
+
+	// KeepAliveRemoteStreamWithResponse request
+	KeepAliveRemoteStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error)
+
+	// GetRemoteStreamPlaylistWithResponse request
+	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
+
 	// ListRemotesWithResponse request
 	ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error)
 
@@ -2362,31 +2491,10 @@ type ClientWithResponsesInterface interface {
 
 	AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
 
-	// RemoteAlbumWithResponse request
-	RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error)
-
 	// SetRemotePairingTokenWithBodyWithResponse request with any body
 	SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
 
 	SetRemotePairingTokenWithResponse(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
-
-	// GetRemoteTrackDurationWithResponse request
-	GetRemoteTrackDurationWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error)
-
-	// StartRemoteTrackStreamWithResponse request
-	StartRemoteTrackStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error)
-
-	// GetRemoteStreamFragmentWithResponse request
-	GetRemoteStreamFragmentWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error)
-
-	// GetRemoteStreamInitWithResponse request
-	GetRemoteStreamInitWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error)
-
-	// KeepAliveRemoteStreamWithResponse request
-	KeepAliveRemoteStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error)
-
-	// GetRemoteStreamPlaylistWithResponse request
-	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
 
 	// SearchWithResponse request
 	SearchWithResponse(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*SearchResponse, error)
@@ -2797,15 +2905,15 @@ func (r HealthResponse) ContentType() string {
 	return ""
 }
 
-type ListRemotesResponse struct {
+type ListLibrariesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]RemoteInstance
+	JSON200      *[]Library
 	JSON403      *Forbidden
 }
 
 // Status returns HTTPResponse.Status
-func (r ListRemotesResponse) Status() string {
+func (r ListLibrariesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2813,7 +2921,7 @@ func (r ListRemotesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListRemotesResponse) StatusCode() int {
+func (r ListLibrariesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2821,23 +2929,24 @@ func (r ListRemotesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRemotesResponse) ContentType() string {
+func (r ListLibrariesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type AddRemoteResponse struct {
+type RemoteRootAlbumResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *AddRemoteResult
+	JSON200      *RootAlbum
 	JSON400      *BadRequest
 	JSON403      *Forbidden
+	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r AddRemoteResponse) Status() string {
+func (r RemoteRootAlbumResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2845,7 +2954,7 @@ func (r AddRemoteResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AddRemoteResponse) StatusCode() int {
+func (r RemoteRootAlbumResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2853,7 +2962,7 @@ func (r AddRemoteResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AddRemoteResponse) ContentType() string {
+func (r RemoteRootAlbumResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2887,39 +2996,6 @@ func (r RemoteAlbumResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RemoteAlbumResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SetRemotePairingTokenResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Empty
-	JSON400      *BadRequest
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r SetRemotePairingTokenResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetRemotePairingTokenResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetRemotePairingTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3102,6 +3178,102 @@ func (r GetRemoteStreamPlaylistResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetRemoteStreamPlaylistResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRemotesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]RemoteInstance
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRemotesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRemotesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRemotesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AddRemoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AddRemoteResult
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r AddRemoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddRemoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AddRemoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetRemotePairingTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Empty
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SetRemotePairingTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetRemotePairingTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetRemotePairingTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3551,6 +3723,87 @@ func (c *ClientWithResponses) HealthWithResponse(ctx context.Context, reqEditors
 	return ParseHealthResponse(rsp)
 }
 
+// ListLibrariesWithResponse request returning *ListLibrariesResponse
+func (c *ClientWithResponses) ListLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLibrariesResponse, error) {
+	rsp, err := c.ListLibraries(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLibrariesResponse(rsp)
+}
+
+// RemoteRootAlbumWithResponse request returning *RemoteRootAlbumResponse
+func (c *ClientWithResponses) RemoteRootAlbumWithResponse(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error) {
+	rsp, err := c.RemoteRootAlbum(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoteRootAlbumResponse(rsp)
+}
+
+// RemoteAlbumWithResponse request returning *RemoteAlbumResponse
+func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error) {
+	rsp, err := c.RemoteAlbum(ctx, id, albumId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoteAlbumResponse(rsp)
+}
+
+// GetRemoteTrackDurationWithResponse request returning *GetRemoteTrackDurationResponse
+func (c *ClientWithResponses) GetRemoteTrackDurationWithResponse(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error) {
+	rsp, err := c.GetRemoteTrackDuration(ctx, id, trackId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRemoteTrackDurationResponse(rsp)
+}
+
+// StartRemoteTrackStreamWithResponse request returning *StartRemoteTrackStreamResponse
+func (c *ClientWithResponses) StartRemoteTrackStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error) {
+	rsp, err := c.StartRemoteTrackStream(ctx, id, trackId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartRemoteTrackStreamResponse(rsp)
+}
+
+// GetRemoteStreamFragmentWithResponse request returning *GetRemoteStreamFragmentResponse
+func (c *ClientWithResponses) GetRemoteStreamFragmentWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error) {
+	rsp, err := c.GetRemoteStreamFragment(ctx, id, trackId, streamId, number, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRemoteStreamFragmentResponse(rsp)
+}
+
+// GetRemoteStreamInitWithResponse request returning *GetRemoteStreamInitResponse
+func (c *ClientWithResponses) GetRemoteStreamInitWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error) {
+	rsp, err := c.GetRemoteStreamInit(ctx, id, trackId, streamId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRemoteStreamInitResponse(rsp)
+}
+
+// KeepAliveRemoteStreamWithResponse request returning *KeepAliveRemoteStreamResponse
+func (c *ClientWithResponses) KeepAliveRemoteStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error) {
+	rsp, err := c.KeepAliveRemoteStream(ctx, id, trackId, streamId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseKeepAliveRemoteStreamResponse(rsp)
+}
+
+// GetRemoteStreamPlaylistWithResponse request returning *GetRemoteStreamPlaylistResponse
+func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error) {
+	rsp, err := c.GetRemoteStreamPlaylist(ctx, id, trackId, streamId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRemoteStreamPlaylistResponse(rsp)
+}
+
 // ListRemotesWithResponse request returning *ListRemotesResponse
 func (c *ClientWithResponses) ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error) {
 	rsp, err := c.ListRemotes(ctx, reqEditors...)
@@ -3577,15 +3830,6 @@ func (c *ClientWithResponses) AddRemoteWithResponse(ctx context.Context, body Ad
 	return ParseAddRemoteResponse(rsp)
 }
 
-// RemoteAlbumWithResponse request returning *RemoteAlbumResponse
-func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error) {
-	rsp, err := c.RemoteAlbum(ctx, id, albumId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRemoteAlbumResponse(rsp)
-}
-
 // SetRemotePairingTokenWithBodyWithResponse request with arbitrary body returning *SetRemotePairingTokenResponse
 func (c *ClientWithResponses) SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error) {
 	rsp, err := c.SetRemotePairingTokenWithBody(ctx, id, contentType, body, reqEditors...)
@@ -3601,60 +3845,6 @@ func (c *ClientWithResponses) SetRemotePairingTokenWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseSetRemotePairingTokenResponse(rsp)
-}
-
-// GetRemoteTrackDurationWithResponse request returning *GetRemoteTrackDurationResponse
-func (c *ClientWithResponses) GetRemoteTrackDurationWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error) {
-	rsp, err := c.GetRemoteTrackDuration(ctx, id, trackId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRemoteTrackDurationResponse(rsp)
-}
-
-// StartRemoteTrackStreamWithResponse request returning *StartRemoteTrackStreamResponse
-func (c *ClientWithResponses) StartRemoteTrackStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error) {
-	rsp, err := c.StartRemoteTrackStream(ctx, id, trackId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartRemoteTrackStreamResponse(rsp)
-}
-
-// GetRemoteStreamFragmentWithResponse request returning *GetRemoteStreamFragmentResponse
-func (c *ClientWithResponses) GetRemoteStreamFragmentWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error) {
-	rsp, err := c.GetRemoteStreamFragment(ctx, id, trackId, streamId, number, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRemoteStreamFragmentResponse(rsp)
-}
-
-// GetRemoteStreamInitWithResponse request returning *GetRemoteStreamInitResponse
-func (c *ClientWithResponses) GetRemoteStreamInitWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error) {
-	rsp, err := c.GetRemoteStreamInit(ctx, id, trackId, streamId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRemoteStreamInitResponse(rsp)
-}
-
-// KeepAliveRemoteStreamWithResponse request returning *KeepAliveRemoteStreamResponse
-func (c *ClientWithResponses) KeepAliveRemoteStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error) {
-	rsp, err := c.KeepAliveRemoteStream(ctx, id, trackId, streamId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseKeepAliveRemoteStreamResponse(rsp)
-}
-
-// GetRemoteStreamPlaylistWithResponse request returning *GetRemoteStreamPlaylistResponse
-func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error) {
-	rsp, err := c.GetRemoteStreamPlaylist(ctx, id, trackId, streamId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRemoteStreamPlaylistResponse(rsp)
 }
 
 // SearchWithResponse request returning *SearchResponse
@@ -4185,22 +4375,22 @@ func ParseHealthResponse(rsp *http.Response) (*HealthResponse, error) {
 	return response, nil
 }
 
-// ParseListRemotesResponse parses an HTTP response from a ListRemotesWithResponse call
-func ParseListRemotesResponse(rsp *http.Response) (*ListRemotesResponse, error) {
+// ParseListLibrariesResponse parses an HTTP response from a ListLibrariesWithResponse call
+func ParseListLibrariesResponse(rsp *http.Response) (*ListLibrariesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListRemotesResponse{
+	response := &ListLibrariesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []RemoteInstance
+		var dest []Library
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4218,62 +4408,22 @@ func ParseListRemotesResponse(rsp *http.Response) (*ListRemotesResponse, error) 
 	return response, nil
 }
 
-// ParseAddRemoteResponse parses an HTTP response from a AddRemoteWithResponse call
-func ParseAddRemoteResponse(rsp *http.Response) (*AddRemoteResponse, error) {
+// ParseRemoteRootAlbumResponse parses an HTTP response from a RemoteRootAlbumWithResponse call
+func ParseRemoteRootAlbumResponse(rsp *http.Response) (*RemoteRootAlbumResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AddRemoteResponse{
+	response := &RemoteRootAlbumResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AddRemoteResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRemoteAlbumResponse parses an HTTP response from a RemoteAlbumWithResponse call
-func ParseRemoteAlbumResponse(rsp *http.Response) (*RemoteAlbumResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RemoteAlbumResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Album
+		var dest RootAlbum
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4305,22 +4455,22 @@ func ParseRemoteAlbumResponse(rsp *http.Response) (*RemoteAlbumResponse, error) 
 	return response, nil
 }
 
-// ParseSetRemotePairingTokenResponse parses an HTTP response from a SetRemotePairingTokenWithResponse call
-func ParseSetRemotePairingTokenResponse(rsp *http.Response) (*SetRemotePairingTokenResponse, error) {
+// ParseRemoteAlbumResponse parses an HTTP response from a RemoteAlbumWithResponse call
+func ParseRemoteAlbumResponse(rsp *http.Response) (*RemoteAlbumResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SetRemotePairingTokenResponse{
+	response := &RemoteAlbumResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Empty
+		var dest Album
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4505,6 +4655,126 @@ func ParseGetRemoteStreamPlaylistResponse(rsp *http.Response) (*GetRemoteStreamP
 	response := &GetRemoteStreamPlaylistResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseListRemotesResponse parses an HTTP response from a ListRemotesWithResponse call
+func ParseListRemotesResponse(rsp *http.Response) (*ListRemotesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRemotesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []RemoteInstance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddRemoteResponse parses an HTTP response from a AddRemoteWithResponse call
+func ParseAddRemoteResponse(rsp *http.Response) (*AddRemoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddRemoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AddRemoteResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetRemotePairingTokenResponse parses an HTTP response from a SetRemotePairingTokenWithResponse call
+func ParseSetRemotePairingTokenResponse(rsp *http.Response) (*SetRemotePairingTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetRemotePairingTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Empty
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil

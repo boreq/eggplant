@@ -68,14 +68,17 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteListRemotes)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteAddRemote)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.addAccessContextRest(h.remoteSetPairingToken)))
-	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/browse/:albumId", rest.Wrap(h.addAccessContextRest(h.remoteAlbum)))
-	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/track/:trackId/duration", rest.Wrap(h.addAccessContextRest(h.remoteTrackDuration)))
-	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/track/:trackId/stream", rest.Wrap(h.addAccessContextRest(h.remoteStartStream)))
-	h.router.GET("/api/remote/:id/track/:trackId/stream/:streamId/playlist", h.addAccessContext(h.remoteStreamPlaylist))
-	h.router.GET("/api/remote/:id/track/:trackId/stream/:streamId/init", h.addAccessContext(h.remoteStreamInit))
-	h.router.GET("/api/remote/:id/track/:trackId/stream/:streamId/fragment/:number", h.addAccessContext(h.remoteStreamFragment))
-	h.router.POST("/api/remote/:id/track/:trackId/stream/:streamId/keepalive", h.addAccessContext(h.remoteKeepAliveStream))
-	h.router.GET("/api/remote/:id/thumbnail/:thumbnailId", h.addAccessContext(h.remoteThumbnail))
+
+	h.router.HandlerFunc(http.MethodGet, "/api/library", rest.Wrap(h.addAccessContextRest(h.listLibraries)))
+	h.router.HandlerFunc(http.MethodGet, "/api/library/:id/browse", rest.Wrap(h.addAccessContextRest(h.remoteRootAlbum)))
+	h.router.HandlerFunc(http.MethodGet, "/api/library/:id/browse/:albumId", rest.Wrap(h.addAccessContextRest(h.remoteAlbum)))
+	h.router.HandlerFunc(http.MethodGet, "/api/library/:id/track/:trackId/duration", rest.Wrap(h.addAccessContextRest(h.remoteTrackDuration)))
+	h.router.HandlerFunc(http.MethodPost, "/api/library/:id/track/:trackId/stream", rest.Wrap(h.addAccessContextRest(h.remoteStartStream)))
+	h.router.GET("/api/library/:id/track/:trackId/stream/:streamId/playlist", h.addAccessContext(h.remoteStreamPlaylist))
+	h.router.GET("/api/library/:id/track/:trackId/stream/:streamId/init", h.addAccessContext(h.remoteStreamInit))
+	h.router.GET("/api/library/:id/track/:trackId/stream/:streamId/fragment/:number", h.addAccessContext(h.remoteStreamFragment))
+	h.router.POST("/api/library/:id/track/:trackId/stream/:streamId/keepalive", h.addAccessContext(h.remoteKeepAliveStream))
+	h.router.GET("/api/library/:id/thumbnail/:thumbnailId", h.addAccessContext(h.remoteThumbnail))
 	h.router.HandlerFunc(http.MethodGet, "/api/health", rest.Wrap(h.addAccessContextRest(h.remotePeerHealth)))
 	h.router.HandlerFunc(http.MethodPost, "/api/auth-token", rest.Wrap(h.remoteSetAuthToken))
 
@@ -129,7 +132,7 @@ func (h *Handler) addAccessContext(handler func(accessctx.AccessContext, http.Re
 }
 
 func (h *Handler) browse(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	a, err := h.app.Music.GetRootAlbum.Execute(r.Context(), accessCtx, music.GetRootAlbum{})
+	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx, music.GetRootAlbum{})
 	if err != nil {
 		return h.handleBrowseError(err)
 	}

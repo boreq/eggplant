@@ -78,6 +78,41 @@ func TestServiceRemotePairing(t *testing.T) {
 	require.NotNil(t, (*listed.JSON200)[0].LastHealthcheckStatus)
 	require.Equal(t, openapi.RemoteInstanceLastHealthcheckStatusALIVE, *(*listed.JSON200)[0].LastHealthcheckStatus)
 	require.NotNil(t, (*listed.JSON200)[0].LastHealthcheckAt)
+
+	t.Run("the paired instance is listed as a browsable library", func(t *testing.T) {
+		resp, err := instanceA.client.ListLibrariesWithResponse(ctx, adminA)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.NotNil(t, resp.JSON200)
+		require.Len(t, *resp.JSON200, 1)
+		require.Equal(t, startedA.JSON200.Id, (*resp.JSON200)[0].Id)
+		require.Equal(t, instanceB.baseURL, (*resp.JSON200)[0].Name)
+	})
+
+	t.Run("listing browsable libraries is forbidden for anonymous callers", func(t *testing.T) {
+		resp, err := instanceA.client.ListLibrariesWithResponse(ctx)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusForbidden, resp.StatusCode())
+	})
+
+	t.Run("the root of the local library does not contain remote albums", func(t *testing.T) {
+		resp, err := instanceA.client.BrowseWithResponse(ctx, adminA)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.NotNil(t, resp.JSON200)
+		require.Len(t, resp.JSON200.Albums, 1)
+		require.Nil(t, resp.JSON200.Albums[0].RemoteLibraryId)
+	})
+
+	t.Run("the root of the remote library contains only remote albums", func(t *testing.T) {
+		resp, err := instanceA.client.RemoteRootAlbumWithResponse(ctx, startedA.JSON200.Id, adminA)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.NotNil(t, resp.JSON200)
+		require.Len(t, resp.JSON200.Albums, 1)
+		require.NotNil(t, resp.JSON200.Albums[0].RemoteLibraryId)
+		require.Equal(t, startedA.JSON200.Id, *resp.JSON200.Albums[0].RemoteLibraryId)
+	})
 }
 
 func remoteAuthTokenSet(ts *testService, id remotedomain.RemoteInstanceID) bool {

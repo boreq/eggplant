@@ -3,3 +3,4 @@ backend/_build
 /eggplant
 _*
 .DS_store
+*.database

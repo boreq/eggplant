@@ -4,5 +4,5 @@ export interface Track {
     title: string;
     // Loaded lazily from the track duration endpoint; undefined until fetched.
     duration?: number;
-    remoteInstanceId?: string;
+    remoteLibraryId?: string;
 }

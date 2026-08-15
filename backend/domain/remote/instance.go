@@ -148,6 +148,10 @@ func (r *RemoteInstance) RemoteAuthToken() (AuthToken, bool) {
 	return *r.remoteAuthToken, true
 }
 
+func (r *RemoteInstance) CanBeQueried() bool {
+	return r.remoteAuthToken != nil
+}
+
 func (r *RemoteInstance) Status() RemoteInstanceStatus {
 	if !r.isPaired() {
 		return RemoteInstanceStatusPairing

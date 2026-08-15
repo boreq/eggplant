@@ -51,9 +51,9 @@ func NewLoggingGetRootAlbumHandler(inner *GetRootAlbumHandler, logger logging.Lo
 	return &LoggingGetRootAlbumHandler{inner: inner, logger: logger}
 }
 
-func (h *LoggingGetRootAlbumHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd GetRootAlbum) (music.RootAlbum, error) {
+func (h *LoggingGetRootAlbumHandler) Execute(accessCtx library.AccessContext, cmd GetRootAlbum) (music.RootAlbum, error) {
 	start := time.Now()
-	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	ret0, ret1 := h.inner.Execute(accessCtx, cmd)
 	logFn := h.logger.Debug
 	msg := "handler executed"
 	if ret1 != nil && !isNonLoggableError(ret1) {
@@ -174,6 +174,35 @@ func (h *LoggingRemoteGetAlbumHandler) Execute(ctx context.Context, accessCtx ac
 	}
 	logFn(msg,
 		"handler", "RemoteGetAlbum",
+		"accessCtx", accessCtx,
+		"cmd", cmd,
+		"ret0", ret0,
+		"err", ret1,
+		"duration", time.Since(start),
+	)
+	return ret0, ret1
+}
+
+type LoggingRemoteGetRootAlbumHandler struct {
+	inner  *RemoteGetRootAlbumHandler
+	logger logging.Logger
+}
+
+func NewLoggingRemoteGetRootAlbumHandler(inner *RemoteGetRootAlbumHandler, logger logging.Logger) *LoggingRemoteGetRootAlbumHandler {
+	return &LoggingRemoteGetRootAlbumHandler{inner: inner, logger: logger}
+}
+
+func (h *LoggingRemoteGetRootAlbumHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd RemoteGetRootAlbum) (music.RootAlbum, error) {
+	start := time.Now()
+	ret0, ret1 := h.inner.Execute(ctx, accessCtx, cmd)
+	logFn := h.logger.Debug
+	msg := "handler executed"
+	if ret1 != nil && !isNonLoggableError(ret1) {
+		logFn = h.logger.Error
+		msg = "handler failed"
+	}
+	logFn(msg,
+		"handler", "RemoteGetRootAlbum",
 		"accessCtx", accessCtx,
 		"cmd", cmd,
 		"ret0", ret0,
