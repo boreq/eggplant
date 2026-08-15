@@ -444,12 +444,17 @@ export default class Browse extends Vue {
                     const status = error.response && error.response.status;
                     if (status === HttpStatus.ServiceUnavailable) {
                         this.state = BrowseState.LibraryNotReady;
-                    } else if (status === HttpStatus.NotFound) {
-                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
-                        Notifications.pushError(this, 'Could not list the tracks and albums.', error);
-                    } else {
-                        Notifications.pushError(this, 'Could not list the tracks and albums.', error);
+                        this.scheduleTimeout();
+                        return;
                     }
+
+                    Notifications.pushError(this, 'Could not list the tracks and albums.', error);
+
+                    if (status === HttpStatus.Forbidden || status === HttpStatus.NotFound) {
+                        this.state = BrowseState.PermissionDeniedOrDoesNotExist;
+                        return;
+                    }
+
                     this.scheduleTimeout();
                 });
     }
