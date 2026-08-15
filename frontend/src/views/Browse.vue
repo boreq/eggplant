@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="section" v-if="showRemoteLibraries">
-                    <SubHeader text="Connected instances"></SubHeader>
+                    <SubHeader text="Remote libraries"></SubHeader>
                     <remote-libraries :libraries="remoteLibraries"
                         @select-library="selectRemoteLibrary"></remote-libraries>
                 </div>

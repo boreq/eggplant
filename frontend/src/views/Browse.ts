@@ -4,7 +4,7 @@ import { DurationLoader } from '@/services/DurationLoader';
 import { HttpStatus } from '@/services/HttpStatus';
 import { NavigationService } from '@/services/NavigationService';
 import { Album, PartialAlbum } from '@/dto/Album';
-import { RemoteLibrary } from '@/dto/RemoteLibrary';
+import { Library } from '@/dto/Library';
 import { User } from '@/dto/User';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Track } from '@/dto/Track';
@@ -64,7 +64,7 @@ enum BrowseState {
 export default class Browse extends Vue {
 
     album: Album = null;
-    remoteLibraries: RemoteLibrary[] = null;
+    remoteLibraries: Library[] = null;
     state: BrowseState = BrowseState.Loading;
 
     searchQuery: string = null;
@@ -156,7 +156,7 @@ export default class Browse extends Vue {
         this.$router.push(location);
     }
 
-    selectRemoteLibrary(library: RemoteLibrary): void {
+    selectRemoteLibrary(library: Library): void {
         this.switchView(View.Browse);
         const location = this.navigationService.getBrowse(undefined, library.id);
         this.$router.push(location);
@@ -267,7 +267,7 @@ export default class Browse extends Vue {
     get remoteInstanceTitle(): string {
         const library = (this.remoteLibraries || [])
             .find(v => v.id === this.remoteInstanceId);
-        return library ? library.address : 'Connected instance';
+        return library ? library.name : 'Remote library';
     }
 
     get remoteInstanceUrl(): Location {
@@ -465,7 +465,7 @@ export default class Browse extends Vue {
             return;
         }
 
-        this.apiService.listRemoteLibraries()
+        this.apiService.listLibraries()
             .then(
                 response => {
                     this.remoteLibraries = response.data;
@@ -475,7 +475,7 @@ export default class Browse extends Vue {
                 },
                 error => {
                     this.remoteLibraries = null;
-                    Notifications.pushError(this, 'Could not list the connected instances.', error);
+                    Notifications.pushError(this, 'Could not list the remote libraries.', error);
                 });
     }
 

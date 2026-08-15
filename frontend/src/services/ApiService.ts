@@ -15,7 +15,7 @@ import { RegisterCommand } from '@/dto/RegisterCommand';
 import { StreamStartResponse } from '@/dto/StreamStartResponse';
 import { TrackDuration } from '@/dto/TrackDuration';
 import { RemoteInstance } from '@/dto/RemoteInstance';
-import { RemoteLibrary } from '@/dto/RemoteLibrary';
+import { Library } from '@/dto/Library';
 import { AddRemoteResult } from '@/dto/AddRemoteResult';
 
 /*
@@ -205,9 +205,9 @@ export class ApiService {
         return this.axios.delete<void>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
-    listRemoteLibraries(): Promise<AxiosResponse<RemoteLibrary[]>> {
-        const url = `remotes`;
-        return this.axios.get<RemoteLibrary[]>(import.meta.env.VUE_APP_API_PREFIX + url);
+    listLibraries(): Promise<AxiosResponse<Library[]>> {
+        const url = `library`;
+        return this.axios.get<Library[]>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     listRemotes(): Promise<AxiosResponse<RemoteInstance[]>> {

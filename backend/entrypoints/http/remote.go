@@ -76,28 +76,28 @@ func (h *Handler) remoteListRemotes(accessCtx accessctx.AccessContext, r *http.R
 	return rest.NewResponse(out)
 }
 
-func (h *Handler) remoteListRemoteLibraries(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+func (h *Handler) listLibraries(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	libraries, err := h.app.Remote.ListRemoteLibraries.Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden
 		}
-		h.log.Error("list remote libraries query failed", "err", err)
+		h.log.Error("list libraries query failed", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	out := make([]openapi.RemoteLibrary, 0, len(libraries))
+	out := make([]openapi.Library, 0, len(libraries))
 	for _, library := range libraries {
-		out = append(out, toRemoteLibrary(library))
+		out = append(out, toLibrary(library))
 	}
 
 	return rest.NewResponse(out)
 }
 
-func toRemoteLibrary(library remote.RemoteLibrary) openapi.RemoteLibrary {
-	return openapi.RemoteLibrary{
-		Id:      library.ID().String(),
-		Address: library.Address().String(),
+func toLibrary(library remote.RemoteLibrary) openapi.Library {
+	return openapi.Library{
+		Id:   library.ID().String(),
+		Name: library.Address().String(),
 	}
 }
 

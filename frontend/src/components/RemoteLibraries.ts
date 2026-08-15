@@ -1,14 +1,14 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { RemoteLibrary } from '@/dto/RemoteLibrary';
+import { Library } from '@/dto/Library';
 
 
 @Component
 export default class RemoteLibraries extends Vue {
 
     @Prop()
-    libraries: RemoteLibrary[];
+    libraries: Library[];
 
-    selectLibrary(library: RemoteLibrary): void {
+    selectLibrary(library: Library): void {
         this.$emit('select-library', library);
     }
 

@@ -106,6 +106,14 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Library defines model for Library.
+type Library struct {
+	Id string `json:"id"`
+
+	// Name A name of the library which can be displayed to the user.
+	Name string `json:"name"`
+}
+
 // LoginInput defines model for LoginInput.
 type LoginInput struct {
 	Password string `json:"password"`
@@ -182,13 +190,6 @@ type RemoteInstanceLastHealthcheckStatus string
 
 // RemoteInstanceStatus defines model for RemoteInstance.Status.
 type RemoteInstanceStatus string
-
-// RemoteLibrary defines model for RemoteLibrary.
-type RemoteLibrary struct {
-	// Address The address of the peer instance.
-	Address string `json:"address"`
-	Id      string `json:"id"`
-}
 
 // RootAlbum defines model for RootAlbum.
 type RootAlbum struct {
@@ -496,6 +497,9 @@ type ClientInterface interface {
 	// Health request
 	Health(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListLibraries request
+	ListLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRemotes request
 	ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -532,9 +536,6 @@ type ClientInterface interface {
 
 	// GetRemoteStreamPlaylist request
 	GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRemoteLibraries request
-	ListRemoteLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Search request
 	Search(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -759,6 +760,18 @@ func (c *Client) Health(ctx context.Context, reqEditors ...RequestEditorFn) (*ht
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLibrariesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRemotesRequest(c.Server)
 	if err != nil {
@@ -905,18 +918,6 @@ func (c *Client) KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId,
 
 func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteStreamPlaylistRequest(c.Server, id, trackId, streamId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListRemoteLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRemoteLibrariesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1437,6 +1438,33 @@ func NewHealthRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListLibrariesRequest generates requests for ListLibraries
+func NewListLibrariesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/library")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRemotesRequest generates requests for ListRemotes
 func NewListRemotesRequest(server string) (*http.Request, error) {
 	var err error
@@ -1917,33 +1945,6 @@ func NewGetRemoteStreamPlaylistRequest(server string, id RemoteInstanceId, track
 	}
 
 	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/playlist", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListRemoteLibrariesRequest generates requests for ListRemoteLibraries
-func NewListRemoteLibrariesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remotes")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2452,6 +2453,9 @@ type ClientWithResponsesInterface interface {
 	// HealthWithResponse request
 	HealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthResponse, error)
 
+	// ListLibrariesWithResponse request
+	ListLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLibrariesResponse, error)
+
 	// ListRemotesWithResponse request
 	ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error)
 
@@ -2488,9 +2492,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetRemoteStreamPlaylistWithResponse request
 	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
-
-	// ListRemoteLibrariesWithResponse request
-	ListRemoteLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemoteLibrariesResponse, error)
 
 	// SearchWithResponse request
 	SearchWithResponse(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*SearchResponse, error)
@@ -2901,6 +2902,37 @@ func (r HealthResponse) ContentType() string {
 	return ""
 }
 
+type ListLibrariesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Library
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListLibrariesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListLibrariesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListLibrariesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRemotesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3239,37 +3271,6 @@ func (r GetRemoteStreamPlaylistResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetRemoteStreamPlaylistResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListRemoteLibrariesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]RemoteLibrary
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRemoteLibrariesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRemoteLibrariesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRemoteLibrariesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3719,6 +3720,15 @@ func (c *ClientWithResponses) HealthWithResponse(ctx context.Context, reqEditors
 	return ParseHealthResponse(rsp)
 }
 
+// ListLibrariesWithResponse request returning *ListLibrariesResponse
+func (c *ClientWithResponses) ListLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLibrariesResponse, error) {
+	rsp, err := c.ListLibraries(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLibrariesResponse(rsp)
+}
+
 // ListRemotesWithResponse request returning *ListRemotesResponse
 func (c *ClientWithResponses) ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error) {
 	rsp, err := c.ListRemotes(ctx, reqEditors...)
@@ -3832,15 +3842,6 @@ func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetRemoteStreamPlaylistResponse(rsp)
-}
-
-// ListRemoteLibrariesWithResponse request returning *ListRemoteLibrariesResponse
-func (c *ClientWithResponses) ListRemoteLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemoteLibrariesResponse, error) {
-	rsp, err := c.ListRemoteLibraries(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRemoteLibrariesResponse(rsp)
 }
 
 // SearchWithResponse request returning *SearchResponse
@@ -4371,6 +4372,39 @@ func ParseHealthResponse(rsp *http.Response) (*HealthResponse, error) {
 	return response, nil
 }
 
+// ParseListLibrariesResponse parses an HTTP response from a ListLibrariesWithResponse call
+func ParseListLibrariesResponse(rsp *http.Response) (*ListLibrariesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListLibrariesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Library
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRemotesResponse parses an HTTP response from a ListRemotesWithResponse call
 func ParseListRemotesResponse(rsp *http.Response) (*ListRemotesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -4738,39 +4772,6 @@ func ParseGetRemoteStreamPlaylistResponse(rsp *http.Response) (*GetRemoteStreamP
 	response := &GetRemoteStreamPlaylistResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseListRemoteLibrariesResponse parses an HTTP response from a ListRemoteLibrariesWithResponse call
-func ParseListRemoteLibrariesResponse(rsp *http.Response) (*ListRemoteLibrariesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRemoteLibrariesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []RemoteLibrary
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
 	}
 
 	return response, nil

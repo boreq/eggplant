@@ -4,8 +4,8 @@
             <div class="icon">
                 <i class="fas fa-server"></i>
             </div>
-            <div class="address">
-                {{ library.address }}
+            <div class="name">
+                {{ library.name }}
             </div>
         </a>
     </div>

@@ -80,17 +80,17 @@ func TestServiceRemotePairing(t *testing.T) {
 	require.NotNil(t, (*listed.JSON200)[0].LastHealthcheckAt)
 
 	t.Run("the paired instance is listed as a browsable library", func(t *testing.T) {
-		resp, err := instanceA.client.ListRemoteLibrariesWithResponse(ctx, adminA)
+		resp, err := instanceA.client.ListLibrariesWithResponse(ctx, adminA)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.NotNil(t, resp.JSON200)
 		require.Len(t, *resp.JSON200, 1)
 		require.Equal(t, startedA.JSON200.Id, (*resp.JSON200)[0].Id)
-		require.Equal(t, instanceB.baseURL, (*resp.JSON200)[0].Address)
+		require.Equal(t, instanceB.baseURL, (*resp.JSON200)[0].Name)
 	})
 
 	t.Run("listing browsable libraries is forbidden for anonymous callers", func(t *testing.T) {
-		resp, err := instanceA.client.ListRemoteLibrariesWithResponse(ctx)
+		resp, err := instanceA.client.ListLibrariesWithResponse(ctx)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusForbidden, resp.StatusCode())
 	})

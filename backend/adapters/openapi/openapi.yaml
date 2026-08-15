@@ -408,22 +408,22 @@ paths:
                 $ref: '#/components/schemas/VersionResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /api/remotes:
+  /api/library:
     get:
       tags: [remote]
-      operationId: listRemoteLibraries
-      summary: List paired remote instances whose libraries can be browsed.
+      operationId: listLibraries
+      summary: List the libraries of paired remote instances which can be browsed.
       security:
         - cookieAuth: []
       responses:
         '200':
-          description: The remote instances which can be browsed.
+          description: The libraries which can be browsed.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RemoteLibrary'
+                  $ref: '#/components/schemas/Library'
         '403':
           $ref: '#/components/responses/Forbidden'
   /api/remote:
@@ -1134,16 +1134,16 @@ components:
           type: string
           description: The address of the peer instance to pair with.
           example: https://music.0x46.net
-    RemoteLibrary:
+    Library:
       type: object
-      required: [id, address]
+      required: [id, name]
       properties:
         id:
           type: string
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
-        address:
+        name:
           type: string
-          description: The address of the peer instance.
+          description: A name of the library which can be displayed to the user.
           example: https://music.0x46.net
     RemoteInstance:
       type: object
