@@ -45,11 +45,11 @@ export class ApiService {
             });
     }
 
-    browse(id?: string, instanceId?: string): Promise<AxiosResponse<Album>> {
+    browse(id?: string, libraryId?: string): Promise<AxiosResponse<Album>> {
         let url: string;
-        if (instanceId) {
-            const instance = `library/${encodeURIComponent(instanceId)}`;
-            url = id ? `${instance}/browse/${id}` : `${instance}/browse`;
+        if (libraryId) {
+            const library = `library/${encodeURIComponent(libraryId)}`;
+            url = id ? `${library}/browse/${id}` : `${library}/browse`;
         } else {
             url = id ? `browse/${id}` : 'browse';
         }
@@ -74,8 +74,8 @@ export class ApiService {
     }
 
     private trackBase(track: Track): string {
-        if (track.remoteInstanceId) {
-            return `library/${encodeURIComponent(track.remoteInstanceId)}/track/${track.id}`;
+        if (track.remoteLibraryId) {
+            return `library/${encodeURIComponent(track.remoteLibraryId)}/track/${track.id}`;
         }
         return `track/${track.id}`;
     }
@@ -103,9 +103,9 @@ export class ApiService {
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }
 
-    thumbnailUrl(thumbnail: Thumbnail, instanceId?: string): string {
-        const url = instanceId
-            ? `library/${encodeURIComponent(instanceId)}/thumbnail/${thumbnail.id}`
+    thumbnailUrl(thumbnail: Thumbnail, libraryId?: string): string {
+        const url = libraryId
+            ? `library/${encodeURIComponent(libraryId)}/thumbnail/${thumbnail.id}`
             : `thumbnail/${thumbnail.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }

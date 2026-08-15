@@ -101,7 +101,7 @@ func TestServiceRemotePairing(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.NotNil(t, resp.JSON200)
 		require.Len(t, resp.JSON200.Albums, 1)
-		require.Nil(t, resp.JSON200.Albums[0].RemoteInstanceId)
+		require.Nil(t, resp.JSON200.Albums[0].RemoteLibraryId)
 	})
 
 	t.Run("the root of the remote library contains only remote albums", func(t *testing.T) {
@@ -110,8 +110,8 @@ func TestServiceRemotePairing(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.NotNil(t, resp.JSON200)
 		require.Len(t, resp.JSON200.Albums, 1)
-		require.NotNil(t, resp.JSON200.Albums[0].RemoteInstanceId)
-		require.Equal(t, startedA.JSON200.Id, *resp.JSON200.Albums[0].RemoteInstanceId)
+		require.NotNil(t, resp.JSON200.Albums[0].RemoteLibraryId)
+		require.Equal(t, startedA.JSON200.Id, *resp.JSON200.Albums[0].RemoteLibraryId)
 	})
 }
 

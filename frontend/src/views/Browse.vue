@@ -29,12 +29,12 @@
                                     Eggplant
                                 </router-link>
                             </li>
-                            <li v-if="remoteInstanceId">
-                                <router-link v-if="album.id" :to="remoteInstanceUrl">
-                                    {{ remoteInstanceTitle }}
+                            <li v-if="remoteLibraryId">
+                                <router-link v-if="album.id" :to="remoteLibraryUrl">
+                                    {{ remoteLibraryTitle }}
                                 </router-link>
                                 <template v-else>
-                                    {{ remoteInstanceTitle }}
+                                    {{ remoteLibraryTitle }}
                                 </template>
                             </li>
                             <li v-for="parent in album.parents" :key="parent.id">

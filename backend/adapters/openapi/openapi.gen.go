@@ -81,11 +81,11 @@ type Album struct {
 	Id      string         `json:"id"`
 	Parents []PartialAlbum `json:"parents"`
 
-	// RemoteInstanceId Set when the album belongs to a paired remote instance.
-	RemoteInstanceId *string    `json:"remoteInstanceId,omitempty"`
-	Thumbnail        *Thumbnail `json:"thumbnail,omitempty"`
-	Title            string     `json:"title"`
-	Tracks           []Track    `json:"tracks"`
+	// RemoteLibraryId Set when the album belongs to a remote library.
+	RemoteLibraryId *string    `json:"remoteLibraryId,omitempty"`
+	Thumbnail       *Thumbnail `json:"thumbnail,omitempty"`
+	Title           string     `json:"title"`
+	Tracks          []Track    `json:"tracks"`
 }
 
 // AlbumSearchResult defines model for AlbumSearchResult.
@@ -129,10 +129,10 @@ type LoginResult struct {
 type PartialAlbum struct {
 	Id string `json:"id"`
 
-	// RemoteInstanceId Set when the album belongs to a paired remote instance.
-	RemoteInstanceId *string    `json:"remoteInstanceId,omitempty"`
-	Thumbnail        *Thumbnail `json:"thumbnail,omitempty"`
-	Title            string     `json:"title"`
+	// RemoteLibraryId Set when the album belongs to a remote library.
+	RemoteLibraryId *string    `json:"remoteLibraryId,omitempty"`
+	Thumbnail       *Thumbnail `json:"thumbnail,omitempty"`
+	Title           string     `json:"title"`
 }
 
 // PeerHealth defines model for PeerHealth.
@@ -261,9 +261,9 @@ type Track struct {
 	Id     string `json:"id"`
 	Number *int   `json:"number,omitempty"`
 
-	// RemoteInstanceId Set when the track belongs to a paired remote instance.
-	RemoteInstanceId *string `json:"remoteInstanceId,omitempty"`
-	Title            string  `json:"title"`
+	// RemoteLibraryId Set when the track belongs to a remote library.
+	RemoteLibraryId *string `json:"remoteLibraryId,omitempty"`
+	Title           string  `json:"title"`
 }
 
 // TrackDuration defines model for TrackDuration.
@@ -304,6 +304,9 @@ type VersionResponse struct {
 
 // AlbumId defines model for AlbumId.
 type AlbumId = string
+
+// LibraryId defines model for LibraryId.
+type LibraryId = string
 
 // RemoteInstanceId defines model for RemoteInstanceId.
 type RemoteInstanceId = string
@@ -501,28 +504,28 @@ type ClientInterface interface {
 	ListLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RemoteRootAlbum request
-	RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RemoteRootAlbum(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RemoteAlbum request
-	RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RemoteAlbum(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRemoteTrackDuration request
-	GetRemoteTrackDuration(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRemoteTrackDuration(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartRemoteTrackStream request
-	StartRemoteTrackStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	StartRemoteTrackStream(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRemoteStreamFragment request
-	GetRemoteStreamFragment(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRemoteStreamFragment(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRemoteStreamInit request
-	GetRemoteStreamInit(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRemoteStreamInit(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// KeepAliveRemoteStream request
-	KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	KeepAliveRemoteStream(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRemoteStreamPlaylist request
-	GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRemoteStreamPlaylist(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRemotes request
 	ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -772,7 +775,7 @@ func (c *Client) ListLibraries(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-func (c *Client) RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) RemoteRootAlbum(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoteRootAlbumRequest(c.Server, id)
 	if err != nil {
 		return nil, err
@@ -784,7 +787,7 @@ func (c *Client) RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) RemoteAlbum(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoteAlbumRequest(c.Server, id, albumId)
 	if err != nil {
 		return nil, err
@@ -796,7 +799,7 @@ func (c *Client) RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId s
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRemoteTrackDuration(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRemoteTrackDuration(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteTrackDurationRequest(c.Server, id, trackId)
 	if err != nil {
 		return nil, err
@@ -808,7 +811,7 @@ func (c *Client) GetRemoteTrackDuration(ctx context.Context, id RemoteInstanceId
 	return c.Client.Do(req)
 }
 
-func (c *Client) StartRemoteTrackStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) StartRemoteTrackStream(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartRemoteTrackStreamRequest(c.Server, id, trackId, params)
 	if err != nil {
 		return nil, err
@@ -820,7 +823,7 @@ func (c *Client) StartRemoteTrackStream(ctx context.Context, id RemoteInstanceId
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRemoteStreamFragment(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRemoteStreamFragment(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteStreamFragmentRequest(c.Server, id, trackId, streamId, number)
 	if err != nil {
 		return nil, err
@@ -832,7 +835,7 @@ func (c *Client) GetRemoteStreamFragment(ctx context.Context, id RemoteInstanceI
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRemoteStreamInit(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRemoteStreamInit(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteStreamInitRequest(c.Server, id, trackId, streamId)
 	if err != nil {
 		return nil, err
@@ -844,7 +847,7 @@ func (c *Client) GetRemoteStreamInit(ctx context.Context, id RemoteInstanceId, t
 	return c.Client.Do(req)
 }
 
-func (c *Client) KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) KeepAliveRemoteStream(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewKeepAliveRemoteStreamRequest(c.Server, id, trackId, streamId)
 	if err != nil {
 		return nil, err
@@ -856,7 +859,7 @@ func (c *Client) KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId,
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteStreamPlaylistRequest(c.Server, id, trackId, streamId)
 	if err != nil {
 		return nil, err
@@ -1466,7 +1469,7 @@ func NewListLibrariesRequest(server string) (*http.Request, error) {
 }
 
 // NewRemoteRootAlbumRequest generates requests for RemoteRootAlbum
-func NewRemoteRootAlbumRequest(server string, id RemoteInstanceId) (*http.Request, error) {
+func NewRemoteRootAlbumRequest(server string, id LibraryId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1500,7 +1503,7 @@ func NewRemoteRootAlbumRequest(server string, id RemoteInstanceId) (*http.Reques
 }
 
 // NewRemoteAlbumRequest generates requests for RemoteAlbum
-func NewRemoteAlbumRequest(server string, id RemoteInstanceId, albumId string) (*http.Request, error) {
+func NewRemoteAlbumRequest(server string, id LibraryId, albumId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1541,7 +1544,7 @@ func NewRemoteAlbumRequest(server string, id RemoteInstanceId, albumId string) (
 }
 
 // NewGetRemoteTrackDurationRequest generates requests for GetRemoteTrackDuration
-func NewGetRemoteTrackDurationRequest(server string, id RemoteInstanceId, trackId TrackId) (*http.Request, error) {
+func NewGetRemoteTrackDurationRequest(server string, id LibraryId, trackId TrackId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1582,7 +1585,7 @@ func NewGetRemoteTrackDurationRequest(server string, id RemoteInstanceId, trackI
 }
 
 // NewStartRemoteTrackStreamRequest generates requests for StartRemoteTrackStream
-func NewStartRemoteTrackStreamRequest(server string, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams) (*http.Request, error) {
+func NewStartRemoteTrackStreamRequest(server string, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1650,7 +1653,7 @@ func NewStartRemoteTrackStreamRequest(server string, id RemoteInstanceId, trackI
 }
 
 // NewGetRemoteStreamFragmentRequest generates requests for GetRemoteStreamFragment
-func NewGetRemoteStreamFragmentRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int) (*http.Request, error) {
+func NewGetRemoteStreamFragmentRequest(server string, id LibraryId, trackId TrackId, streamId StreamId, number int) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1705,7 +1708,7 @@ func NewGetRemoteStreamFragmentRequest(server string, id RemoteInstanceId, track
 }
 
 // NewGetRemoteStreamInitRequest generates requests for GetRemoteStreamInit
-func NewGetRemoteStreamInitRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId) (*http.Request, error) {
+func NewGetRemoteStreamInitRequest(server string, id LibraryId, trackId TrackId, streamId StreamId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1753,7 +1756,7 @@ func NewGetRemoteStreamInitRequest(server string, id RemoteInstanceId, trackId T
 }
 
 // NewKeepAliveRemoteStreamRequest generates requests for KeepAliveRemoteStream
-func NewKeepAliveRemoteStreamRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId) (*http.Request, error) {
+func NewKeepAliveRemoteStreamRequest(server string, id LibraryId, trackId TrackId, streamId StreamId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1801,7 +1804,7 @@ func NewKeepAliveRemoteStreamRequest(server string, id RemoteInstanceId, trackId
 }
 
 // NewGetRemoteStreamPlaylistRequest generates requests for GetRemoteStreamPlaylist
-func NewGetRemoteStreamPlaylistRequest(server string, id RemoteInstanceId, trackId TrackId, streamId StreamId) (*http.Request, error) {
+func NewGetRemoteStreamPlaylistRequest(server string, id LibraryId, trackId TrackId, streamId StreamId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2457,28 +2460,28 @@ type ClientWithResponsesInterface interface {
 	ListLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLibrariesResponse, error)
 
 	// RemoteRootAlbumWithResponse request
-	RemoteRootAlbumWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error)
+	RemoteRootAlbumWithResponse(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error)
 
 	// RemoteAlbumWithResponse request
-	RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error)
+	RemoteAlbumWithResponse(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error)
 
 	// GetRemoteTrackDurationWithResponse request
-	GetRemoteTrackDurationWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error)
+	GetRemoteTrackDurationWithResponse(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error)
 
 	// StartRemoteTrackStreamWithResponse request
-	StartRemoteTrackStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error)
+	StartRemoteTrackStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error)
 
 	// GetRemoteStreamFragmentWithResponse request
-	GetRemoteStreamFragmentWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error)
+	GetRemoteStreamFragmentWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error)
 
 	// GetRemoteStreamInitWithResponse request
-	GetRemoteStreamInitWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error)
+	GetRemoteStreamInitWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error)
 
 	// KeepAliveRemoteStreamWithResponse request
-	KeepAliveRemoteStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error)
+	KeepAliveRemoteStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error)
 
 	// GetRemoteStreamPlaylistWithResponse request
-	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
+	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
 
 	// ListRemotesWithResponse request
 	ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error)
@@ -3730,7 +3733,7 @@ func (c *ClientWithResponses) ListLibrariesWithResponse(ctx context.Context, req
 }
 
 // RemoteRootAlbumWithResponse request returning *RemoteRootAlbumResponse
-func (c *ClientWithResponses) RemoteRootAlbumWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error) {
+func (c *ClientWithResponses) RemoteRootAlbumWithResponse(ctx context.Context, id LibraryId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error) {
 	rsp, err := c.RemoteRootAlbum(ctx, id, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3739,7 +3742,7 @@ func (c *ClientWithResponses) RemoteRootAlbumWithResponse(ctx context.Context, i
 }
 
 // RemoteAlbumWithResponse request returning *RemoteAlbumResponse
-func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error) {
+func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id LibraryId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error) {
 	rsp, err := c.RemoteAlbum(ctx, id, albumId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3748,7 +3751,7 @@ func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id Re
 }
 
 // GetRemoteTrackDurationWithResponse request returning *GetRemoteTrackDurationResponse
-func (c *ClientWithResponses) GetRemoteTrackDurationWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error) {
+func (c *ClientWithResponses) GetRemoteTrackDurationWithResponse(ctx context.Context, id LibraryId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error) {
 	rsp, err := c.GetRemoteTrackDuration(ctx, id, trackId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3757,7 +3760,7 @@ func (c *ClientWithResponses) GetRemoteTrackDurationWithResponse(ctx context.Con
 }
 
 // StartRemoteTrackStreamWithResponse request returning *StartRemoteTrackStreamResponse
-func (c *ClientWithResponses) StartRemoteTrackStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error) {
+func (c *ClientWithResponses) StartRemoteTrackStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, params *StartRemoteTrackStreamParams, reqEditors ...RequestEditorFn) (*StartRemoteTrackStreamResponse, error) {
 	rsp, err := c.StartRemoteTrackStream(ctx, id, trackId, params, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3766,7 +3769,7 @@ func (c *ClientWithResponses) StartRemoteTrackStreamWithResponse(ctx context.Con
 }
 
 // GetRemoteStreamFragmentWithResponse request returning *GetRemoteStreamFragmentResponse
-func (c *ClientWithResponses) GetRemoteStreamFragmentWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error) {
+func (c *ClientWithResponses) GetRemoteStreamFragmentWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, number int, reqEditors ...RequestEditorFn) (*GetRemoteStreamFragmentResponse, error) {
 	rsp, err := c.GetRemoteStreamFragment(ctx, id, trackId, streamId, number, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3775,7 +3778,7 @@ func (c *ClientWithResponses) GetRemoteStreamFragmentWithResponse(ctx context.Co
 }
 
 // GetRemoteStreamInitWithResponse request returning *GetRemoteStreamInitResponse
-func (c *ClientWithResponses) GetRemoteStreamInitWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error) {
+func (c *ClientWithResponses) GetRemoteStreamInitWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamInitResponse, error) {
 	rsp, err := c.GetRemoteStreamInit(ctx, id, trackId, streamId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3784,7 +3787,7 @@ func (c *ClientWithResponses) GetRemoteStreamInitWithResponse(ctx context.Contex
 }
 
 // KeepAliveRemoteStreamWithResponse request returning *KeepAliveRemoteStreamResponse
-func (c *ClientWithResponses) KeepAliveRemoteStreamWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error) {
+func (c *ClientWithResponses) KeepAliveRemoteStreamWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*KeepAliveRemoteStreamResponse, error) {
 	rsp, err := c.KeepAliveRemoteStream(ctx, id, trackId, streamId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -3793,7 +3796,7 @@ func (c *ClientWithResponses) KeepAliveRemoteStreamWithResponse(ctx context.Cont
 }
 
 // GetRemoteStreamPlaylistWithResponse request returning *GetRemoteStreamPlaylistResponse
-func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error) {
+func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Context, id LibraryId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error) {
 	rsp, err := c.GetRemoteStreamPlaylist(ctx, id, trackId, streamId, reqEditors...)
 	if err != nil {
 		return nil, err

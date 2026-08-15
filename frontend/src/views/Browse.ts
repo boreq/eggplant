@@ -142,17 +142,17 @@ export default class Browse extends Vue {
     }
 
     parentUrl(album: PartialAlbum): Location {
-        return this.navigationService.getBrowse(album.id, album.remoteInstanceId);
+        return this.navigationService.getBrowse(album.id, album.remoteLibraryId);
     }
 
     selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
         const alreadyOnPage = this.$route.params.albumId === album.id
-            && this.$route.params.libraryId === (album.remoteInstanceId || undefined);
+            && this.$route.params.libraryId === (album.remoteLibraryId || undefined);
         if (alreadyOnPage) {
             return;
         }
-        const location = this.navigationService.getBrowse(album.id, album.remoteInstanceId);
+        const location = this.navigationService.getBrowse(album.id, album.remoteLibraryId);
         this.$router.push(location);
     }
 
@@ -254,24 +254,24 @@ export default class Browse extends Vue {
         if (this.album && this.album.title) {
             return this.album.title;
         }
-        if (this.remoteInstanceId) {
-            return this.remoteInstanceTitle;
+        if (this.remoteLibraryId) {
+            return this.remoteLibraryTitle;
         }
         return 'Eggplant';
     }
 
-    get remoteInstanceId(): string {
+    get remoteLibraryId(): string {
         return this.getLibraryIdFromRoute();
     }
 
-    get remoteInstanceTitle(): string {
+    get remoteLibraryTitle(): string {
         const library = (this.remoteLibraries || [])
-            .find(v => v.id === this.remoteInstanceId);
+            .find(v => v.id === this.remoteLibraryId);
         return library ? library.name : 'Remote library';
     }
 
-    get remoteInstanceUrl(): Location {
-        return this.navigationService.getBrowse(undefined, this.remoteInstanceId);
+    get remoteLibraryUrl(): Location {
+        return this.navigationService.getBrowse(undefined, this.remoteLibraryId);
     }
 
     get showRemoteLibraries(): boolean {
@@ -509,7 +509,7 @@ export default class Browse extends Vue {
             title: album.title,
             id: album.id,
             thumbnail: album.thumbnail,
-            remoteInstanceId: album.remoteInstanceId,
+            remoteLibraryId: album.remoteLibraryId,
         };
     }
 

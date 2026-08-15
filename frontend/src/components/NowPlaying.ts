@@ -40,13 +40,13 @@ export default class NowPlaying extends Vue {
     }
 
     private navigateToNowPlaying(reveal: boolean): void {
-        const { id: albumId, remoteInstanceId } = this.nowPlaying.album;
+        const { id: albumId, remoteLibraryId } = this.nowPlaying.album;
         const trackId = this.nowPlaying.track.id;
-        const location = this.navigationService.getBrowse(albumId, remoteInstanceId);
+        const location = this.navigationService.getBrowse(albumId, remoteLibraryId);
         const currentAlbumId = this.$route.params.albumId;
         const currentLibraryId = this.$route.params.libraryId;
 
-        const alreadyOnPage = currentAlbumId === albumId && currentLibraryId === (remoteInstanceId || undefined);
+        const alreadyOnPage = currentAlbumId === albumId && currentLibraryId === (remoteLibraryId || undefined);
         if (alreadyOnPage) {
             if (reveal) {
                 this.$root.$emit('revealNowPlaying', trackId);

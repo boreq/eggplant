@@ -497,7 +497,7 @@ paths:
       operationId: getRemoteTrackDuration
       summary: Return the duration of a track on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
       responses:
         '200':
@@ -518,7 +518,7 @@ paths:
       operationId: startRemoteTrackStream
       summary: Start an HLS stream for a track on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - name: seek
           in: query
@@ -547,7 +547,7 @@ paths:
       operationId: getRemoteStreamPlaylist
       summary: Return the HLS playlist for a stream on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
       responses:
@@ -569,7 +569,7 @@ paths:
       operationId: getRemoteStreamInit
       summary: Return the HLS init segment for a stream on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
       responses:
@@ -592,7 +592,7 @@ paths:
       operationId: getRemoteStreamFragment
       summary: Return a single HLS fragment for a stream on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
         - name: number
@@ -621,7 +621,7 @@ paths:
       operationId: keepAliveRemoteStream
       summary: Keep a stream alive on a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - $ref: '#/components/parameters/TrackId'
         - $ref: '#/components/parameters/StreamId'
       responses:
@@ -639,7 +639,7 @@ paths:
       operationId: remoteRootAlbum
       summary: Return the root of the library of a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
       responses:
         '200':
           description: The root album of the remote instance.
@@ -659,7 +659,7 @@ paths:
       operationId: remoteAlbum
       summary: Return a single album fetched from a paired remote instance.
       parameters:
-        - $ref: '#/components/parameters/RemoteInstanceId'
+        - $ref: '#/components/parameters/LibraryId'
         - name: albumId
           in: path
           required: true
@@ -731,6 +731,14 @@ components:
         type: string
         example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
       description: The remote instance id.
+    LibraryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+      description: The remote library id.
     AlbumId:
       name: id
       in: path
@@ -852,10 +860,10 @@ components:
         title:
           type: string
           example: The Eggplant Song
-        remoteInstanceId:
+        remoteLibraryId:
           type: string
           nullable: true
-          description: Set when the track belongs to a paired remote instance.
+          description: Set when the track belongs to a remote library.
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     PartialAlbum:
       type: object
@@ -871,10 +879,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/Thumbnail'
           nullable: true
-        remoteInstanceId:
+        remoteLibraryId:
           type: string
           nullable: true
-          description: Set when the album belongs to a paired remote instance.
+          description: Set when the album belongs to a remote library.
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     RootAlbum:
       type: object
@@ -918,10 +926,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Track'
-        remoteInstanceId:
+        remoteLibraryId:
           type: string
           nullable: true
-          description: Set when the album belongs to a paired remote instance.
+          description: Set when the album belongs to a remote library.
           example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
     TrackWithAlbum:
       type: object
