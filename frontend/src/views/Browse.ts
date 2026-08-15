@@ -148,7 +148,7 @@ export default class Browse extends Vue {
     selectAlbum(album: PartialAlbum): void {
         this.switchView(View.Browse);
         const alreadyOnPage = this.$route.params.albumId === album.id
-            && this.$route.params.instanceId === (album.remoteInstanceId || undefined);
+            && this.$route.params.libraryId === (album.remoteInstanceId || undefined);
         if (alreadyOnPage) {
             return;
         }
@@ -241,7 +241,7 @@ export default class Browse extends Vue {
     get showAlbum(): boolean {
         if (this.album) {
             if (!this.getIdFromRoute()) {
-                return !!this.getInstanceFromRoute()
+                return !!this.getLibraryIdFromRoute()
                     || !!this.album.thumbnail
                     || (this.album.tracks && this.album.tracks.length > 0);
             }
@@ -261,7 +261,7 @@ export default class Browse extends Vue {
     }
 
     get remoteInstanceId(): string {
-        return this.getInstanceFromRoute();
+        return this.getLibraryIdFromRoute();
     }
 
     get remoteInstanceTitle(): string {
@@ -276,7 +276,7 @@ export default class Browse extends Vue {
 
     get showRemoteLibraries(): boolean {
         return !this.getIdFromRoute()
-            && !this.getInstanceFromRoute()
+            && !this.getLibraryIdFromRoute()
             && !!this.remoteLibraries
             && this.remoteLibraries.length > 0;
     }
@@ -426,7 +426,7 @@ export default class Browse extends Vue {
 
     private load(): void {
         this.clearTimeout();
-        this.apiService.browse(this.getIdFromRoute(), this.getInstanceFromRoute())
+        this.apiService.browse(this.getIdFromRoute(), this.getLibraryIdFromRoute())
             .then(
                 response => {
                     this.album = response.data;
@@ -495,9 +495,9 @@ export default class Browse extends Vue {
         return this.$route.params.albumId;
     }
 
-    private getInstanceFromRoute(): string | undefined {
-        const instance = this.$route.params.instanceId;
-        return typeof instance === 'string' ? instance : undefined;
+    private getLibraryIdFromRoute(): string | undefined {
+        const libraryId = this.$route.params.libraryId;
+        return typeof libraryId === 'string' ? libraryId : undefined;
     }
 
     scrollToTop(smooth: boolean = false): void {
