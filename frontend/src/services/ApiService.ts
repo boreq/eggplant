@@ -73,9 +73,6 @@ export class ApiService {
         return this.axios.get<Stats>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
-    // trackBase returns the API path prefix for a track. Remote tracks are
-    // proxied through this instance under the library prefix; local tracks use
-    // the plain track path.
     private trackBase(track: Track): string {
         if (track.remoteInstanceId) {
             return `library/${encodeURIComponent(track.remoteInstanceId)}/track/${track.id}`;

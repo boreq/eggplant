@@ -34,8 +34,6 @@ func NewListRemoteLibrariesHandler(transactionProvider TransactionProvider) *Lis
 	return &ListRemoteLibrariesHandler{transactionProvider: transactionProvider}
 }
 
-// Execute lists the instances the libraries of which can be browsed, so the
-// ones which gave us an auth token during pairing.
 func (h *ListRemoteLibrariesHandler) Execute(accessCtx accessctx.AccessContext) ([]RemoteLibrary, error) {
 	if !accessCtx.Can(accessctx.PermissionSeeRemoteLibraryContent) {
 		return nil, accessctx.ErrPermissionDenied
