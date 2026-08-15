@@ -17,12 +17,12 @@
 # When pairing, point one instance at the other's BACKEND address
 # (e.g. http://127.0.0.1:8119).
 #
-# Each run starts with fresh databases: the data directories are wiped so the
-# two instances always come up empty and unpaired. The caches are kept so we
-# do not re-transcode the whole music library every time.
+# The data and cache directories are kept between runs, so the instances stay
+# paired and we do not re-transcode the whole music library every time. Delete
+# _misc/pair to start over.
 #
 # Usage:
-#   ./tools/dev-pair.sh   # start both instances with fresh databases
+#   ./tools/dev-pair.sh
 set -e
 
 repo_root=$(git rev-parse --show-toplevel)
@@ -44,10 +44,9 @@ if [ ! -d "$music_dir" ]; then
 	exit 1
 fi
 
-# Bail out if a previous run is still around. Otherwise the old backends keep
-# serving the databases we are about to wipe (they hold the files open) and the
-# frontends silently move to other ports, so you end up talking to the stale
-# instances without noticing.
+# Bail out if a previous run is still around. Otherwise the new backends fail to
+# bind while the old ones keep serving, and the frontends silently move to other
+# ports, so you end up talking to the stale instances without noticing.
 check_port_free() {
 	local host=$1
 	local port=$2
@@ -67,8 +66,6 @@ check_port_free "$frontend_b_host" "$frontend_b_port"
 write_config() {
 	local dir=$1
 	local port=$2
-	# Wipe the database so each run starts fresh; keep the cache.
-	rm -rf "$dir/data"
 	mkdir -p "$dir/data" "$dir/cache"
 	cat > "$dir/config.toml" <<EOF
 serve_address = "127.0.0.1:$port"
