@@ -51,6 +51,7 @@ type Remote struct {
 	SetRemoteAuthToken    *SetRemoteAuthTokenHandler
 	CheckLocalAuthToken   *CheckLocalAuthTokenHandler
 	ListRemotes           *ListRemotesHandler
+	ListRemoteLibraries   *ListRemoteLibrariesHandler
 	CheckRemotes          *CheckRemotesHandler
 	CheckRemote           *CheckRemoteHandler
 }

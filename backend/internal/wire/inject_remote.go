@@ -20,6 +20,7 @@ var remoteSet = wire.NewSet(
 	remote.NewSetRemoteAuthTokenHandler,
 	remote.NewCheckLocalAuthTokenHandler,
 	remote.NewListRemotesHandler,
+	remote.NewListRemoteLibrariesHandler,
 	remote.NewCheckRemotesHandler,
 	remote.NewCheckRemoteHandler,
 

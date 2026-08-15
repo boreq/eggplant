@@ -408,6 +408,24 @@ paths:
                 $ref: '#/components/schemas/VersionResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/remotes:
+    get:
+      tags: [remote]
+      operationId: listRemoteLibraries
+      summary: List paired remote instances whose libraries can be browsed.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: The remote instances which can be browsed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RemoteLibrary'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/remote:
     get:
       tags: [remote]
@@ -615,6 +633,26 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
+  /api/remote/{id}/browse:
+    get:
+      tags: [remote]
+      operationId: remoteRootAlbum
+      summary: Return the root of the library of a paired remote instance.
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+      responses:
+        '200':
+          description: The root album of the remote instance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RootAlbum'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/remote/{id}/browse/{albumId}:
     get:
       tags: [remote]
@@ -1095,6 +1133,17 @@ components:
         url:
           type: string
           description: The address of the peer instance to pair with.
+          example: https://music.0x46.net
+    RemoteLibrary:
+      type: object
+      required: [id, address]
+      properties:
+        id:
+          type: string
+          example: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+        address:
+          type: string
+          description: The address of the peer instance.
           example: https://music.0x46.net
     RemoteInstance:
       type: object

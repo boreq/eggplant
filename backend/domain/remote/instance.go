@@ -148,6 +148,12 @@ func (r *RemoteInstance) RemoteAuthToken() (AuthToken, bool) {
 	return *r.remoteAuthToken, true
 }
 
+// CanBeQueried reports whether we can talk to this instance, so whether it
+// gave us a token which authenticates our requests.
+func (r *RemoteInstance) CanBeQueried() bool {
+	return r.remoteAuthToken != nil
+}
+
 func (r *RemoteInstance) Status() RemoteInstanceStatus {
 	if !r.isPaired() {
 		return RemoteInstanceStatusPairing

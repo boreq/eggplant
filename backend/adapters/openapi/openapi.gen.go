@@ -183,6 +183,13 @@ type RemoteInstanceLastHealthcheckStatus string
 // RemoteInstanceStatus defines model for RemoteInstance.Status.
 type RemoteInstanceStatus string
 
+// RemoteLibrary defines model for RemoteLibrary.
+type RemoteLibrary struct {
+	// Address The address of the peer instance.
+	Address string `json:"address"`
+	Id      string `json:"id"`
+}
+
 // RootAlbum defines model for RootAlbum.
 type RootAlbum struct {
 	Albums    []PartialAlbum `json:"albums"`
@@ -497,6 +504,9 @@ type ClientInterface interface {
 
 	AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RemoteRootAlbum request
+	RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RemoteAlbum request
 	RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -522,6 +532,9 @@ type ClientInterface interface {
 
 	// GetRemoteStreamPlaylist request
 	GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRemoteLibraries request
+	ListRemoteLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Search request
 	Search(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -782,6 +795,18 @@ func (c *Client) AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, r
 	return c.Client.Do(req)
 }
 
+func (c *Client) RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoteRootAlbumRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoteAlbumRequest(c.Server, id, albumId)
 	if err != nil {
@@ -880,6 +905,18 @@ func (c *Client) KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId,
 
 func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteStreamPlaylistRequest(c.Server, id, trackId, streamId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRemoteLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRemoteLibrariesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1467,6 +1504,40 @@ func NewAddRemoteRequestWithBody(server string, contentType string, body io.Read
 	return req, nil
 }
 
+// NewRemoteRootAlbumRequest generates requests for RemoteRootAlbum
+func NewRemoteRootAlbumRequest(server string, id RemoteInstanceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/remote/%s/browse", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewRemoteAlbumRequest generates requests for RemoteAlbum
 func NewRemoteAlbumRequest(server string, id RemoteInstanceId, albumId string) (*http.Request, error) {
 	var err error
@@ -1846,6 +1917,33 @@ func NewGetRemoteStreamPlaylistRequest(server string, id RemoteInstanceId, track
 	}
 
 	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/playlist", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListRemoteLibrariesRequest generates requests for ListRemoteLibraries
+func NewListRemoteLibrariesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/remotes")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2362,6 +2460,9 @@ type ClientWithResponsesInterface interface {
 
 	AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
 
+	// RemoteRootAlbumWithResponse request
+	RemoteRootAlbumWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error)
+
 	// RemoteAlbumWithResponse request
 	RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error)
 
@@ -2387,6 +2488,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetRemoteStreamPlaylistWithResponse request
 	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
+
+	// ListRemoteLibrariesWithResponse request
+	ListRemoteLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemoteLibrariesResponse, error)
 
 	// SearchWithResponse request
 	SearchWithResponse(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*SearchResponse, error)
@@ -2860,6 +2964,39 @@ func (r AddRemoteResponse) ContentType() string {
 	return ""
 }
 
+type RemoteRootAlbumResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RootAlbum
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoteRootAlbumResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoteRootAlbumResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RemoteRootAlbumResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type RemoteAlbumResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3102,6 +3239,37 @@ func (r GetRemoteStreamPlaylistResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetRemoteStreamPlaylistResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRemoteLibrariesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]RemoteLibrary
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRemoteLibrariesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRemoteLibrariesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRemoteLibrariesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3577,6 +3745,15 @@ func (c *ClientWithResponses) AddRemoteWithResponse(ctx context.Context, body Ad
 	return ParseAddRemoteResponse(rsp)
 }
 
+// RemoteRootAlbumWithResponse request returning *RemoteRootAlbumResponse
+func (c *ClientWithResponses) RemoteRootAlbumWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error) {
+	rsp, err := c.RemoteRootAlbum(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoteRootAlbumResponse(rsp)
+}
+
 // RemoteAlbumWithResponse request returning *RemoteAlbumResponse
 func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error) {
 	rsp, err := c.RemoteAlbum(ctx, id, albumId, reqEditors...)
@@ -3655,6 +3832,15 @@ func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetRemoteStreamPlaylistResponse(rsp)
+}
+
+// ListRemoteLibrariesWithResponse request returning *ListRemoteLibrariesResponse
+func (c *ClientWithResponses) ListRemoteLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemoteLibrariesResponse, error) {
+	rsp, err := c.ListRemoteLibraries(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRemoteLibrariesResponse(rsp)
 }
 
 // SearchWithResponse request returning *SearchResponse
@@ -4258,6 +4444,53 @@ func ParseAddRemoteResponse(rsp *http.Response) (*AddRemoteResponse, error) {
 	return response, nil
 }
 
+// ParseRemoteRootAlbumResponse parses an HTTP response from a RemoteRootAlbumWithResponse call
+func ParseRemoteRootAlbumResponse(rsp *http.Response) (*RemoteRootAlbumResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoteRootAlbumResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RootAlbum
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseRemoteAlbumResponse parses an HTTP response from a RemoteAlbumWithResponse call
 func ParseRemoteAlbumResponse(rsp *http.Response) (*RemoteAlbumResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -4505,6 +4738,39 @@ func ParseGetRemoteStreamPlaylistResponse(rsp *http.Response) (*GetRemoteStreamP
 	response := &GetRemoteStreamPlaylistResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseListRemoteLibrariesResponse parses an HTTP response from a ListRemoteLibrariesWithResponse call
+func ParseListRemoteLibrariesResponse(rsp *http.Response) (*ListRemoteLibrariesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRemoteLibrariesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []RemoteLibrary
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	}
 
 	return response, nil

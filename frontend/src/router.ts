@@ -24,6 +24,11 @@ export default new Router({
             component: Browse,
         },
         {
+            path: '/remote/:instanceId',
+            name: 'remote-browse',
+            component: Browse,
+        },
+        {
             path: '/',
             name: 'browse',
             component: Browse,

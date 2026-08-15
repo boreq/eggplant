@@ -36,16 +36,6 @@ func (r RootAlbum) Tracks() Tracks {
 	return r.tracks
 }
 
-func MergeRootAlbums(base RootAlbum, others []RootAlbum) (RootAlbum, error) {
-	albums := slices.Clone(base.albums)
-	tracks := slices.Clone(base.tracks.Items())
-	for _, o := range others {
-		albums = append(albums, o.albums...)
-		tracks = append(tracks, o.tracks.Items()...)
-	}
-	return NewRootAlbum(base.thumbnail, albums, tracks)
-}
-
 type Album struct {
 	id               AlbumId
 	title            AlbumTitle

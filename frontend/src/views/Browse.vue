@@ -29,6 +29,14 @@
                                     Eggplant
                                 </router-link>
                             </li>
+                            <li v-if="remoteInstanceId">
+                                <router-link v-if="album.id" :to="remoteInstanceUrl">
+                                    {{ remoteInstanceTitle }}
+                                </router-link>
+                                <template v-else>
+                                    {{ remoteInstanceTitle }}
+                                </template>
+                            </li>
                             <li v-for="parent in album.parents" :key="parent.id">
                                 <router-link :to="parentUrl(parent)">
                                     {{ parent.title }}
@@ -40,7 +48,7 @@
                         </ul>
 
                         <div class="title">
-                            {{ album.title || 'Eggplant' }}
+                            {{ title }}
                         </div>
 
                         <div class="details" v-if="numberOfTracks > 0">
@@ -72,6 +80,12 @@
                             </li>
                         </ul>
                     </div>
+                </div>
+
+                <div class="section" v-if="showRemoteLibraries">
+                    <SubHeader text="Connected instances"></SubHeader>
+                    <remote-libraries :libraries="remoteLibraries"
+                        @select-library="selectRemoteLibrary"></remote-libraries>
                 </div>
 
                 <div class="section bleed" v-if="album && album.tracks && album.tracks.length > 0">

@@ -15,6 +15,7 @@ import { RegisterCommand } from '@/dto/RegisterCommand';
 import { StreamStartResponse } from '@/dto/StreamStartResponse';
 import { TrackDuration } from '@/dto/TrackDuration';
 import { RemoteInstance } from '@/dto/RemoteInstance';
+import { RemoteLibrary } from '@/dto/RemoteLibrary';
 import { AddRemoteResult } from '@/dto/AddRemoteResult';
 
 /*
@@ -46,8 +47,9 @@ export class ApiService {
 
     browse(id?: string, instanceId?: string): Promise<AxiosResponse<Album>> {
         let url: string;
-        if (instanceId && id) {
-            url = `remote/${encodeURIComponent(instanceId)}/browse/${id}`;
+        if (instanceId) {
+            const instance = `remote/${encodeURIComponent(instanceId)}`;
+            url = id ? `${instance}/browse/${id}` : `${instance}/browse`;
         } else {
             url = id ? `browse/${id}` : 'browse';
         }
@@ -201,6 +203,11 @@ export class ApiService {
         username = encodeURIComponent(username);
         const url = `auth/users/${username}`;
         return this.axios.delete<void>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
+    listRemoteLibraries(): Promise<AxiosResponse<RemoteLibrary[]>> {
+        const url = `remotes`;
+        return this.axios.get<RemoteLibrary[]>(import.meta.env.VUE_APP_API_PREFIX + url);
     }
 
     listRemotes(): Promise<AxiosResponse<RemoteInstance[]>> {

@@ -76,6 +76,31 @@ func (h *Handler) remoteListRemotes(accessCtx accessctx.AccessContext, r *http.R
 	return rest.NewResponse(out)
 }
 
+func (h *Handler) remoteListRemoteLibraries(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	libraries, err := h.app.Remote.ListRemoteLibraries.Execute(accessCtx)
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden
+		}
+		h.log.Error("list remote libraries query failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	out := make([]openapi.RemoteLibrary, 0, len(libraries))
+	for _, library := range libraries {
+		out = append(out, toRemoteLibrary(library))
+	}
+
+	return rest.NewResponse(out)
+}
+
+func toRemoteLibrary(library remote.RemoteLibrary) openapi.RemoteLibrary {
+	return openapi.RemoteLibrary{
+		Id:      library.ID().String(),
+		Address: library.Address().String(),
+	}
+}
+
 func toRemoteInstance(instance *remotedomain.RemoteInstance) (openapi.RemoteInstance, error) {
 	status, err := toRemoteInstanceStatus(instance.Status())
 	if err != nil {
@@ -146,6 +171,29 @@ func (h *Handler) remoteTrackDuration(accessCtx accessctx.AccessContext, r *http
 	}
 
 	return rest.NewResponse(openapi.TrackDuration{Duration: duration.Seconds()})
+}
+
+func (h *Handler) remoteRootAlbum(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
+	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+	}
+
+	album, err := h.app.Music.RemoteGetRootAlbum.Execute(r.Context(), accessCtx, music.RemoteGetRootAlbum{InstanceId: instanceId})
+	if err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+		}
+		h.log.Error("could not get the remote root album", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(toRootAlbum(album))
 }
 
 func (h *Handler) remoteAlbum(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {

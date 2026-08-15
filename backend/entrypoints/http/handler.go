@@ -65,9 +65,11 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/auth/users", rest.Wrap(h.addAccessContextRest(h.getUsers)))
 	h.router.HandlerFunc(http.MethodDelete, "/api/auth/users/:username", rest.Wrap(h.addAccessContextRest(h.removeUser)))
 
+	h.router.HandlerFunc(http.MethodGet, "/api/remotes", rest.Wrap(h.addAccessContextRest(h.remoteListRemoteLibraries)))
 	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteListRemotes)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteAddRemote)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.addAccessContextRest(h.remoteSetPairingToken)))
+	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/browse", rest.Wrap(h.addAccessContextRest(h.remoteRootAlbum)))
 	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/browse/:albumId", rest.Wrap(h.addAccessContextRest(h.remoteAlbum)))
 	h.router.HandlerFunc(http.MethodGet, "/api/remote/:id/track/:trackId/duration", rest.Wrap(h.addAccessContextRest(h.remoteTrackDuration)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/track/:trackId/stream", rest.Wrap(h.addAccessContextRest(h.remoteStartStream)))
@@ -129,7 +131,7 @@ func (h *Handler) addAccessContext(handler func(accessctx.AccessContext, http.Re
 }
 
 func (h *Handler) browse(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	a, err := h.app.Music.GetRootAlbum.Execute(r.Context(), accessCtx, music.GetRootAlbum{})
+	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx, music.GetRootAlbum{})
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
