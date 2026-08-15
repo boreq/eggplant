@@ -98,6 +98,14 @@ func (r *RemoteInstance) Address() RemoteInstanceAddress {
 	return r.address
 }
 
+func (r *RemoteInstance) Name() (RemoteInstanceName, error) {
+	name, err := NewRemoteInstanceName(r.address)
+	if err != nil {
+		return RemoteInstanceName{}, errors.Wrap(err, "could not create the name")
+	}
+	return name, nil
+}
+
 func (r *RemoteInstance) LocalPairingTokenHash() (HashedPairingToken, bool) {
 	if r.localPairingTokenHash == nil {
 		return HashedPairingToken{}, false

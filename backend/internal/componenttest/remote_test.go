@@ -86,7 +86,7 @@ func TestServiceRemotePairing(t *testing.T) {
 		require.NotNil(t, resp.JSON200)
 		require.Len(t, *resp.JSON200, 1)
 		require.Equal(t, startedA.JSON200.Id, (*resp.JSON200)[0].Id)
-		require.Equal(t, instanceB.baseURL, (*resp.JSON200)[0].Name)
+		require.Equal(t, instanceB.host, (*resp.JSON200)[0].Name)
 	})
 
 	t.Run("listing browsable libraries is forbidden for anonymous callers", func(t *testing.T) {

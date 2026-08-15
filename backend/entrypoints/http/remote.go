@@ -97,7 +97,7 @@ func (h *Handler) listLibraries(accessCtx accessctx.AccessContext, r *http.Reque
 func toLibrary(library remote.RemoteLibrary) openapi.Library {
 	return openapi.Library{
 		Id:   library.ID().String(),
-		Name: library.Address().String(),
+		Name: library.Name().String(),
 	}
 }
 

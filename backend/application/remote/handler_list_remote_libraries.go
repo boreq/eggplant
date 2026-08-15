@@ -7,14 +7,14 @@ import (
 )
 
 type RemoteLibrary struct {
-	id      remotedomain.RemoteInstanceID
-	address remotedomain.RemoteInstanceAddress
+	id   remotedomain.RemoteInstanceID
+	name remotedomain.RemoteInstanceName
 }
 
-func NewRemoteLibrary(id remotedomain.RemoteInstanceID, address remotedomain.RemoteInstanceAddress) RemoteLibrary {
+func NewRemoteLibrary(id remotedomain.RemoteInstanceID, name remotedomain.RemoteInstanceName) RemoteLibrary {
 	return RemoteLibrary{
-		id:      id,
-		address: address,
+		id:   id,
+		name: name,
 	}
 }
 
@@ -22,8 +22,8 @@ func (l RemoteLibrary) ID() remotedomain.RemoteInstanceID {
 	return l.id
 }
 
-func (l RemoteLibrary) Address() remotedomain.RemoteInstanceAddress {
-	return l.address
+func (l RemoteLibrary) Name() remotedomain.RemoteInstanceName {
+	return l.name
 }
 
 type ListRemoteLibrariesHandler struct {
@@ -50,7 +50,11 @@ func (h *ListRemoteLibrariesHandler) Execute(accessCtx accessctx.AccessContext) 
 			if !instance.CanBeQueried() {
 				continue
 			}
-			libraries = append(libraries, NewRemoteLibrary(instance.Id(), instance.Address()))
+			name, err := instance.Name()
+			if err != nil {
+				return errors.Wrap(err, "could not get the name")
+			}
+			libraries = append(libraries, NewRemoteLibrary(instance.Id(), name))
 		}
 		return nil
 	}); err != nil {

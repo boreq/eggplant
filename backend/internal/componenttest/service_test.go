@@ -281,6 +281,7 @@ func TestServiceDocs(t *testing.T) {
 
 type testService struct {
 	baseURL string
+	host    string
 	client  *openapi.ClientWithResponses
 	app     *application.Application
 	db      *bolt.DB
@@ -327,7 +328,7 @@ func newTestService(t *testing.T) *testService {
 	client, err := openapi.NewClientWithResponses(server.URL)
 	require.NoError(t, err)
 
-	return &testService{baseURL: server.URL, client: client, app: svc.App, db: svc.DB}
+	return &testService{baseURL: server.URL, host: server.Listener.Addr().String(), client: client, app: svc.App, db: svc.DB}
 }
 
 func authedAs(token string) openapi.RequestEditorFn {
