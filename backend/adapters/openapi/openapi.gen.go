@@ -500,24 +500,11 @@ type ClientInterface interface {
 	// ListLibraries request
 	ListLibraries(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRemotes request
-	ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AddRemoteWithBody request with any body
-	AddRemoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// RemoteRootAlbum request
 	RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RemoteAlbum request
 	RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetRemotePairingTokenWithBody request with any body
-	SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	SetRemotePairingToken(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRemoteTrackDuration request
 	GetRemoteTrackDuration(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -536,6 +523,19 @@ type ClientInterface interface {
 
 	// GetRemoteStreamPlaylist request
 	GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRemotes request
+	ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddRemoteWithBody request with any body
+	AddRemoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetRemotePairingTokenWithBody request with any body
+	SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetRemotePairingToken(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Search request
 	Search(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -772,42 +772,6 @@ func (c *Client) ListLibraries(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRemotesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AddRemoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddRemoteRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddRemoteRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoteRootAlbumRequest(c.Server, id)
 	if err != nil {
@@ -822,30 +786,6 @@ func (c *Client) RemoteRootAlbum(ctx context.Context, id RemoteInstanceId, reqEd
 
 func (c *Client) RemoteAlbum(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoteAlbumRequest(c.Server, id, albumId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetRemotePairingTokenRequestWithBody(c.Server, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SetRemotePairingToken(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetRemotePairingTokenRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -918,6 +858,66 @@ func (c *Client) KeepAliveRemoteStream(ctx context.Context, id RemoteInstanceId,
 
 func (c *Client) GetRemoteStreamPlaylist(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRemoteStreamPlaylistRequest(c.Server, id, trackId, streamId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRemotes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRemotesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddRemoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddRemoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddRemoteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetRemotePairingTokenRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetRemotePairingToken(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetRemotePairingTokenRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1465,73 +1465,6 @@ func NewListLibrariesRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewListRemotesRequest generates requests for ListRemotes
-func NewListRemotesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAddRemoteRequest calls the generic AddRemote builder with application/json body
-func NewAddRemoteRequest(server string, body AddRemoteJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAddRemoteRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewAddRemoteRequestWithBody generates requests for AddRemote with any type of body
-func NewAddRemoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewRemoteRootAlbumRequest generates requests for RemoteRootAlbum
 func NewRemoteRootAlbumRequest(server string, id RemoteInstanceId) (*http.Request, error) {
 	var err error
@@ -1548,7 +1481,7 @@ func NewRemoteRootAlbumRequest(server string, id RemoteInstanceId) (*http.Reques
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/browse", pathParam0)
+	operationPath := fmt.Sprintf("/api/library/%s/browse", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1589,7 +1522,7 @@ func NewRemoteAlbumRequest(server string, id RemoteInstanceId, albumId string) (
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/browse/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/api/library/%s/browse/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1603,53 +1536,6 @@ func NewRemoteAlbumRequest(server string, id RemoteInstanceId, albumId string) (
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewSetRemotePairingTokenRequest calls the generic SetRemotePairingToken builder with application/json body
-func NewSetRemotePairingTokenRequest(server string, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSetRemotePairingTokenRequestWithBody(server, id, "application/json", bodyReader)
-}
-
-// NewSetRemotePairingTokenRequestWithBody generates requests for SetRemotePairingToken with any type of body
-func NewSetRemotePairingTokenRequestWithBody(server string, id RemoteInstanceId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/remote/%s/pairing-token", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1677,7 +1563,7 @@ func NewGetRemoteTrackDurationRequest(server string, id RemoteInstanceId, trackI
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/duration", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/duration", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1718,7 +1604,7 @@ func NewStartRemoteTrackStreamRequest(server string, id RemoteInstanceId, trackI
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1800,7 +1686,7 @@ func NewGetRemoteStreamFragmentRequest(server string, id RemoteInstanceId, track
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/fragment/%s", pathParam0, pathParam1, pathParam2, pathParam3)
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/fragment/%s", pathParam0, pathParam1, pathParam2, pathParam3)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1848,7 +1734,7 @@ func NewGetRemoteStreamInitRequest(server string, id RemoteInstanceId, trackId T
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/init", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/init", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1896,7 +1782,7 @@ func NewKeepAliveRemoteStreamRequest(server string, id RemoteInstanceId, trackId
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/keepalive", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/keepalive", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1944,7 +1830,7 @@ func NewGetRemoteStreamPlaylistRequest(server string, id RemoteInstanceId, track
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/remote/%s/track/%s/stream/%s/playlist", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/api/library/%s/track/%s/stream/%s/playlist", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1958,6 +1844,120 @@ func NewGetRemoteStreamPlaylistRequest(server string, id RemoteInstanceId, track
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListRemotesRequest generates requests for ListRemotes
+func NewListRemotesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/remote")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAddRemoteRequest calls the generic AddRemote builder with application/json body
+func NewAddRemoteRequest(server string, body AddRemoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddRemoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddRemoteRequestWithBody generates requests for AddRemote with any type of body
+func NewAddRemoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/remote")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSetRemotePairingTokenRequest calls the generic SetRemotePairingToken builder with application/json body
+func NewSetRemotePairingTokenRequest(server string, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetRemotePairingTokenRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewSetRemotePairingTokenRequestWithBody generates requests for SetRemotePairingToken with any type of body
+func NewSetRemotePairingTokenRequestWithBody(server string, id RemoteInstanceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/remote/%s/pairing-token", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -2456,24 +2456,11 @@ type ClientWithResponsesInterface interface {
 	// ListLibrariesWithResponse request
 	ListLibrariesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLibrariesResponse, error)
 
-	// ListRemotesWithResponse request
-	ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error)
-
-	// AddRemoteWithBodyWithResponse request with any body
-	AddRemoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
-
-	AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
-
 	// RemoteRootAlbumWithResponse request
 	RemoteRootAlbumWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error)
 
 	// RemoteAlbumWithResponse request
 	RemoteAlbumWithResponse(ctx context.Context, id RemoteInstanceId, albumId string, reqEditors ...RequestEditorFn) (*RemoteAlbumResponse, error)
-
-	// SetRemotePairingTokenWithBodyWithResponse request with any body
-	SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
-
-	SetRemotePairingTokenWithResponse(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
 
 	// GetRemoteTrackDurationWithResponse request
 	GetRemoteTrackDurationWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, reqEditors ...RequestEditorFn) (*GetRemoteTrackDurationResponse, error)
@@ -2492,6 +2479,19 @@ type ClientWithResponsesInterface interface {
 
 	// GetRemoteStreamPlaylistWithResponse request
 	GetRemoteStreamPlaylistWithResponse(ctx context.Context, id RemoteInstanceId, trackId TrackId, streamId StreamId, reqEditors ...RequestEditorFn) (*GetRemoteStreamPlaylistResponse, error)
+
+	// ListRemotesWithResponse request
+	ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error)
+
+	// AddRemoteWithBodyWithResponse request with any body
+	AddRemoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
+
+	AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
+
+	// SetRemotePairingTokenWithBodyWithResponse request with any body
+	SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
+
+	SetRemotePairingTokenWithResponse(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
 
 	// SearchWithResponse request
 	SearchWithResponse(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*SearchResponse, error)
@@ -2933,69 +2933,6 @@ func (r ListLibrariesResponse) ContentType() string {
 	return ""
 }
 
-type ListRemotesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]RemoteInstance
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRemotesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRemotesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRemotesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AddRemoteResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AddRemoteResult
-	JSON400      *BadRequest
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r AddRemoteResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AddRemoteResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AddRemoteResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type RemoteRootAlbumResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3056,39 +2993,6 @@ func (r RemoteAlbumResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RemoteAlbumResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SetRemotePairingTokenResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Empty
-	JSON400      *BadRequest
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r SetRemotePairingTokenResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetRemotePairingTokenResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetRemotePairingTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3271,6 +3175,102 @@ func (r GetRemoteStreamPlaylistResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetRemoteStreamPlaylistResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRemotesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]RemoteInstance
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRemotesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRemotesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRemotesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AddRemoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AddRemoteResult
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r AddRemoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddRemoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AddRemoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetRemotePairingTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Empty
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SetRemotePairingTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetRemotePairingTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetRemotePairingTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3729,32 +3729,6 @@ func (c *ClientWithResponses) ListLibrariesWithResponse(ctx context.Context, req
 	return ParseListLibrariesResponse(rsp)
 }
 
-// ListRemotesWithResponse request returning *ListRemotesResponse
-func (c *ClientWithResponses) ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error) {
-	rsp, err := c.ListRemotes(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRemotesResponse(rsp)
-}
-
-// AddRemoteWithBodyWithResponse request with arbitrary body returning *AddRemoteResponse
-func (c *ClientWithResponses) AddRemoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error) {
-	rsp, err := c.AddRemoteWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAddRemoteResponse(rsp)
-}
-
-func (c *ClientWithResponses) AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error) {
-	rsp, err := c.AddRemote(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAddRemoteResponse(rsp)
-}
-
 // RemoteRootAlbumWithResponse request returning *RemoteRootAlbumResponse
 func (c *ClientWithResponses) RemoteRootAlbumWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoteRootAlbumResponse, error) {
 	rsp, err := c.RemoteRootAlbum(ctx, id, reqEditors...)
@@ -3771,23 +3745,6 @@ func (c *ClientWithResponses) RemoteAlbumWithResponse(ctx context.Context, id Re
 		return nil, err
 	}
 	return ParseRemoteAlbumResponse(rsp)
-}
-
-// SetRemotePairingTokenWithBodyWithResponse request with arbitrary body returning *SetRemotePairingTokenResponse
-func (c *ClientWithResponses) SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error) {
-	rsp, err := c.SetRemotePairingTokenWithBody(ctx, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetRemotePairingTokenResponse(rsp)
-}
-
-func (c *ClientWithResponses) SetRemotePairingTokenWithResponse(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error) {
-	rsp, err := c.SetRemotePairingToken(ctx, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetRemotePairingTokenResponse(rsp)
 }
 
 // GetRemoteTrackDurationWithResponse request returning *GetRemoteTrackDurationResponse
@@ -3842,6 +3799,49 @@ func (c *ClientWithResponses) GetRemoteStreamPlaylistWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetRemoteStreamPlaylistResponse(rsp)
+}
+
+// ListRemotesWithResponse request returning *ListRemotesResponse
+func (c *ClientWithResponses) ListRemotesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRemotesResponse, error) {
+	rsp, err := c.ListRemotes(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRemotesResponse(rsp)
+}
+
+// AddRemoteWithBodyWithResponse request with arbitrary body returning *AddRemoteResponse
+func (c *ClientWithResponses) AddRemoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error) {
+	rsp, err := c.AddRemoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddRemoteResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error) {
+	rsp, err := c.AddRemote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddRemoteResponse(rsp)
+}
+
+// SetRemotePairingTokenWithBodyWithResponse request with arbitrary body returning *SetRemotePairingTokenResponse
+func (c *ClientWithResponses) SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error) {
+	rsp, err := c.SetRemotePairingTokenWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetRemotePairingTokenResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetRemotePairingTokenWithResponse(ctx context.Context, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error) {
+	rsp, err := c.SetRemotePairingToken(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetRemotePairingTokenResponse(rsp)
 }
 
 // SearchWithResponse request returning *SearchResponse
@@ -4405,79 +4405,6 @@ func ParseListLibrariesResponse(rsp *http.Response) (*ListLibrariesResponse, err
 	return response, nil
 }
 
-// ParseListRemotesResponse parses an HTTP response from a ListRemotesWithResponse call
-func ParseListRemotesResponse(rsp *http.Response) (*ListRemotesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRemotesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []RemoteInstance
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAddRemoteResponse parses an HTTP response from a AddRemoteWithResponse call
-func ParseAddRemoteResponse(rsp *http.Response) (*AddRemoteResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AddRemoteResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AddRemoteResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseRemoteRootAlbumResponse parses an HTTP response from a RemoteRootAlbumWithResponse call
 func ParseRemoteRootAlbumResponse(rsp *http.Response) (*RemoteRootAlbumResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -4541,53 +4468,6 @@ func ParseRemoteAlbumResponse(rsp *http.Response) (*RemoteAlbumResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Album
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSetRemotePairingTokenResponse parses an HTTP response from a SetRemotePairingTokenWithResponse call
-func ParseSetRemotePairingTokenResponse(rsp *http.Response) (*SetRemotePairingTokenResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SetRemotePairingTokenResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Empty
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4772,6 +4652,126 @@ func ParseGetRemoteStreamPlaylistResponse(rsp *http.Response) (*GetRemoteStreamP
 	response := &GetRemoteStreamPlaylistResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseListRemotesResponse parses an HTTP response from a ListRemotesWithResponse call
+func ParseListRemotesResponse(rsp *http.Response) (*ListRemotesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRemotesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []RemoteInstance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddRemoteResponse parses an HTTP response from a AddRemoteWithResponse call
+func ParseAddRemoteResponse(rsp *http.Response) (*AddRemoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddRemoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AddRemoteResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetRemotePairingTokenResponse parses an HTTP response from a SetRemotePairingTokenWithResponse call
+func ParseSetRemotePairingTokenResponse(rsp *http.Response) (*SetRemotePairingTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetRemotePairingTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Empty
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil

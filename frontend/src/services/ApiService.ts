@@ -48,7 +48,7 @@ export class ApiService {
     browse(id?: string, instanceId?: string): Promise<AxiosResponse<Album>> {
         let url: string;
         if (instanceId) {
-            const instance = `remote/${encodeURIComponent(instanceId)}`;
+            const instance = `library/${encodeURIComponent(instanceId)}`;
             url = id ? `${instance}/browse/${id}` : `${instance}/browse`;
         } else {
             url = id ? `browse/${id}` : 'browse';
@@ -74,11 +74,11 @@ export class ApiService {
     }
 
     // trackBase returns the API path prefix for a track. Remote tracks are
-    // proxied through this instance under the remote-instance prefix; local
-    // tracks use the plain track path.
+    // proxied through this instance under the library prefix; local tracks use
+    // the plain track path.
     private trackBase(track: Track): string {
         if (track.remoteInstanceId) {
-            return `remote/${encodeURIComponent(track.remoteInstanceId)}/track/${track.id}`;
+            return `library/${encodeURIComponent(track.remoteInstanceId)}/track/${track.id}`;
         }
         return `track/${track.id}`;
     }
@@ -108,7 +108,7 @@ export class ApiService {
 
     thumbnailUrl(thumbnail: Thumbnail, instanceId?: string): string {
         const url = instanceId
-            ? `remote/${encodeURIComponent(instanceId)}/thumbnail/${thumbnail.id}`
+            ? `library/${encodeURIComponent(instanceId)}/thumbnail/${thumbnail.id}`
             : `thumbnail/${thumbnail.id}`;
         return import.meta.env.VUE_APP_API_PREFIX + url;
     }

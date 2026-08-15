@@ -491,7 +491,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/track/{trackId}/duration:
+  /api/library/{id}/track/{trackId}/duration:
     get:
       tags: [remote]
       operationId: getRemoteTrackDuration
@@ -512,7 +512,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/track/{trackId}/stream:
+  /api/library/{id}/track/{trackId}/stream:
     post:
       tags: [remote]
       operationId: startRemoteTrackStream
@@ -541,7 +541,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/playlist:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/playlist:
     get:
       tags: [remote]
       operationId: getRemoteStreamPlaylist
@@ -563,7 +563,7 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/init:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/init:
     get:
       tags: [remote]
       operationId: getRemoteStreamInit
@@ -586,7 +586,7 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/fragment/{number}:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/fragment/{number}:
     get:
       tags: [remote]
       operationId: getRemoteStreamFragment
@@ -615,7 +615,7 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/track/{trackId}/stream/{streamId}/keepalive:
+  /api/library/{id}/track/{trackId}/stream/{streamId}/keepalive:
     post:
       tags: [remote]
       operationId: keepAliveRemoteStream
@@ -633,7 +633,7 @@ paths:
           $ref: '#/components/responses/ForbiddenEmpty'
         '404':
           $ref: '#/components/responses/NotFoundEmpty'
-  /api/remote/{id}/browse:
+  /api/library/{id}/browse:
     get:
       tags: [remote]
       operationId: remoteRootAlbum
@@ -653,7 +653,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/remote/{id}/browse/{albumId}:
+  /api/library/{id}/browse/{albumId}:
     get:
       tags: [remote]
       operationId: remoteAlbum
