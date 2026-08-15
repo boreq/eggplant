@@ -1133,7 +1133,7 @@ components:
         url:
           type: string
           description: The address of the peer instance to pair with.
-          example: https://music.0x46.net
+          example: https://music.example.com
     Library:
       type: object
       required: [id, name]
@@ -1144,7 +1144,7 @@ components:
         name:
           type: string
           description: A name of the library which can be displayed to the user.
-          example: https://music.0x46.net
+          example: https://music.example.com
     RemoteInstance:
       type: object
       required: [id, address, status, remote_pairing_token_set]
@@ -1155,7 +1155,7 @@ components:
         address:
           type: string
           description: The address of the peer instance.
-          example: https://music.0x46.net
+          example: https://music.example.com
         status:
           type: string
           enum: [PAIRING, HEALTHY, DEAD]
