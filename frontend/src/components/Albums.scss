@@ -1,6 +1,6 @@
 .albums {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 2em;
 
     .album {
@@ -24,6 +24,7 @@
         .title {
             margin: 0 auto;
             margin-top: .5em;
+            overflow-wrap: anywhere;
         }
 
         &:hover {
@@ -31,6 +32,30 @@
             color: $primary-color;
             transform: scale(1.05);
         }
+    }
+}
+
+@media (max-width: 1500px) {
+    .albums {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1300px) {
+    .albums {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1100px) {
+    .albums {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 950px) {
+    .albums {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 

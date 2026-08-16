@@ -2,6 +2,7 @@
     height: 100%;
     width: 100%;
     position: relative;
+    container-type: size;
 
     > * {
         height: 100%;
@@ -88,17 +89,11 @@
     }
 
     .icon {
-        font-size: 100px;
+        font-size: 50cqmin;
         display: flex;
         justify-content: center;
         align-items: center;
         text-shadow: $box-normal-box-shadow;
         color: $primary-color;
-    }
-
-    @media (max-width: $responsive-threshold-mobile) {
-        .icon {
-            font-size: 100px;
-        }
     }
 }
