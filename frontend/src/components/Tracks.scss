@@ -131,6 +131,8 @@
 
     @media (any-pointer: coarse) {
         .track {
+            cursor: pointer;
+
             &.playing {
                 .title {
                     color: $primary-color;
