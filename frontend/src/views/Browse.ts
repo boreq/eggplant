@@ -260,6 +260,13 @@ export default class Browse extends Vue {
         return 'Eggplant';
     }
 
+    get albumIcon(): string {
+        if (this.remoteLibraryId && !(this.album && this.album.id)) {
+            return 'fa-network-wired';
+        }
+        return 'fa-compact-disc';
+    }
+
     get remoteLibraryId(): string {
         return this.getLibraryIdFromRoute();
     }
@@ -267,7 +274,7 @@ export default class Browse extends Vue {
     get remoteLibraryTitle(): string {
         const library = (this.remoteLibraries || [])
             .find(v => v.id === this.remoteLibraryId);
-        return library ? library.name : 'Remote library';
+        return library ? library.name : 'Remote';
     }
 
     get remoteLibraryUrl(): Location {
@@ -475,7 +482,7 @@ export default class Browse extends Vue {
                 },
                 error => {
                     this.remoteLibraries = null;
-                    Notifications.pushError(this, 'Could not list the remote libraries.', error);
+                    Notifications.pushError(this, 'Could not list the remotes.', error);
                 });
     }
 

@@ -19,7 +19,7 @@
             <div class="content" ref="content">
                 <div class="album-hero" v-if="showAlbum">
                     <div class="artwork">
-                        <thumbnail :album="basicAlbum" tilt></thumbnail>
+                        <thumbnail :album="basicAlbum" :icon="albumIcon" tilt></thumbnail>
                     </div>
 
                     <div class="info">
@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="section" v-if="showRemoteLibraries">
-                    <SubHeader text="Remote libraries"></SubHeader>
+                    <SubHeader text="Remotes"></SubHeader>
                     <remote-libraries :libraries="remoteLibraries"
                         @select-library="selectRemoteLibrary"></remote-libraries>
                 </div>

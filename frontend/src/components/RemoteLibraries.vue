@@ -2,7 +2,7 @@
     <div class="remote-libraries">
         <a v-for="library in libraries" :key="library.id" class="library" @click="selectLibrary(library)">
             <div class="icon">
-                <i class="fas fa-server"></i>
+                <i class="fas fa-network-wired"></i>
             </div>
             <div class="name">
                 {{ library.name }}

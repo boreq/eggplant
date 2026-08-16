@@ -17,6 +17,9 @@ export default class Thumbnail extends Vue {
     @Prop({ type: Boolean, default: false })
     tilt: boolean;
 
+    @Prop({ type: String, default: 'fa-compact-disc' })
+    icon: string;
+
     @Ref()
     root: HTMLElement;
 

@@ -8,7 +8,7 @@
             </div>
         </div>
         <div class="icon" v-else>
-            <i class="fas fa-compact-disc"></i>
+            <i class="fas" :class="icon"></i>
         </div>
     </div>
 </template>
