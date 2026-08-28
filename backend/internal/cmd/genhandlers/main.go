@@ -14,7 +14,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -145,7 +145,7 @@ func collectHandlers(pkg *packages.Package) []handler {
 		}
 	}
 
-	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
+	slices.SortFunc(out, func(a, b handler) int { return strings.Compare(a.name, b.name) })
 	return out
 }
 
@@ -273,8 +273,8 @@ func render(pkgName, loggerImport, loggerType, loggerKey string, handlers []hand
 			stdlib = append(stdlib, k)
 		}
 	}
-	sort.Strings(stdlib)
-	sort.Strings(third)
+	slices.Sort(stdlib)
+	slices.Sort(third)
 	for _, k := range stdlib {
 		fmt.Fprintf(&src, "\t%q\n", k)
 	}

@@ -1,7 +1,7 @@
 package library
 
 import (
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/boreq/eggplant/domain/music"
@@ -187,22 +187,28 @@ func (b *searchBuilder) build() SearchResults {
 	for _, h := range b.albums {
 		albumHits = append(albumHits, h)
 	}
-	sort.SliceStable(albumHits, func(i, j int) bool {
-		if albumHits[i].dist != albumHits[j].dist {
-			return albumHits[i].dist < albumHits[j].dist
+	slices.SortStableFunc(albumHits, func(a, b albumHit) int {
+		if a.dist != b.dist {
+			if a.dist < b.dist {
+				return -1
+			}
+			return 1
 		}
-		return albumHits[i].album.Title().String() < albumHits[j].album.Title().String()
+		return strings.Compare(a.album.Title().String(), b.album.Title().String())
 	})
 
 	trackHits := make([]trackHit, 0, len(b.tracks))
 	for _, h := range b.tracks {
 		trackHits = append(trackHits, h)
 	}
-	sort.SliceStable(trackHits, func(i, j int) bool {
-		if trackHits[i].dist != trackHits[j].dist {
-			return trackHits[i].dist < trackHits[j].dist
+	slices.SortStableFunc(trackHits, func(a, b trackHit) int {
+		if a.dist != b.dist {
+			if a.dist < b.dist {
+				return -1
+			}
+			return 1
 		}
-		return trackHits[i].track.Track().Title().String() < trackHits[j].track.Track().Title().String()
+		return strings.Compare(a.track.Track().Title().String(), b.track.Track().Title().String())
 	})
 
 	if len(albumHits) > maxSearchItems {

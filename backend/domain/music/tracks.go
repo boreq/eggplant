@@ -2,7 +2,7 @@ package music
 
 import (
 	"slices"
-	"sort"
+	"strings"
 )
 
 type Tracks struct {
@@ -20,20 +20,23 @@ func (t Tracks) Items() []Track {
 }
 
 func sortTracks(tracks []Track) {
-	sort.Slice(tracks, func(i, j int) bool {
-		ni := tracks[i].Number()
-		nj := tracks[j].Number()
+	slices.SortFunc(tracks, func(a, b Track) int {
+		na := a.Number()
+		nb := b.Number()
 
-		if ni != nil && nj != nil {
-			if ni.Int() != nj.Int() {
-				return ni.Int() < nj.Int()
+		if na != nil && nb != nil {
+			if na.Int() != nb.Int() {
+				if na.Int() < nb.Int() {
+					return -1
+				}
+				return 1
 			}
-		} else if ni != nil {
-			return true
-		} else if nj != nil {
-			return false
+		} else if na != nil {
+			return -1
+		} else if nb != nil {
+			return 1
 		}
 
-		return tracks[i].Title().String() < tracks[j].Title().String()
+		return strings.Compare(a.Title().String(), b.Title().String())
 	})
 }

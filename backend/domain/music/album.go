@@ -2,7 +2,7 @@ package music
 
 import (
 	"slices"
-	"sort"
+	"strings"
 
 	"github.com/boreq/eggplant/domain/remote"
 	"github.com/boreq/errors"
@@ -185,7 +185,7 @@ func (t AlbumTitle) String() string {
 }
 
 func sortAlbums(albums []PartialAlbum) {
-	sort.Slice(albums, func(i, j int) bool {
-		return albums[i].Title().String() < albums[j].Title().String()
+	slices.SortFunc(albums, func(a, b PartialAlbum) int {
+		return strings.Compare(a.Title().String(), b.Title().String())
 	})
 }

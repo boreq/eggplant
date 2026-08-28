@@ -3,7 +3,7 @@ package symwalk
 import (
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 )
@@ -93,6 +93,6 @@ func readDirNames(dirname string) ([]string, error) {
 		return nil, err
 	}
 
-	sort.Strings(names)
+	slices.Sort(names)
 	return names, nil
 }
