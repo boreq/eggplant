@@ -8,7 +8,7 @@ all: build-without-frontend
 dev: test lint build-without-frontend
 
 .PHONY: ci
-ci: tools dependencies generate tidy fmt check-repository-unchanged test lint build-without-frontend
+ci: tools dependencies generate tidy fix fmt check-repository-unchanged test lint build-without-frontend
 
 .PHONY: build-directory
 build-directory:
@@ -65,6 +65,10 @@ test-verbose:
 .PHONY: clean
 clean:
 	rm -rf ./${BUILD_DIRECTORY}
+
+.PHONY: fix
+fix:
+	go fix ./...
 
 .PHONY: fmt
 fmt:
