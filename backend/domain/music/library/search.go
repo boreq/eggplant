@@ -35,7 +35,7 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 
 		var ownDist *int
 		if containsStringCaseInsensitive(a.title.String(), query) {
-			ownDist = ptr(0)
+			ownDist = new(0)
 		} else {
 			ownDist = parentInheritedDist
 		}
@@ -126,11 +126,12 @@ func incDist(d *int) *int {
 	if d == nil {
 		return nil
 	}
-	return ptr(*d + 1)
+	return new(*d + 1)
 }
 
+//go:fix inline
 func ptr(v int) *int {
-	return &v
+	return new(v)
 }
 
 func containsStringCaseInsensitive(s, substr string) bool {

@@ -1,7 +1,6 @@
 package thumbnails_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,8 +31,7 @@ func (f fakeConverter) Convert(item thumbnails.Item) error {
 }
 
 func TestStoreGetStatsSkipsMissingFiles(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	converter := fakeConverter{outputDir: filepath.Join(t.TempDir(), "converted")}
 

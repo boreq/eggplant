@@ -1,7 +1,6 @@
 package tracks_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,8 +12,7 @@ import (
 )
 
 func TestConverterGetStatsSkipsMissingFiles(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	dataDir := t.TempDir()
 

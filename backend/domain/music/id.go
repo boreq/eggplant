@@ -3,6 +3,7 @@ package music
 import (
 	"crypto/sha256"
 	"fmt"
+	"strings"
 
 	"github.com/boreq/eggplant/domain/crockford"
 	"github.com/boreq/errors"
@@ -39,9 +40,9 @@ func (id idForHumans) String() string {
 }
 
 func parentsAsString(parents []AlbumId) string {
-	var s string
+	var s strings.Builder
 	for _, p := range parents {
-		s += p.String()
+		s.WriteString(p.String())
 	}
-	return s
+	return s.String()
 }

@@ -405,7 +405,7 @@ func resultDecls(rs []param) string {
 	return strings.Join(out, ", ")
 }
 
-func fatal(format string, args ...interface{}) {
+func fatal(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "genhandlers: "+format+"\n", args...)
 	os.Exit(1)
 }

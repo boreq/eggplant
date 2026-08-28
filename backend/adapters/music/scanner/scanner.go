@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/boreq/eggplant/adapters/music/scanner/symwalk"
@@ -222,12 +223,7 @@ func (s *Scanner) isThumbnail(path music.FilePath) bool {
 }
 
 func (s *Scanner) isTrack(path music.FilePath) bool {
-	for _, trackExt := range s.config.trackExtensions {
-		if path.HasExtension(trackExt) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(s.config.trackExtensions, path.HasExtension)
 }
 
 func (s *Scanner) findAlbum(root *album, file music.FilePath) (*album, error) {

@@ -14,8 +14,7 @@ import (
 )
 
 func TestDurationStore_ConcurrentRequestsForSameFileProbeOnce(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	d, err := musicdomain.NewTrackDuration(42 * time.Second)
 	require.NoError(t, err)
@@ -30,7 +29,7 @@ func TestDurationStore_ConcurrentRequestsForSameFileProbeOnce(t *testing.T) {
 	var wg sync.WaitGroup
 	results := make([]musicdomain.TrackDuration, callers)
 	errs := make([]error, callers)
-	for i := 0; i < callers; i++ {
+	for i := range callers {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -43,7 +42,7 @@ func TestDurationStore_ConcurrentRequestsForSameFileProbeOnce(t *testing.T) {
 	close(checker.gate)
 	wg.Wait()
 
-	for i := 0; i < callers; i++ {
+	for i := range callers {
 		require.NoErrorf(t, errs[i], "caller %d", i)
 		require.Equal(t, d, results[i])
 	}
@@ -57,8 +56,7 @@ func TestDurationStore_ConcurrentRequestsForSameFileProbeOnce(t *testing.T) {
 }
 
 func TestDurationStore_UnknownFileId(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	store := tracks.NewDurationStore(ctx, &fakeChecker{})
 

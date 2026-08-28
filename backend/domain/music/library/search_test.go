@@ -276,7 +276,7 @@ func TestSearchSubstringMatch(t *testing.T) {
 func TestSearchCap(t *testing.T) {
 	t.Run("more_than_max_items_truncates_after_sort", func(t *testing.T) {
 		var subAlbums []albumSpec
-		for i := 0; i < 25; i++ {
+		for i := range 25 {
 			subAlbums = append(subAlbums, albumSpec{
 				title:      fmt.Sprintf("child_%02d", i),
 				visibility: visPublic,
@@ -302,7 +302,7 @@ func TestSearchCap(t *testing.T) {
 
 	t.Run("own_matches_not_dropped_by_cap", func(t *testing.T) {
 		var subAlbums []albumSpec
-		for i := 0; i < 25; i++ {
+		for i := range 25 {
 			subAlbums = append(subAlbums, albumSpec{
 				title:      fmt.Sprintf("child_%02d", i),
 				visibility: visPublic,

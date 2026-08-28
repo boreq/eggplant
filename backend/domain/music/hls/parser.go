@@ -154,11 +154,11 @@ type extinf struct {
 }
 
 func parseExtinf(value string) (extinf, error) {
-	idx := strings.IndexByte(value, ',')
-	if idx < 0 {
+	before, _, ok := strings.Cut(value, ",")
+	if !ok {
 		return extinf{}, errors.New("missing comma in EXTINF value")
 	}
-	secs, err := strconv.ParseFloat(value[:idx], 64)
+	secs, err := strconv.ParseFloat(before, 64)
 	if err != nil {
 		return extinf{}, errors.Wrap(err, "invalid duration")
 	}
@@ -219,9 +219,9 @@ func parseAttrList(s string) (map[string]string, error) {
 
 func splitTag(line string) (name, value string) {
 	body := line[1:]
-	idx := strings.IndexByte(body, ':')
-	if idx < 0 {
+	before, after, ok := strings.Cut(body, ":")
+	if !ok {
 		return body, ""
 	}
-	return body[:idx], body[idx+1:]
+	return before, after
 }
