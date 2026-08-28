@@ -129,11 +129,6 @@ func incDist(d *int) *int {
 	return new(*d + 1)
 }
 
-//go:fix inline
-func ptr(v int) *int {
-	return new(v)
-}
-
 func containsStringCaseInsensitive(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
