@@ -1,6 +1,8 @@
 package library
 
 import (
+	"slices"
+
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/errors"
 )
@@ -260,9 +262,7 @@ func findAlbumPathRec(albums []Album, id music.AlbumId, path []Album) ([]Album, 
 	for _, a := range albums {
 		path = append(path, a)
 		if a.id == id {
-			result := make([]Album, len(path))
-			copy(result, path)
-			return result, true
+			return slices.Clone(path), true
 		}
 		if result, ok := findAlbumPathRec(a.albums, id, path); ok {
 			return result, true
