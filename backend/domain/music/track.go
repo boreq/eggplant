@@ -33,11 +33,11 @@ func NewTrackWithNumber(id TrackId, fileId FileId, number TrackNumber, title Tra
 	}
 }
 
-func NewRemoteTrack(id TrackId, fileId FileId, title TrackTitle, remoteInstanceId remote.RemoteInstanceID) Track {
+func NewRemoteTrack(id TrackId, fileId FileId, number *TrackNumber, title TrackTitle, remoteInstanceId remote.RemoteInstanceID) Track {
 	return Track{
 		id:               id,
 		fileId:           fileId,
-		number:           nil,
+		number:           number,
 		title:            title,
 		remoteInstanceId: &remoteInstanceId,
 	}

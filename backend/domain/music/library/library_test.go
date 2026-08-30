@@ -642,7 +642,7 @@ func mkRemoteTrack(t *testing.T, title string, instanceId remotedomain.RemoteIns
 	t.Helper()
 	tt, err := music.NewTrackTitle(title)
 	require.NoError(t, err)
-	return music.NewRemoteTrack(trackIdFor(t, title), music.FileId{}, tt, instanceId)
+	return music.NewRemoteTrack(trackIdFor(t, title), music.FileId{}, nil, tt, instanceId)
 }
 
 func mkPartialAlbum(t *testing.T, title string) music.PartialAlbum {

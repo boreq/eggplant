@@ -375,5 +375,13 @@ func toRemoteTrack(t openapi.Track, instanceID remotedomain.RemoteInstanceID) (m
 	if err != nil {
 		return musicdomain.Track{}, errors.Wrap(err, "invalid track title")
 	}
-	return musicdomain.NewRemoteTrack(id, musicdomain.FileId{}, title, instanceID), nil
+	var number *musicdomain.TrackNumber
+	if t.Number != nil {
+		n, err := musicdomain.NewTrackNumber(*t.Number)
+		if err != nil {
+			return musicdomain.Track{}, errors.Wrap(err, "invalid track number")
+		}
+		number = &n
+	}
+	return musicdomain.NewRemoteTrack(id, musicdomain.FileId{}, number, title, instanceID), nil
 }
