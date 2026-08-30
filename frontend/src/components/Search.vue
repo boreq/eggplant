@@ -27,7 +27,8 @@
                         </a>
                     </template>
                 </SubHeader>
-                <Albums v-if="hasAlbums" :albums="displayedAlbums" @select-album="selectAlbum"></Albums>
+                <Albums v-if="hasAlbums" :albums="albums" :collapsed="!showAllAlbums"
+                    @toggling-available="albumsTogglingAvailable = $event" @select-album="selectAlbum"></Albums>
                 <div class="message" v-else>
                     No albums found.
                 </div>

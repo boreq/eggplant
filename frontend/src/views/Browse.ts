@@ -76,8 +76,9 @@ export default class Browse extends Vue {
     showAllTracks: boolean = false;
     showAllAlbums: boolean = false;
 
+    albumsTogglingAvailable: boolean = false;
+
     private readonly initialTrackLimit = 5;
-    private readonly initialAlbumLimit = 5;
 
     @Ref('dropdown')
     readonly dropdown: Dropdown;
@@ -366,20 +367,14 @@ export default class Browse extends Vue {
         return this.hasAlbums && this.entries.length > this.initialTrackLimit;
     }
 
-    get displayedAlbums(): PartialAlbum[] {
-        if (!this.albums) {
-            return null;
-        }
-        if (this.hasTracks && !this.showAllAlbums) {
-            return this.albums.slice(0, this.initialAlbumLimit);
-        }
-        return this.albums;
+    get albumsCollapsed(): boolean {
+        return this.hasTracks && !this.showAllAlbums;
     }
 
     get canToggleAlbums(): boolean {
         return this.hasTracks
-            && !!this.albums
-            && this.albums.length > this.initialAlbumLimit;
+            && this.hasAlbums
+            && this.albumsTogglingAvailable;
     }
 
     get totalDurationMinutes(): number {

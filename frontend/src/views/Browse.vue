@@ -109,7 +109,8 @@
                             </a>
                         </template>
                     </SubHeader>
-                    <Albums :albums="displayedAlbums" @select-album="selectAlbum"></Albums>
+                    <Albums :albums="albums" :collapsed="albumsCollapsed"
+                        @toggling-available="albumsTogglingAvailable = $event" @select-album="selectAlbum"></Albums>
                 </div>
             </div>
 
