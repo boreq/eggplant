@@ -5,6 +5,7 @@ linters:
     - bodyclose
     - errorlint
     - misspell
+    - modernize
     - noctx
     - unconvert
   settings:

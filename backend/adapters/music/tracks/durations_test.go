@@ -46,13 +46,13 @@ func TestDurationStore_ConcurrentRequestsForSameFileProbeOnce(t *testing.T) {
 		require.NoErrorf(t, errs[i], "caller %d", i)
 		require.Equal(t, d, results[i])
 	}
-	require.Equal(t, int64(1), atomic.LoadInt64(&checker.calls), "expected a single deduped probe")
+	require.Equal(t, int64(1), checker.calls.Load(), "expected a single deduped probe")
 
 	// A subsequent request is served from cache without another probe.
 	got, err := store.GetDuration(ctx, fileId)
 	require.NoError(t, err)
 	require.Equal(t, d, got)
-	require.Equal(t, int64(1), atomic.LoadInt64(&checker.calls))
+	require.Equal(t, int64(1), checker.calls.Load())
 }
 
 func TestDurationStore_UnknownFileId(t *testing.T) {
@@ -65,13 +65,13 @@ func TestDurationStore_UnknownFileId(t *testing.T) {
 }
 
 type fakeChecker struct {
-	calls    int64
+	calls    atomic.Int64
 	duration musicdomain.TrackDuration
 	gate     chan struct{} // closed to release blocked probes
 }
 
 func (c *fakeChecker) GetDuration(ctx context.Context, path string) (musicdomain.TrackDuration, error) {
-	atomic.AddInt64(&c.calls, 1)
+	c.calls.Add(1)
 	if c.gate != nil {
 		select {
 		case <-c.gate:
