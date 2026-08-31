@@ -210,7 +210,7 @@ func (s *Store) scheduleConversion(ctx context.Context, id string) <-chan error 
 }
 
 func (s *Store) startConversionWorkers(ctx context.Context) {
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for range runtime.NumCPU() {
 		go s.conversionWorker(ctx)
 	}
 }

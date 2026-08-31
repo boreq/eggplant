@@ -38,7 +38,7 @@ func NewDurationStore(ctx context.Context, checker DurationChecker) *DurationSto
 		currentlyChecking: make(map[musicdomain.FileId]*durationResult),
 		jobs:              make(chan durationJob),
 	}
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for range runtime.NumCPU() {
 		go s.worker(ctx)
 	}
 	return s

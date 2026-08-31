@@ -67,7 +67,7 @@ func NewConverter(ctx context.Context, dataDir string) (*Converter, error) {
 	if err := c.removeLeftoverStreamDirectories(); err != nil {
 		return nil, err
 	}
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for range runtime.NumCPU() {
 		go c.ffmpegWorker(ctx)
 	}
 	go c.cleanupIdleStreamsLoop(ctx)
