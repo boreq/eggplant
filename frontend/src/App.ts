@@ -1,7 +1,8 @@
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { PlaybackData } from '@/dto/PlaybackData';
 import { Mutation } from '@/store';
 import { ApiService } from '@/services/ApiService';
+import { deviceService } from '@/services/DeviceService';
 
 import Controls from '@/components/Controls.vue';
 import Player from '@/components/Player.vue';
@@ -27,15 +28,28 @@ export default class App extends Vue {
     private readonly errCheckSetup = `Could not confirm whether this instance's setup process was completed.`;
     private readonly errCheckUser = `Could not retrieve the current user.`;
     private readonly apiService = new ApiService(this);
+    private remotePlaybackDataIntervalID: number;
 
     created() {
         window.addEventListener('keydown', this.onKeyDown);
         this.redirectToSetupIfNeeded();
         this.loadCurrentUser();
+        deviceService.start(this);
+        this.remotePlaybackDataIntervalID = window.setInterval(this.updateRemotePlaybackData, 200);
     }
 
     destroyed(): void {
         window.removeEventListener('keydown', this.onKeyDown);
+        window.clearInterval(this.remotePlaybackDataIntervalID);
+    }
+
+    get controlledDevice(): string {
+        return this.$store.state.controlledDevice;
+    }
+
+    @Watch('controlledDevice')
+    onControlledDeviceChanged(): void {
+        this.playbackData = null;
     }
 
     get isMobile(): boolean {
@@ -58,7 +72,16 @@ export default class App extends Vue {
     }
 
     onPlaybackData(playbackData: PlaybackData): void {
-        this.playbackData = playbackData;
+        deviceService.setLocalPlaybackData(playbackData);
+        if (!this.controlledDevice) {
+            this.playbackData = playbackData;
+        }
+    }
+
+    updateRemotePlaybackData(): void {
+        if (this.controlledDevice) {
+            this.playbackData = deviceService.remotePlaybackData();
+        }
     }
 
     get isCsd(): boolean {

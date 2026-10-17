@@ -11,6 +11,8 @@ import { Track } from '@/dto/Track';
 import { Mutation, ReplaceCommand, AppendCommand } from '@/store';
 import { Location } from 'vue-router';
 import Notifications from '@/components/Notifications';
+import { DeviceMode } from '@/dto/Device';
+import { deviceModeIcon, deviceService } from '@/services/DeviceService';
 
 import SubHeader from '@/components/SubHeader.vue';
 import MainHeader from '@/components/MainHeader.vue';
@@ -22,6 +24,7 @@ import NowPlaying from '@/components/NowPlaying.vue';
 import LoginButton from '@/components/LoginButton.vue';
 import SearchInput from '@/components/forms/SearchInput.vue';
 import Queue from '@/components/Queue.vue';
+import Devices from '@/components/Devices.vue';
 import Search from '@/components/Search.vue';
 import Dropdown from '@/components/Dropdown.vue';
 import DropdownElement from '@/components/DropdownElement.vue';
@@ -32,6 +35,7 @@ enum View {
     Browse = 'browse',
     Search = 'search',
     Queue = 'queue',
+    Devices = 'devices',
 }
 
 enum BrowseState {
@@ -54,6 +58,7 @@ enum BrowseState {
         SearchInput,
         LoginButton,
         Queue,
+        Devices,
         Search,
         Dropdown,
         DropdownElement,
@@ -168,6 +173,14 @@ export default class Browse extends Vue {
             this.switchView(View.Browse);
         } else {
             this.switchView(View.Queue);
+        }
+    }
+
+    toggleDevices(): void {
+        if (this.view === View.Devices) {
+            this.switchView(View.Browse);
+        } else {
+            this.switchView(View.Devices);
         }
     }
 
@@ -295,6 +308,25 @@ export default class Browse extends Vue {
 
     get showQueue(): boolean {
         return this.view === View.Queue;
+    }
+
+    get showDevices(): boolean {
+        return this.view === View.Devices;
+    }
+
+    get devicesIcon(): string {
+        return deviceModeIcon(deviceService.mode);
+    }
+
+    get devicesTooltip(): string {
+        switch (deviceService.mode) {
+            case DeviceMode.Controller:
+                return 'Devices. You control another device.';
+            case DeviceMode.Target:
+                return 'Devices. Another device controls this device.';
+            default:
+                return 'Devices.';
+        }
     }
 
     get noContent(): boolean {

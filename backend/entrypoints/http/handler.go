@@ -82,6 +82,8 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 	h.router.HandlerFunc(http.MethodGet, "/api/health", rest.Wrap(h.addAccessContextRest(h.remotePeerHealth)))
 	h.router.HandlerFunc(http.MethodPost, "/api/auth-token", rest.Wrap(h.remoteSetAuthToken))
 
+	h.router.GET("/api/devices/ws", h.addAccessContext(h.deviceWebsocket))
+
 	h.router.HandlerFunc(http.MethodGet, "/api/openapi.yaml", h.openapiSpec)
 	h.router.HandlerFunc(http.MethodGet, "/api", h.docs)
 

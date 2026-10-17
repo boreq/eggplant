@@ -14,4 +14,5 @@ linters:
         - (io.Closer).Close
         - (*os.File).Close
         - (*github.com/gorilla/websocket.Conn).Close
+        - (*github.com/coder/websocket.Conn).CloseNow
         - (*os.Process).Kill

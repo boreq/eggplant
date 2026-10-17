@@ -15,11 +15,13 @@ import (
 	"github.com/boreq/eggplant/adapters/music/tracks"
 	"github.com/boreq/eggplant/adapters/pubsub"
 	remote2 "github.com/boreq/eggplant/adapters/remote"
+	"github.com/boreq/eggplant/adapters/remotecontrol"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/application/remote"
+	remotecontrol2 "github.com/boreq/eggplant/application/remotecontrol"
 	"github.com/boreq/eggplant/entrypoints/filesystem"
 	"github.com/boreq/eggplant/entrypoints/http"
 	"github.com/boreq/eggplant/entrypoints/outbox"
@@ -168,6 +170,27 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		SetPassword:      setPasswordHandler,
 		GetCurrentUser:   getCurrentUserHandler,
 	}
+	hub := remotecontrol.NewHub()
+	connectHandler := remotecontrol2.NewConnectHandler(hub)
+	disconnectHandler := remotecontrol2.NewDisconnectHandler(hub)
+	setControllableHandler := remotecontrol2.NewSetControllableHandler(hub)
+	renameHandler := remotecontrol2.NewRenameHandler(hub)
+	takeControlHandler := remotecontrol2.NewTakeControlHandler(hub)
+	releaseControlHandler := remotecontrol2.NewReleaseControlHandler(hub)
+	disconnectControllersHandler := remotecontrol2.NewDisconnectControllersHandler(hub)
+	sendCommandHandler := remotecontrol2.NewSendCommandHandler(hub)
+	publishStateHandler := remotecontrol2.NewPublishStateHandler(hub)
+	control := remotecontrol2.Control{
+		Connect:               connectHandler,
+		Disconnect:            disconnectHandler,
+		SetControllable:       setControllableHandler,
+		Rename:                renameHandler,
+		TakeControl:           takeControlHandler,
+		ReleaseControl:        releaseControlHandler,
+		DisconnectControllers: disconnectControllersHandler,
+		SendCommand:           sendCommandHandler,
+		PublishState:          publishStateHandler,
+	}
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
@@ -288,6 +311,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	}
 	applicationApplication := &application.Application{
 		Auth:    authAuth,
+		Control: control,
 		Music:   musicMusic,
 		Queries: applicationQueries,
 		Remote:  remoteRemote,
@@ -344,6 +368,27 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		SetPassword:      setPasswordHandler,
 		GetCurrentUser:   getCurrentUserHandler,
 	}
+	hub := remotecontrol.NewHub()
+	connectHandler := remotecontrol2.NewConnectHandler(hub)
+	disconnectHandler := remotecontrol2.NewDisconnectHandler(hub)
+	setControllableHandler := remotecontrol2.NewSetControllableHandler(hub)
+	renameHandler := remotecontrol2.NewRenameHandler(hub)
+	takeControlHandler := remotecontrol2.NewTakeControlHandler(hub)
+	releaseControlHandler := remotecontrol2.NewReleaseControlHandler(hub)
+	disconnectControllersHandler := remotecontrol2.NewDisconnectControllersHandler(hub)
+	sendCommandHandler := remotecontrol2.NewSendCommandHandler(hub)
+	publishStateHandler := remotecontrol2.NewPublishStateHandler(hub)
+	control := remotecontrol2.Control{
+		Connect:               connectHandler,
+		Disconnect:            disconnectHandler,
+		SetControllable:       setControllableHandler,
+		Rename:                renameHandler,
+		TakeControl:           takeControlHandler,
+		ReleaseControl:        releaseControlHandler,
+		DisconnectControllers: disconnectControllersHandler,
+		SendCommand:           sendCommandHandler,
+		PublishState:          publishStateHandler,
+	}
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
@@ -464,6 +509,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	}
 	applicationApplication := &application.Application{
 		Auth:    authAuth,
+		Control: control,
 		Music:   musicMusic,
 		Queries: applicationQueries,
 		Remote:  remoteRemote,

@@ -5,6 +5,11 @@
                 <search-input class="search" v-model="searchQuery"></search-input>
 
                 <ul class="buttons">
+                    <li class="button" :class="{ active: showDevices }" v-if="user">
+                        <a @click="toggleDevices" v-tooltip="showDevices ? 'Close devices.' : devicesTooltip">
+                            <i class="fas" :class="devicesIcon"></i>
+                        </a>
+                    </li>
                     <li class="button" :class="{ active: showQueue }">
                         <a @click="toggleQueue" v-tooltip="showQueue ? 'Close queue.' : 'Queue.'">
                             <i class="fas fa-list-ol"></i>
@@ -117,6 +122,11 @@
             <div class="content queue" v-if="showQueue">
                 <main-header text="Queue"></main-header>
                 <queue @select-album="selectAlbum"></queue>
+            </div>
+
+            <div class="content devices" v-if="showDevices">
+                <main-header text="Devices"></main-header>
+                <devices></devices>
             </div>
 
             <div class="content search" v-if="showSearch">
