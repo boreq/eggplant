@@ -69,7 +69,7 @@ func (r *RemoteInstance) SetRemotePairingToken(token PairingToken) error {
 	}
 
 	r.remotePairingToken = &token
-	r.events.RecordEvent(RemotePairingTokenSet{RemoteInstanceID: r.id})
+	r.events.RecordEvent(NewRemotePairingTokenSet(r.id))
 	return nil
 }
 
@@ -145,7 +145,7 @@ func (r *RemoteInstance) isPaired() bool {
 
 func (r *RemoteInstance) recordPairedIfJustCompleted(wasPaired bool) {
 	if !wasPaired && r.isPaired() {
-		r.events.RecordEvent(RemotePaired{RemoteInstanceID: r.id})
+		r.events.RecordEvent(NewRemotePaired(r.id))
 	}
 }
 

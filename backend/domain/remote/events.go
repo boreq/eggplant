@@ -10,7 +10,15 @@ type Event interface {
 }
 
 type RemotePairingTokenSet struct {
-	RemoteInstanceID RemoteInstanceID
+	remoteInstanceID RemoteInstanceID
+}
+
+func NewRemotePairingTokenSet(remoteInstanceID RemoteInstanceID) RemotePairingTokenSet {
+	return RemotePairingTokenSet{remoteInstanceID: remoteInstanceID}
+}
+
+func (e RemotePairingTokenSet) RemoteInstanceID() RemoteInstanceID {
+	return e.remoteInstanceID
 }
 
 func (RemotePairingTokenSet) EventName() string {
@@ -18,7 +26,15 @@ func (RemotePairingTokenSet) EventName() string {
 }
 
 type RemotePaired struct {
-	RemoteInstanceID RemoteInstanceID
+	remoteInstanceID RemoteInstanceID
+}
+
+func NewRemotePaired(remoteInstanceID RemoteInstanceID) RemotePaired {
+	return RemotePaired{remoteInstanceID: remoteInstanceID}
+}
+
+func (e RemotePaired) RemoteInstanceID() RemoteInstanceID {
+	return e.remoteInstanceID
 }
 
 func (RemotePaired) EventName() string {

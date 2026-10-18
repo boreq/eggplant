@@ -34,7 +34,7 @@ func (h *RemotePairingTokenSetHandler) Handle(msg *message.Message) error {
 		return errors.Wrap(err, "could not unmarshal the event")
 	}
 
-	if err := h.sendLocalAuthToken.Execute(msg.Context(), remoteapp.SendLocalAuthToken{RemoteInstanceID: event.RemoteInstanceID}); err != nil {
+	if err := h.sendLocalAuthToken.Execute(msg.Context(), remoteapp.SendLocalAuthToken{RemoteInstanceID: event.RemoteInstanceID()}); err != nil {
 		h.log.Error("could not handle an event", "topic", adapters.TopicRemotePairingTokenSet, "err", err)
 		return err
 	}

@@ -15,7 +15,7 @@ type RemotePairingTokenSetPayload struct {
 
 func MarshalRemotePairingTokenSet(event remotedomain.RemotePairingTokenSet) (*message.Message, error) {
 	payload, err := json.Marshal(RemotePairingTokenSetPayload{
-		RemoteInstanceID: event.RemoteInstanceID.String(),
+		RemoteInstanceID: event.RemoteInstanceID().String(),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal the payload")
@@ -35,7 +35,7 @@ func UnmarshalRemotePairingTokenSet(msg *message.Message) (remotedomain.RemotePa
 		return remotedomain.RemotePairingTokenSet{}, errors.Wrap(err, "invalid remote instance id")
 	}
 
-	return remotedomain.RemotePairingTokenSet{RemoteInstanceID: id}, nil
+	return remotedomain.NewRemotePairingTokenSet(id), nil
 }
 
 type RemotePairedPayload struct {
@@ -44,7 +44,7 @@ type RemotePairedPayload struct {
 
 func MarshalRemotePaired(event remotedomain.RemotePaired) (*message.Message, error) {
 	payload, err := json.Marshal(RemotePairedPayload{
-		RemoteInstanceID: event.RemoteInstanceID.String(),
+		RemoteInstanceID: event.RemoteInstanceID().String(),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal the payload")
@@ -64,5 +64,5 @@ func UnmarshalRemotePaired(msg *message.Message) (remotedomain.RemotePaired, err
 		return remotedomain.RemotePaired{}, errors.Wrap(err, "invalid remote instance id")
 	}
 
-	return remotedomain.RemotePaired{RemoteInstanceID: id}, nil
+	return remotedomain.NewRemotePaired(id), nil
 }

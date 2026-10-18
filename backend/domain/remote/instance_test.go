@@ -77,7 +77,7 @@ func TestSetRemotePairingToken(t *testing.T) {
 	events := instance.PopEvents()
 	require.Len(t, events, 1)
 	require.IsType(t, remotedomain.RemotePairingTokenSet{}, events[0])
-	require.Equal(t, instance.Id(), events[0].(remotedomain.RemotePairingTokenSet).RemoteInstanceID)
+	require.Equal(t, instance.Id(), events[0].(remotedomain.RemotePairingTokenSet).RemoteInstanceID())
 }
 
 func TestSetRemotePairingTokenIsIdempotent(t *testing.T) {
@@ -181,7 +181,7 @@ func requireRemotePairedRecorded(t *testing.T, instance *remotedomain.RemoteInst
 	require.Len(t, events, 1)
 	paired, ok := events[0].(remotedomain.RemotePaired)
 	require.True(t, ok)
-	require.Equal(t, instance.Id(), paired.RemoteInstanceID)
+	require.Equal(t, instance.Id(), paired.RemoteInstanceID())
 }
 
 func TestSetRemoteAuthToken(t *testing.T) {
