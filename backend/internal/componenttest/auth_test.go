@@ -1,4 +1,4 @@
-package componenttest
+package componenttest_test
 
 import (
 	"errors"
