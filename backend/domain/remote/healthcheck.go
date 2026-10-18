@@ -15,21 +15,6 @@ var (
 	HealthcheckStatusDead  = HealthcheckStatus{"DEAD"}
 )
 
-func NewHealthcheckStatusFromString(s string) (HealthcheckStatus, error) {
-	switch s {
-	case HealthcheckStatusAlive.s:
-		return HealthcheckStatusAlive, nil
-	case HealthcheckStatusDead.s:
-		return HealthcheckStatusDead, nil
-	default:
-		return HealthcheckStatus{}, errors.New("unknown healthcheck status")
-	}
-}
-
-func (s HealthcheckStatus) IsZero() bool {
-	return s == HealthcheckStatus{}
-}
-
 func (s HealthcheckStatus) String() string {
 	return s.s
 }
@@ -40,9 +25,6 @@ type Healthcheck struct {
 }
 
 func NewHealthcheck(status HealthcheckStatus, at time.Time) (Healthcheck, error) {
-	if status.IsZero() {
-		return Healthcheck{}, errors.New("status must be set")
-	}
 	if at.IsZero() {
 		return Healthcheck{}, errors.New("time must be set")
 	}

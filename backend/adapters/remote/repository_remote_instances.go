@@ -28,7 +28,10 @@ func NewRemoteInstanceRepository(tx *bolt.Tx) (*RemoteInstanceRepository, error)
 }
 
 func (r *RemoteInstanceRepository) Save(instance *remotedomain.RemoteInstance) error {
-	dto := toRemoteInstanceDTO(instance)
+	dto, err := toRemoteInstanceDTO(instance)
+	if err != nil {
+		return errors.Wrap(err, "could not convert to dto")
+	}
 
 	j, err := json.Marshal(dto)
 	if err != nil {
@@ -130,7 +133,7 @@ type remoteInstanceDTO struct {
 	LastHealthcheckTime   string `json:"lastHealthcheckTime,omitempty"`
 }
 
-func toRemoteInstanceDTO(instance *remotedomain.RemoteInstance) remoteInstanceDTO {
+func toRemoteInstanceDTO(instance *remotedomain.RemoteInstance) (remoteInstanceDTO, error) {
 	dto := remoteInstanceDTO{
 		ID:      instance.Id().String(),
 		Address: instance.Address().String(),
@@ -148,10 +151,14 @@ func toRemoteInstanceDTO(instance *remotedomain.RemoteInstance) remoteInstanceDT
 		dto.RemoteAuthToken = crockford.Encode(t.Bytes())
 	}
 	if h, ok := instance.LastHealthcheck(); ok {
-		dto.LastHealthcheckStatus = h.Status().String()
+		status, err := healthcheckStatusToDTO(h.Status())
+		if err != nil {
+			return remoteInstanceDTO{}, errors.Wrap(err, "invalid last healthcheck status")
+		}
+		dto.LastHealthcheckStatus = status
 		dto.LastHealthcheckTime = h.At().UTC().Format(time.RFC3339Nano)
 	}
-	return dto
+	return dto, nil
 }
 
 func unmarshalRemoteInstance(j []byte) (*remotedomain.RemoteInstance, error) {
@@ -205,7 +212,7 @@ func optionalHealthcheckFromDTO(status, at string) (*remotedomain.Healthcheck, e
 	if status == "" && at == "" {
 		return nil, nil
 	}
-	s, err := remotedomain.NewHealthcheckStatusFromString(status)
+	s, err := healthcheckStatusFromDTO(status)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid status")
 	}
@@ -218,6 +225,33 @@ func optionalHealthcheckFromDTO(status, at string) (*remotedomain.Healthcheck, e
 		return nil, errors.Wrap(err, "could not create the healthcheck")
 	}
 	return &healthcheck, nil
+}
+
+const (
+	healthcheckStatusAliveDTO = "ALIVE"
+	healthcheckStatusDeadDTO  = "DEAD"
+)
+
+func healthcheckStatusToDTO(s remotedomain.HealthcheckStatus) (string, error) {
+	switch s {
+	case remotedomain.HealthcheckStatusAlive:
+		return healthcheckStatusAliveDTO, nil
+	case remotedomain.HealthcheckStatusDead:
+		return healthcheckStatusDeadDTO, nil
+	default:
+		return "", errors.New("unknown healthcheck status")
+	}
+}
+
+func healthcheckStatusFromDTO(s string) (remotedomain.HealthcheckStatus, error) {
+	switch s {
+	case healthcheckStatusAliveDTO:
+		return remotedomain.HealthcheckStatusAlive, nil
+	case healthcheckStatusDeadDTO:
+		return remotedomain.HealthcheckStatusDead, nil
+	default:
+		return remotedomain.HealthcheckStatus{}, errors.New("unknown healthcheck status")
+	}
 }
 
 func optionalHashedAuthTokenFromDTO(s string) (*remotedomain.HashedAuthToken, error) {
