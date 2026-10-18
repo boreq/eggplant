@@ -48,6 +48,19 @@ you don't want to use Docker Compose then I presume you know how to figure this
 out by yourself via Kubernetes or by using Docker directly based on the example
 above.
 
+Remote control of playback between your devices uses a WebSocket at
+`/api/devices/ws`. Your reverse proxy must pass the WebSocket upgrade and the
+original `Host` header, because Eggplant rejects WebSocket connections whose
+`Origin` does not match `Host`. For `nginx`:
+
+    location /api/devices/ws {
+        proxy_pass http://127.0.0.1:8123;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
 The layout of the music directory is documented in the section ["Music directory"][anchor-music-directory]. 
 
 ### I do not want to use Docker

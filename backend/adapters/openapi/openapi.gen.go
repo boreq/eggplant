@@ -347,6 +347,15 @@ type cookieAuthContextKey string
 // peerAuthContextKey is the context key for peerAuth security scheme
 type peerAuthContextKey string
 
+// ConnectDeviceParams defines parameters for ConnectDevice.
+type ConnectDeviceParams struct {
+	// Device The random ID that the browser generated for itself.
+	Device string `form:"device" json:"device"`
+
+	// Name The name of the device.
+	Name string `form:"name" json:"name"`
+}
+
 // StartRemoteTrackStreamParams defines parameters for StartRemoteTrackStream.
 type StartRemoteTrackStreamParams struct {
 	// Seek Seek position in seconds.
@@ -496,6 +505,9 @@ type ClientInterface interface {
 
 	// BrowseAlbum request
 	BrowseAlbum(ctx context.Context, id AlbumId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConnectDevice request
+	ConnectDevice(ctx context.Context, params *ConnectDeviceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Health request
 	Health(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -741,6 +753,18 @@ func (c *Client) Browse(ctx context.Context, reqEditors ...RequestEditorFn) (*ht
 
 func (c *Client) BrowseAlbum(ctx context.Context, id AlbumId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBrowseAlbumRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConnectDevice(ctx context.Context, params *ConnectDeviceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConnectDeviceRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1404,6 +1428,64 @@ func NewBrowseAlbumRequest(server string, id AlbumId) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewConnectDeviceRequest generates requests for ConnectDevice
+func NewConnectDeviceRequest(server string, params *ConnectDeviceParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/devices/ws")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "device", params.Device, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "name", params.Name, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -2453,6 +2535,9 @@ type ClientWithResponsesInterface interface {
 	// BrowseAlbumWithResponse request
 	BrowseAlbumWithResponse(ctx context.Context, id AlbumId, reqEditors ...RequestEditorFn) (*BrowseAlbumResponse, error)
 
+	// ConnectDeviceWithResponse request
+	ConnectDeviceWithResponse(ctx context.Context, params *ConnectDeviceParams, reqEditors ...RequestEditorFn) (*ConnectDeviceResponse, error)
+
 	// HealthWithResponse request
 	HealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthResponse, error)
 
@@ -2869,6 +2954,38 @@ func (r BrowseAlbumResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r BrowseAlbumResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ConnectDeviceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ConnectDeviceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConnectDeviceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ConnectDeviceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3714,6 +3831,15 @@ func (c *ClientWithResponses) BrowseAlbumWithResponse(ctx context.Context, id Al
 	return ParseBrowseAlbumResponse(rsp)
 }
 
+// ConnectDeviceWithResponse request returning *ConnectDeviceResponse
+func (c *ClientWithResponses) ConnectDeviceWithResponse(ctx context.Context, params *ConnectDeviceParams, reqEditors ...RequestEditorFn) (*ConnectDeviceResponse, error) {
+	rsp, err := c.ConnectDevice(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConnectDeviceResponse(rsp)
+}
+
 // HealthWithResponse request returning *HealthResponse
 func (c *ClientWithResponses) HealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthResponse, error) {
 	rsp, err := c.Health(ctx, reqEditors...)
@@ -4343,6 +4469,46 @@ func ParseBrowseAlbumResponse(rsp *http.Response) (*BrowseAlbumResponse, error) 
 			return nil, err
 		}
 		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConnectDeviceResponse parses an HTTP response from a ConnectDeviceWithResponse call
+func ParseConnectDeviceResponse(rsp *http.Response) (*ConnectDeviceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConnectDeviceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 

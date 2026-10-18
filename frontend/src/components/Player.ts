@@ -41,12 +41,29 @@ export default class Player extends Vue {
         return this.$store.getters.volume;
     }
 
+    get controlling(): boolean {
+        return !!this.$store.state.controlledDevice;
+    }
+
     get audioElement(): HTMLAudioElement {
         return this.$refs.audio as HTMLAudioElement;
     }
 
+    @Watch('controlling')
+    onControllingChanged(controlling: boolean): void {
+        if (controlling) {
+            this.currentNowPlaying = null;
+            this.audioElement.pause();
+            this.tearDownStream();
+        }
+    }
+
     @Watch('storeNowPlaying')
     onStoreNowPlayingChanged(): void {
+        if (this.controlling) {
+            return;
+        }
+
         if (!this.storeNowPlaying) {
             this.currentNowPlaying = null;
             this.tearDownStream();
@@ -68,6 +85,9 @@ export default class Player extends Vue {
 
     @Watch('storePaused')
     onPausedChanged(val: boolean): void {
+        if (this.controlling) {
+            return;
+        }
         if (val) {
             this.audioElement.pause();
         } else {
@@ -77,6 +97,9 @@ export default class Player extends Vue {
 
     @Watch('storeVolume')
     onStoreVolumeChanged(volume: number): void {
+        if (this.controlling) {
+            return;
+        }
         this.audioElement.volume = volume;
     }
 
@@ -87,7 +110,7 @@ export default class Player extends Vue {
     mounted(): void {
         this.audioElement.volume = this.storeVolume;
         this.$root.$on(seekEvent, (position: number) => {
-            if (!this.storeNowPlaying) {
+            if (this.controlling || !this.storeNowPlaying) {
                 return;
             }
             const trackTarget = this.storeNowPlaying.track.duration * position;
@@ -107,20 +130,32 @@ export default class Player extends Vue {
     }
 
     onAudioElementEnded(): void {
+        if (this.controlling) {
+            return;
+        }
         this.currentNowPlaying = null;
         this.$store.commit(Mutation.Next);
     }
 
     onAudioElementError(): void {
+        if (this.controlling) {
+            return;
+        }
         Notifications.pushError(this, `Could not play "${this.storeNowPlaying.track.title}".`);
         this.$store.commit(Mutation.Next);
     }
 
     onAudioElementPlay(): void {
+        if (this.controlling) {
+            return;
+        }
         this.$store.commit(Mutation.Play);
     }
 
     onAudioElementPause(): void {
+        if (this.controlling) {
+            return;
+        }
         this.$store.commit(Mutation.Pause);
     }
 
