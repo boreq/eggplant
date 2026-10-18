@@ -34,7 +34,12 @@ func (h *StreamPlaylistHandler) Execute(accessCtx library.AccessContext, cmd Str
 		return Playlist{}, errors.Wrap(err, "could not get the track")
 	}
 
-	playlist, err := h.trackConverter.GetPlaylist(track.FileId(), cmd.StreamId)
+	fileId, ok := track.FileId()
+	if !ok {
+		return Playlist{}, errors.New("track has no file id")
+	}
+
+	playlist, err := h.trackConverter.GetPlaylist(fileId, cmd.StreamId)
 	if err != nil {
 		return Playlist{}, errors.Wrap(err, "could not get the playlist")
 	}

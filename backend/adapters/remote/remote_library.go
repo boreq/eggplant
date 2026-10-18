@@ -359,7 +359,7 @@ func toRemoteThumbnail(t *openapi.Thumbnail) (*musicdomain.Thumbnail, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid thumbnail id")
 	}
-	thumb := musicdomain.NewThumbnail(id, musicdomain.FileId{})
+	thumb := musicdomain.NewRemoteThumbnail(id)
 	return &thumb, nil
 }
 
@@ -383,5 +383,5 @@ func toRemoteTrack(t openapi.Track, instanceID remotedomain.RemoteInstanceID) (m
 		}
 		number = &n
 	}
-	return musicdomain.NewRemoteTrack(id, musicdomain.FileId{}, number, title, instanceID), nil
+	return musicdomain.NewRemoteTrack(id, number, title, instanceID), nil
 }

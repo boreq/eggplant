@@ -9,7 +9,7 @@ import (
 
 type Track struct {
 	id               TrackId
-	fileId           FileId
+	fileId           *FileId
 	number           *TrackNumber
 	title            TrackTitle
 	remoteInstanceId *remote.RemoteInstanceID
@@ -17,26 +17,28 @@ type Track struct {
 
 func NewTrack(id TrackId, fileId FileId, title TrackTitle) Track {
 	return Track{
-		id:     id,
-		fileId: fileId,
-		number: nil,
-		title:  title,
+		id:               id,
+		fileId:           &fileId,
+		number:           nil,
+		title:            title,
+		remoteInstanceId: nil,
 	}
 }
 
 func NewTrackWithNumber(id TrackId, fileId FileId, number TrackNumber, title TrackTitle) Track {
 	return Track{
-		id:     id,
-		fileId: fileId,
-		number: &number,
-		title:  title,
+		id:               id,
+		fileId:           &fileId,
+		number:           &number,
+		title:            title,
+		remoteInstanceId: nil,
 	}
 }
 
-func NewRemoteTrack(id TrackId, fileId FileId, number *TrackNumber, title TrackTitle, remoteInstanceId remote.RemoteInstanceID) Track {
+func NewRemoteTrack(id TrackId, number *TrackNumber, title TrackTitle, remoteInstanceId remote.RemoteInstanceID) Track {
 	return Track{
 		id:               id,
-		fileId:           fileId,
+		fileId:           nil,
 		number:           number,
 		title:            title,
 		remoteInstanceId: &remoteInstanceId,
@@ -47,8 +49,11 @@ func (t Track) Id() TrackId {
 	return t.id
 }
 
-func (t Track) FileId() FileId {
-	return t.fileId
+func (t Track) FileId() (FileId, bool) {
+	if t.fileId == nil {
+		return FileId{}, false
+	}
+	return *t.fileId, true
 }
 
 func (t Track) Title() TrackTitle {

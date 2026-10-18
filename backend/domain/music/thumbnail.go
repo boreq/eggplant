@@ -4,19 +4,26 @@ import "github.com/boreq/errors"
 
 type Thumbnail struct {
 	id     ThumbnailId
-	fileId FileId
+	fileId *FileId
 }
 
 func NewThumbnail(id ThumbnailId, fileId FileId) Thumbnail {
-	return Thumbnail{id: id, fileId: fileId}
+	return Thumbnail{id: id, fileId: &fileId}
+}
+
+func NewRemoteThumbnail(id ThumbnailId) Thumbnail {
+	return Thumbnail{id: id, fileId: nil}
 }
 
 func (t Thumbnail) Id() ThumbnailId {
 	return t.id
 }
 
-func (t Thumbnail) FileId() FileId {
-	return t.fileId
+func (t Thumbnail) FileId() (FileId, bool) {
+	if t.fileId == nil {
+		return FileId{}, false
+	}
+	return *t.fileId, true
 }
 
 type ThumbnailId struct {

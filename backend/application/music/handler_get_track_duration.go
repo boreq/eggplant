@@ -35,7 +35,12 @@ func (h *GetTrackDurationHandler) Execute(ctx context.Context, accessCtx library
 		return music.TrackDuration{}, errors.Wrap(err, "could not get the track")
 	}
 
-	duration, err := h.durations.GetDuration(ctx, track.FileId())
+	fileId, ok := track.FileId()
+	if !ok {
+		return music.TrackDuration{}, errors.New("track has no file id")
+	}
+
+	duration, err := h.durations.GetDuration(ctx, fileId)
 	if err != nil {
 		return music.TrackDuration{}, errors.Wrap(err, "could not get the duration")
 	}

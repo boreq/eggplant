@@ -35,7 +35,12 @@ func (h *StreamFragmentHandler) Execute(accessCtx library.AccessContext, cmd Str
 		return ConvertedFile{}, errors.Wrap(err, "could not get the track")
 	}
 
-	cf, err := h.trackConverter.GetFragment(track.FileId(), cmd.StreamId, cmd.FragmentId)
+	fileId, ok := track.FileId()
+	if !ok {
+		return ConvertedFile{}, errors.New("track has no file id")
+	}
+
+	cf, err := h.trackConverter.GetFragment(fileId, cmd.StreamId, cmd.FragmentId)
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the fragment")
 	}

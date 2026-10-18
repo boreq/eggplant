@@ -34,7 +34,12 @@ func (h *StreamInitHandler) Execute(accessCtx library.AccessContext, cmd StreamI
 		return ConvertedFile{}, errors.Wrap(err, "could not get the track")
 	}
 
-	cf, err := h.trackConverter.GetInit(track.FileId(), cmd.StreamId)
+	fileId, ok := track.FileId()
+	if !ok {
+		return ConvertedFile{}, errors.New("track has no file id")
+	}
+
+	cf, err := h.trackConverter.GetInit(fileId, cmd.StreamId)
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the init segment")
 	}

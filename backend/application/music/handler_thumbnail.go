@@ -31,7 +31,12 @@ func (h *ThumbnailHandler) Execute(ctx context.Context, accessCtx library.Access
 		return ConvertedFile{}, errors.Wrap(err, "could not get the thumbnail")
 	}
 
-	cf, err := h.thumbnailStore.GetConvertedFile(ctx, thumbnail.FileId())
+	fileId, ok := thumbnail.FileId()
+	if !ok {
+		return ConvertedFile{}, errors.New("thumbnail has no file id")
+	}
+
+	cf, err := h.thumbnailStore.GetConvertedFile(ctx, fileId)
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the converted file")
 	}

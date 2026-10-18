@@ -167,10 +167,11 @@ func tryAddingTrackNumbers(tracks []music.Track) []music.Track {
 	annotated := make([]music.Track, 0, len(tracks))
 	for _, t := range tracks {
 		parsed, err := titleparser.Parse(t.Title())
-		if err != nil || parsed.Number() == nil {
+		fileId, ok := t.FileId()
+		if err != nil || parsed.Number() == nil || !ok {
 			return tracks
 		}
-		annotated = append(annotated, music.NewTrackWithNumber(t.Id(), t.FileId(), *parsed.Number(), parsed.Title()))
+		annotated = append(annotated, music.NewTrackWithNumber(t.Id(), fileId, *parsed.Number(), parsed.Title()))
 	}
 	return annotated
 }

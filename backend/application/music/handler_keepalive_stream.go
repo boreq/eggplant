@@ -34,5 +34,10 @@ func (h *KeepAliveStreamHandler) Execute(accessCtx library.AccessContext, cmd Ke
 		return errors.Wrap(err, "could not get the track")
 	}
 
-	return h.trackConverter.KeepAliveStream(track.FileId(), cmd.StreamId)
+	fileId, ok := track.FileId()
+	if !ok {
+		return errors.New("track has no file id")
+	}
+
+	return h.trackConverter.KeepAliveStream(fileId, cmd.StreamId)
 }

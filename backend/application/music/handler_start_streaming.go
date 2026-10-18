@@ -41,10 +41,15 @@ func (h *StartStreamingHandler) Execute(ctx context.Context, accessCtx library.A
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not get the track")
 	}
-	startStreamingLog.Debug("Execute: got track", "fileId", track.FileId().String())
+	fileId, ok := track.FileId()
+	if !ok {
+		return music.StreamId{}, errors.New("track has no file id")
+	}
+
+	startStreamingLog.Debug("Execute: got track", "fileId", fileId.String())
 
 	startStreamingLog.Debug("Execute: calling trackConverter.StartStream")
-	streamId, err := h.trackConverter.StartStream(ctx, track.FileId(), h.seekPosition(cmd))
+	streamId, err := h.trackConverter.StartStream(ctx, fileId, h.seekPosition(cmd))
 	startStreamingLog.Debug("Execute: trackConverter.StartStream returned", "err", err)
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not start the stream")
