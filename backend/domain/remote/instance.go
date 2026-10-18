@@ -18,7 +18,7 @@ type RemoteInstance struct {
 
 	lastHealthcheck *Healthcheck
 
-	EventRecorder
+	events EventRecorder
 }
 
 func NewRemoteInstance(id RemoteInstanceID, address RemoteInstanceAddress, localPairingTokenHash HashedPairingToken) *RemoteInstance {
@@ -33,6 +33,8 @@ func NewRemoteInstance(id RemoteInstanceID, address RemoteInstanceAddress, local
 		remoteAuthToken:    nil,
 
 		lastHealthcheck: nil,
+
+		events: NewEventRecorder(),
 	}
 }
 
@@ -53,6 +55,7 @@ func NewRemoteInstanceFromDatabase(
 		remotePairingToken:    remotePairingToken,
 		remoteAuthToken:       remoteAuthToken,
 		lastHealthcheck:       lastHealthcheck,
+		events:                NewEventRecorder(),
 	}
 }
 
@@ -66,7 +69,7 @@ func (r *RemoteInstance) SetRemotePairingToken(token PairingToken) error {
 	}
 
 	r.remotePairingToken = &token
-	r.RecordEvent(RemotePairingTokenSet{RemoteInstanceID: r.id})
+	r.events.RecordEvent(RemotePairingTokenSet{RemoteInstanceID: r.id})
 	return nil
 }
 
@@ -88,6 +91,10 @@ func (r *RemoteInstance) SetRemoteAuthToken(localPairingToken PairingToken, toke
 	r.localPairingTokenHash = nil
 	r.recordPairedIfJustCompleted(wasPaired)
 	return nil
+}
+
+func (r *RemoteInstance) PopEvents() []Event {
+	return r.events.PopEvents()
 }
 
 func (r *RemoteInstance) Id() RemoteInstanceID {
@@ -138,7 +145,7 @@ func (r *RemoteInstance) isPaired() bool {
 
 func (r *RemoteInstance) recordPairedIfJustCompleted(wasPaired bool) {
 	if !wasPaired && r.isPaired() {
-		r.RecordEvent(RemotePaired{RemoteInstanceID: r.id})
+		r.events.RecordEvent(RemotePaired{RemoteInstanceID: r.id})
 	}
 }
 

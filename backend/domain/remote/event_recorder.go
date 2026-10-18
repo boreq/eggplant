@@ -8,6 +8,10 @@ type EventRecorder struct {
 	recordedEvents []Event
 }
 
+func NewEventRecorder() EventRecorder {
+	return EventRecorder{}
+}
+
 func (r *EventRecorder) RecordEvent(event Event) {
 	r.recordedEvents = append(r.recordedEvents, event)
 }
