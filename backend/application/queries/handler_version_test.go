@@ -69,7 +69,10 @@ func userAccessContext(t *testing.T, administrator bool) accessctx.AccessContext
 	token, err := authdomain.NewAccessToken()
 	require.NoError(t, err)
 
-	user := authdomain.NewUser(username, authdomain.PasswordHash{}, administrator, time.Now())
+	passwordHash, err := authdomain.NewPasswordHash([]byte("hash"))
+	require.NoError(t, err)
+
+	user := authdomain.NewUser(username, passwordHash, administrator, time.Now())
 	return accessctx.NewUserAccessContext(user, token)
 }
 

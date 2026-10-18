@@ -180,10 +180,11 @@ func mkTracks(t *testing.T, titles []string) []music.Track {
 		require.NoError(t, err)
 		parsed, err := titleparser.Parse(title)
 		require.NoError(t, err)
+		id, fileId := trackIdAndFileId(t, title)
 		if parsed.Number() == nil {
-			tracks = append(tracks, music.NewTrack(music.TrackId{}, music.FileId{}, parsed.Title()))
+			tracks = append(tracks, music.NewTrack(id, fileId, parsed.Title()))
 		} else {
-			tracks = append(tracks, music.NewTrackWithNumber(music.TrackId{}, music.FileId{}, *parsed.Number(), parsed.Title()))
+			tracks = append(tracks, music.NewTrackWithNumber(id, fileId, *parsed.Number(), parsed.Title()))
 		}
 	}
 	return tracks

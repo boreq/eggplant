@@ -69,5 +69,15 @@ func validTrack(t *testing.T) music.Track {
 	t.Helper()
 	title, err := music.NewTrackTitle("track")
 	require.NoError(t, err)
-	return music.NewTrack(music.TrackId{}, music.FileId{}, title)
+	id, fileId := trackIdAndFileId(t, title)
+	return music.NewTrack(id, fileId, title)
+}
+
+func trackIdAndFileId(t *testing.T, title music.TrackTitle) (music.TrackId, music.FileId) {
+	t.Helper()
+	id, err := music.NewTrackId(nil, title)
+	require.NoError(t, err)
+	path, err := music.NewFilePath("/test/" + title.String())
+	require.NoError(t, err)
+	return id, music.NewFileId(path)
 }
