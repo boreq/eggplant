@@ -34,7 +34,7 @@ check-repository-unchanged:
 
 .PHONY: tools
 tools:
-	 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+	 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 	 go install github.com/google/wire/cmd/wire@v0.7.0
 	 go install golang.org/x/tools/cmd/goimports@v0.45.0
 

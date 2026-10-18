@@ -41,12 +41,10 @@ type Config struct {
 // Default returns the default config.
 func Default() *Config {
 	conf := &Config{
-		ExposedConfig: ExposedConfig{
-			ServeAddress:   "127.0.0.1:8118",
-			MusicDirectory: "/path/to/music",
-			DataDirectory:  "/path/to/data",
-			CacheDirectory: "/path/to/cache",
-		},
+		ServeAddress:   "127.0.0.1:8118",
+		MusicDirectory: "/path/to/music",
+		DataDirectory:  "/path/to/data",
+		CacheDirectory: "/path/to/cache",
 		TrackExtensions: []string{
 			".flac",
 			".mp3",

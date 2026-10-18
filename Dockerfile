@@ -6,7 +6,7 @@ RUN make version > /version.txt
 RUN cd frontend && yarn install --immutable
 RUN make -C frontend build VERSION=$(cat /version.txt)
 
-FROM golang:1.26-alpine AS backend
+FROM golang:1.27-alpine AS backend
 RUN apk add git make
 WORKDIR /eggplant
 COPY . .
