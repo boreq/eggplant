@@ -18,8 +18,8 @@ func toAlbumSearchResults(hits []library.FoundAlbum) []openapi.AlbumSearchResult
 	result := make([]openapi.AlbumSearchResult, 0, len(hits))
 	for _, h := range hits {
 		result = append(result, openapi.AlbumSearchResult{
-			Album: toPartialAlbum(h.Album),
-			Score: h.Dist,
+			Album: toPartialAlbum(h.Album()),
+			Score: h.Dist(),
 		})
 	}
 	return result
@@ -35,14 +35,14 @@ func toTrackWithAlbums(hits []library.FoundTrack) []openapi.TrackWithAlbum {
 
 func toTrackWithAlbum(h library.FoundTrack) openapi.TrackWithAlbum {
 	var alb *openapi.PartialAlbum
-	if a := h.Track.Album(); a != nil {
+	if a := h.Track().Album(); a != nil {
 		v := toPartialAlbum(*a)
 		alb = &v
 	}
 	return openapi.TrackWithAlbum{
-		Track: toTrack(h.Track.Track()),
+		Track: toTrack(h.Track().Track()),
 		Album: alb,
-		Score: h.Dist,
+		Score: h.Dist(),
 	}
 }
 

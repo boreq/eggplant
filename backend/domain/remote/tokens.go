@@ -34,7 +34,7 @@ func NewPairingTokenFromBytes(b []byte) (PairingToken, error) {
 }
 
 func (t PairingToken) Hash() HashedPairingToken {
-	return HashedPairingToken{t.hashed()}
+	return newHashedPairingToken(newHashedToken(t.token))
 }
 
 func (t PairingToken) Equal(o PairingToken) bool {
@@ -50,7 +50,11 @@ func NewHashedPairingTokenFromBytes(b []byte) (HashedPairingToken, error) {
 	if err != nil {
 		return HashedPairingToken{}, errors.Wrap(err, "invalid hashed pairing token")
 	}
-	return HashedPairingToken{t}, nil
+	return newHashedPairingToken(t), nil
+}
+
+func newHashedPairingToken(t hashedToken) HashedPairingToken {
+	return HashedPairingToken{t}
 }
 
 func (t HashedPairingToken) Equal(o HashedPairingToken) bool {
@@ -78,7 +82,7 @@ func NewAuthTokenFromBytes(b []byte) (AuthToken, error) {
 }
 
 func (t AuthToken) Hash() HashedAuthToken {
-	return HashedAuthToken{t.hashed()}
+	return newHashedAuthToken(newHashedToken(t.token))
 }
 
 func (t AuthToken) Equal(o AuthToken) bool {
@@ -94,7 +98,11 @@ func NewHashedAuthTokenFromBytes(b []byte) (HashedAuthToken, error) {
 	if err != nil {
 		return HashedAuthToken{}, errors.Wrap(err, "invalid hashed auth token")
 	}
-	return HashedAuthToken{t}, nil
+	return newHashedAuthToken(t), nil
+}
+
+func newHashedAuthToken(t hashedToken) HashedAuthToken {
+	return HashedAuthToken{t}
 }
 
 type token struct {
@@ -120,13 +128,13 @@ func (t token) Bytes() []byte {
 	return t.value
 }
 
-func (t token) hashed() hashedToken {
-	sum := sha256.Sum256(t.value)
-	return hashedToken{value: sum[:]}
-}
-
 type hashedToken struct {
 	value []byte
+}
+
+func newHashedToken(t token) hashedToken {
+	sum := sha256.Sum256(t.value)
+	return hashedToken{value: sum[:]}
 }
 
 func newHashedTokenFromBytes(b []byte) (hashedToken, error) {

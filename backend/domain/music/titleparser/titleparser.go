@@ -38,7 +38,7 @@ func Parse(t music.TrackTitle) (NumberAndTitle, error) {
 }
 
 func tryParse(s string) (NumberAndTitle, error) {
-	acc := &parseAccumulator{}
+	acc := newParseAccumulator()
 	st := parseState(parseStateStart)
 
 	for _, r := range s {
@@ -77,6 +77,10 @@ func tryCreatingNumberAndTitle(numStr, titleStr string) (NumberAndTitle, error) 
 type parseAccumulator struct {
 	number strings.Builder
 	title  strings.Builder
+}
+
+func newParseAccumulator() *parseAccumulator {
+	return &parseAccumulator{}
 }
 
 type parseState func(acc *parseAccumulator, r rune) (parseState, error)

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	remotedomain "github.com/boreq/eggplant/domain/remote"
 	"github.com/stretchr/testify/require"
@@ -92,8 +93,8 @@ func TestSearchContent(t *testing.T) {
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Albums(), 1)
-		require.Equal(t, "findme", result.Albums()[0].Album.Title().String())
-		require.Equal(t, albumIdFor(t, "findme"), result.Albums()[0].Album.Id())
+		require.Equal(t, "findme", result.Albums()[0].Album().Title().String())
+		require.Equal(t, albumIdFor(t, "findme"), result.Albums()[0].Album().Id())
 	})
 
 	t.Run("track_hit_carries_containing_album_ref", func(t *testing.T) {
@@ -106,9 +107,9 @@ func TestSearchContent(t *testing.T) {
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Tracks(), 1)
-		require.NotNil(t, result.Tracks()[0].Track.Album())
-		require.Equal(t, "parent", result.Tracks()[0].Track.Album().Title().String())
-		require.Equal(t, albumIdFor(t, "parent"), result.Tracks()[0].Track.Album().Id())
+		require.NotNil(t, result.Tracks()[0].Track().Album())
+		require.Equal(t, "parent", result.Tracks()[0].Track().Album().Title().String())
+		require.Equal(t, albumIdFor(t, "parent"), result.Tracks()[0].Track().Album().Id())
 	})
 
 	t.Run("root_track_hit_has_no_album_ref", func(t *testing.T) {
@@ -122,7 +123,7 @@ func TestSearchContent(t *testing.T) {
 		result, err := lib.Search(anonymous, "findme")
 		require.NoError(t, err)
 		require.Len(t, result.Tracks(), 1)
-		require.Nil(t, result.Tracks()[0].Track.Album())
+		require.Nil(t, result.Tracks()[0].Track().Album())
 	})
 
 	t.Run("no_matches_returns_empty_result", func(t *testing.T) {
@@ -201,7 +202,7 @@ func TestSearchDistance(t *testing.T) {
 		})
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
-		require.Equal(t, "needle_own", result.Tracks()[0].Track.Track().Title().String())
+		require.Equal(t, "needle_own", result.Tracks()[0].Track().Track().Title().String())
 	})
 
 	t.Run("album_distances_ordered", func(t *testing.T) {
@@ -270,7 +271,7 @@ func TestSearchSubstringMatch(t *testing.T) {
 	result, err := lib.Search(anonymous, "compound_album")
 	require.NoError(t, err)
 	require.Len(t, result.Albums(), 1)
-	require.True(t, strings.Contains(result.Albums()[0].Album.Title().String(), "compound_album"))
+	require.True(t, strings.Contains(result.Albums()[0].Album().Title().String(), "compound_album"))
 }
 
 func TestSearchCap(t *testing.T) {
@@ -297,7 +298,7 @@ func TestSearchCap(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, result.Albums(), 20)
 		require.Len(t, result.Tracks(), 20)
-		require.Equal(t, "needle_parent", result.Albums()[0].Album.Title().String())
+		require.Equal(t, "needle_parent", result.Albums()[0].Album().Title().String())
 	})
 
 	t.Run("own_matches_not_dropped_by_cap", func(t *testing.T) {
@@ -378,8 +379,8 @@ func TestSearchRootBehavior(t *testing.T) {
 		result, err := lib.Search(anonymous, "needle")
 		require.NoError(t, err)
 		for _, twa := range result.Tracks() {
-			if twa.Track.Track().Title().String() == "needle_song" {
-				require.Nil(t, twa.Track.Album())
+			if twa.Track().Track().Title().String() == "needle_song" {
+				require.Nil(t, twa.Track().Album())
 				return
 			}
 		}
@@ -393,18 +394,19 @@ func TestMergeResultsKeepsItemsWithTheSameIdFromDifferentInstances(t *testing.T)
 
 	t.Run("albums", func(t *testing.T) {
 		local := library.NewSearchResults(
-			[]library.FoundAlbum{{Album: mkPartialAlbum(t, "shared_album"), Dist: 0}},
+			[]library.FoundAlbum{foundAlbum(t, mkPartialAlbum(t, "shared_album"), 0)},
 			nil,
 		)
 		remote := library.NewSearchResults(
 			[]library.FoundAlbum{
-				{Album: mkRemotePartialAlbum(t, "shared_album", instanceA), Dist: 0},
-				{Album: mkRemotePartialAlbum(t, "shared_album", instanceB), Dist: 1},
+				foundAlbum(t, mkRemotePartialAlbum(t, "shared_album", instanceA), 0),
+				foundAlbum(t, mkRemotePartialAlbum(t, "shared_album", instanceB), 1),
 			},
 			nil,
 		)
 
-		merged := library.MergeResults(local, remote)
+		merged, err := library.MergeResults(local, remote)
+		require.NoError(t, err)
 		require.Len(t, merged.Albums(), 3)
 		require.ElementsMatch(t,
 			[]string{"", instanceA.String(), instanceB.String()},
@@ -415,17 +417,18 @@ func TestMergeResultsKeepsItemsWithTheSameIdFromDifferentInstances(t *testing.T)
 	t.Run("tracks", func(t *testing.T) {
 		local := library.NewSearchResults(
 			nil,
-			[]library.FoundTrack{{Track: library.NewRootTrackWithAlbum(mkTrack(t, "shared_song")), Dist: 0}},
+			[]library.FoundTrack{foundTrack(t, library.NewRootTrackWithAlbum(mkTrack(t, "shared_song")), 0)},
 		)
 		remote := library.NewSearchResults(
 			nil,
 			[]library.FoundTrack{
-				{Track: library.NewRootTrackWithAlbum(mkRemoteTrack(t, "shared_song", instanceA)), Dist: 0},
-				{Track: library.NewRootTrackWithAlbum(mkRemoteTrack(t, "shared_song", instanceB)), Dist: 1},
+				foundTrack(t, library.NewRootTrackWithAlbum(mkRemoteTrack(t, "shared_song", instanceA)), 0),
+				foundTrack(t, library.NewRootTrackWithAlbum(mkRemoteTrack(t, "shared_song", instanceB)), 1),
 			},
 		)
 
-		merged := library.MergeResults(local, remote)
+		merged, err := library.MergeResults(local, remote)
+		require.NoError(t, err)
 		require.Len(t, merged.Tracks(), 3)
 		require.ElementsMatch(t,
 			[]string{"", instanceA.String(), instanceB.String()},
@@ -439,39 +442,41 @@ func TestMergeResultsDeduplicatesItemsFromTheSameInstance(t *testing.T) {
 
 	t.Run("albums_keep_the_lowest_distance", func(t *testing.T) {
 		far := library.NewSearchResults(
-			[]library.FoundAlbum{{Album: mkRemotePartialAlbum(t, "album", instance), Dist: 5}},
+			[]library.FoundAlbum{foundAlbum(t, mkRemotePartialAlbum(t, "album", instance), 5)},
 			nil,
 		)
 		near := library.NewSearchResults(
-			[]library.FoundAlbum{{Album: mkRemotePartialAlbum(t, "album", instance), Dist: 1}},
+			[]library.FoundAlbum{foundAlbum(t, mkRemotePartialAlbum(t, "album", instance), 1)},
 			nil,
 		)
 
-		merged := library.MergeResults(far, near)
+		merged, err := library.MergeResults(far, near)
+		require.NoError(t, err)
 		require.Len(t, merged.Albums(), 1)
-		require.Equal(t, 1, merged.Albums()[0].Dist)
+		require.Equal(t, 1, merged.Albums()[0].Dist())
 	})
 
 	t.Run("tracks_keep_the_lowest_distance", func(t *testing.T) {
 		far := library.NewSearchResults(
 			nil,
-			[]library.FoundTrack{{Track: library.NewRootTrackWithAlbum(mkTrack(t, "song")), Dist: 5}},
+			[]library.FoundTrack{foundTrack(t, library.NewRootTrackWithAlbum(mkTrack(t, "song")), 5)},
 		)
 		near := library.NewSearchResults(
 			nil,
-			[]library.FoundTrack{{Track: library.NewRootTrackWithAlbum(mkTrack(t, "song")), Dist: 1}},
+			[]library.FoundTrack{foundTrack(t, library.NewRootTrackWithAlbum(mkTrack(t, "song")), 1)},
 		)
 
-		merged := library.MergeResults(far, near)
+		merged, err := library.MergeResults(far, near)
+		require.NoError(t, err)
 		require.Len(t, merged.Tracks(), 1)
-		require.Equal(t, 1, merged.Tracks()[0].Dist)
+		require.Equal(t, 1, merged.Tracks()[0].Dist())
 	})
 }
 
 func albumInstanceIds(hits []library.FoundAlbum) []string {
 	ids := make([]string, 0, len(hits))
 	for _, h := range hits {
-		ids = append(ids, instanceIdString(h.Album.RemoteInstanceId()))
+		ids = append(ids, instanceIdString(h.Album().RemoteInstanceId()))
 	}
 	return ids
 }
@@ -479,7 +484,7 @@ func albumInstanceIds(hits []library.FoundAlbum) []string {
 func trackInstanceIds(hits []library.FoundTrack) []string {
 	ids := make([]string, 0, len(hits))
 	for _, h := range hits {
-		ids = append(ids, instanceIdString(h.Track.Track().RemoteInstanceId()))
+		ids = append(ids, instanceIdString(h.Track().Track().RemoteInstanceId()))
 	}
 	return ids
 }
@@ -489,4 +494,16 @@ func instanceIdString(id *remotedomain.RemoteInstanceID) string {
 		return ""
 	}
 	return id.String()
+}
+
+func foundAlbum(t *testing.T, album music.PartialAlbum, dist int) library.FoundAlbum {
+	found, err := library.NewFoundAlbum(album, dist)
+	require.NoError(t, err)
+	return found
+}
+
+func foundTrack(t *testing.T, track library.TrackWithAlbum, dist int) library.FoundTrack {
+	found, err := library.NewFoundTrack(track, dist)
+	require.NoError(t, err)
+	return found
 }

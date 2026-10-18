@@ -259,7 +259,12 @@ func (l *RemoteLibrary) Search(ctx context.Context, query string) (library.Searc
 				l.log.Error("could not convert remote search album", "instance", t.id.String(), "err", err)
 				continue
 			}
-			allFoundAlbums = append(allFoundAlbums, library.FoundAlbum{Album: album, Dist: a.Score})
+			foundAlbum, err := library.NewFoundAlbum(album, a.Score)
+			if err != nil {
+				l.log.Error("could not create remote search album", "instance", t.id.String(), "err", err)
+				continue
+			}
+			allFoundAlbums = append(allFoundAlbums, foundAlbum)
 		}
 
 		for _, tw := range resp.Tracks {
@@ -279,7 +284,12 @@ func (l *RemoteLibrary) Search(ctx context.Context, query string) (library.Searc
 			} else {
 				trackWithAlbum = library.NewRootTrackWithAlbum(track)
 			}
-			allFoundTracks = append(allFoundTracks, library.FoundTrack{Track: trackWithAlbum, Dist: tw.Score})
+			foundTrack, err := library.NewFoundTrack(trackWithAlbum, tw.Score)
+			if err != nil {
+				l.log.Error("could not create remote search track", "instance", t.id.String(), "err", err)
+				continue
+			}
+			allFoundTracks = append(allFoundTracks, foundTrack)
 		}
 	}
 

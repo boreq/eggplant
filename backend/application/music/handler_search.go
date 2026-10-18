@@ -88,5 +88,9 @@ func (h *SearchHandler) Execute(ctx context.Context, accessCtx accessctx.AccessC
 		return localResults, nil
 	}
 
-	return library.MergeResults(localResults, remoteResults), nil
+	results, err := library.MergeResults(localResults, remoteResults)
+	if err != nil {
+		return library.SearchResults{}, errors.Wrap(err, "could not merge the results")
+	}
+	return results, nil
 }

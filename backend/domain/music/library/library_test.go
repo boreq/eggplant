@@ -677,7 +677,7 @@ func mkThumb(t *testing.T, filename string) music.Thumbnail {
 func trackTitles(tracks []library.FoundTrack) []string {
 	titles := make([]string, 0, len(tracks))
 	for _, t := range tracks {
-		titles = append(titles, t.Track.Track().Title().String())
+		titles = append(titles, t.Track().Track().Title().String())
 	}
 	return titles
 }
@@ -685,7 +685,7 @@ func trackTitles(tracks []library.FoundTrack) []string {
 func searchAlbumTitles(hits []library.FoundAlbum) []string {
 	titles := make([]string, 0, len(hits))
 	for _, h := range hits {
-		titles = append(titles, h.Album.Title().String())
+		titles = append(titles, h.Album().Title().String())
 	}
 	return titles
 }
