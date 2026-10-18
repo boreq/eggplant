@@ -11,8 +11,8 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-var TopicRemotePairingTokenSet = remotedomain.RemotePairingTokenSet{}.EventName()
-var TopicRemotePaired = remotedomain.RemotePaired{}.EventName()
+var TopicRemotePairingTokenSet = remotedomain.RemotePairingTokenSetEventName
+var TopicRemotePaired = remotedomain.RemotePairedEventName
 
 func AllTopics() []string {
 	return []string{TopicRemotePairingTokenSet, TopicRemotePaired}

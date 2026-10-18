@@ -1,5 +1,10 @@
 package remote
 
+const (
+	RemotePairingTokenSetEventName = "RemoteInstance.RemotePairingTokenSet.v1"
+	RemotePairedEventName          = "RemoteInstance.RemotePaired.v1"
+)
+
 type Event interface {
 	EventName() string
 }
@@ -9,7 +14,7 @@ type RemotePairingTokenSet struct {
 }
 
 func (RemotePairingTokenSet) EventName() string {
-	return "RemoteInstance.RemotePairingTokenSet.v1"
+	return RemotePairingTokenSetEventName
 }
 
 type RemotePaired struct {
@@ -17,5 +22,5 @@ type RemotePaired struct {
 }
 
 func (RemotePaired) EventName() string {
-	return "RemoteInstance.RemotePaired.v1"
+	return RemotePairedEventName
 }
