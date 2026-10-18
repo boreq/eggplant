@@ -7,8 +7,23 @@ import (
 )
 
 type StreamPlaylist struct {
-	TrackId  music.TrackId
-	StreamId music.StreamId
+	trackId  music.TrackId
+	streamId music.StreamId
+}
+
+func NewStreamPlaylist(trackId music.TrackId, streamId music.StreamId) StreamPlaylist {
+	return StreamPlaylist{
+		trackId:  trackId,
+		streamId: streamId,
+	}
+}
+
+func (s StreamPlaylist) TrackId() music.TrackId {
+	return s.trackId
+}
+
+func (s StreamPlaylist) StreamId() music.StreamId {
+	return s.streamId
 }
 
 type StreamPlaylistHandler struct {
@@ -29,7 +44,7 @@ func (h *StreamPlaylistHandler) Execute(accessCtx library.AccessContext, cmd Str
 		return Playlist{}, errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
+	track, err := lib.GetTrack(accessCtx, cmd.TrackId())
 	if err != nil {
 		return Playlist{}, errors.Wrap(err, "could not get the track")
 	}
@@ -39,7 +54,7 @@ func (h *StreamPlaylistHandler) Execute(accessCtx library.AccessContext, cmd Str
 		return Playlist{}, errors.New("track has no file id")
 	}
 
-	playlist, err := h.trackConverter.GetPlaylist(fileId, cmd.StreamId)
+	playlist, err := h.trackConverter.GetPlaylist(fileId, cmd.StreamId())
 	if err != nil {
 		return Playlist{}, errors.Wrap(err, "could not get the playlist")
 	}

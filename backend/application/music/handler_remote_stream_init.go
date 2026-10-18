@@ -11,9 +11,29 @@ import (
 )
 
 type RemoteStreamInit struct {
-	InstanceId remote.RemoteInstanceID
-	TrackId    music.TrackId
-	StreamId   music.StreamId
+	instanceId remote.RemoteInstanceID
+	trackId    music.TrackId
+	streamId   music.StreamId
+}
+
+func NewRemoteStreamInit(instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId) RemoteStreamInit {
+	return RemoteStreamInit{
+		instanceId: instanceId,
+		trackId:    trackId,
+		streamId:   streamId,
+	}
+}
+
+func (r RemoteStreamInit) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteStreamInit) TrackId() music.TrackId {
+	return r.trackId
+}
+
+func (r RemoteStreamInit) StreamId() music.StreamId {
+	return r.streamId
 }
 
 type RemoteStreamInitHandler struct {
@@ -29,7 +49,7 @@ func (h *RemoteStreamInitHandler) Execute(ctx context.Context, accessCtx accessc
 		return nil, accessctx.ErrPermissionDenied
 	}
 
-	body, err := h.remoteLibrary.GetStreamInit(ctx, cmd.InstanceId, cmd.TrackId, cmd.StreamId)
+	body, err := h.remoteLibrary.GetStreamInit(ctx, cmd.InstanceId(), cmd.TrackId(), cmd.StreamId())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get the remote stream init")
 	}

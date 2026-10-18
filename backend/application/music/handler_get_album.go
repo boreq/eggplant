@@ -7,7 +7,17 @@ import (
 )
 
 type GetAlbum struct {
-	Id music.AlbumId
+	id music.AlbumId
+}
+
+func NewGetAlbum(id music.AlbumId) GetAlbum {
+	return GetAlbum{
+		id: id,
+	}
+}
+
+func (g GetAlbum) Id() music.AlbumId {
+	return g.id
 }
 
 type GetAlbumHandler struct {
@@ -24,7 +34,7 @@ func (h *GetAlbumHandler) Execute(accessCtx library.AccessContext, cmd GetAlbum)
 		return music.Album{}, errors.Wrap(err, "could not get the library")
 	}
 
-	album, err := lib.GetAlbum(accessCtx, cmd.Id)
+	album, err := lib.GetAlbum(accessCtx, cmd.Id())
 	if err != nil {
 		return music.Album{}, errors.Wrap(err, "could not get the album")
 	}

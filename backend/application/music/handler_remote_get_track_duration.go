@@ -10,8 +10,23 @@ import (
 )
 
 type RemoteGetTrackDuration struct {
-	InstanceId remote.RemoteInstanceID
-	TrackId    music.TrackId
+	instanceId remote.RemoteInstanceID
+	trackId    music.TrackId
+}
+
+func NewRemoteGetTrackDuration(instanceId remote.RemoteInstanceID, trackId music.TrackId) RemoteGetTrackDuration {
+	return RemoteGetTrackDuration{
+		instanceId: instanceId,
+		trackId:    trackId,
+	}
+}
+
+func (r RemoteGetTrackDuration) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteGetTrackDuration) TrackId() music.TrackId {
+	return r.trackId
 }
 
 type RemoteGetTrackDurationHandler struct {
@@ -27,7 +42,7 @@ func (h *RemoteGetTrackDurationHandler) Execute(ctx context.Context, accessCtx a
 		return music.TrackDuration{}, accessctx.ErrPermissionDenied
 	}
 
-	duration, err := h.remoteLibrary.GetTrackDuration(ctx, cmd.InstanceId, cmd.TrackId)
+	duration, err := h.remoteLibrary.GetTrackDuration(ctx, cmd.InstanceId(), cmd.TrackId())
 	if err != nil {
 		return music.TrackDuration{}, errors.Wrap(err, "could not get the remote track duration")
 	}

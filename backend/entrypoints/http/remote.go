@@ -35,7 +35,7 @@ func (h *Handler) remoteAddRemote(accessCtx accessctx.AccessContext, r *http.Req
 		return rest.ErrBadRequest.WithMessage("Invalid address.")
 	}
 
-	result, err := h.app.Remote.AddRemote.Execute(accessCtx, remote.AddRemote{Address: address})
+	result, err := h.app.Remote.AddRemote.Execute(accessCtx, remote.NewAddRemote(address))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
@@ -158,7 +158,7 @@ func (h *Handler) remoteTrackDuration(accessCtx accessctx.AccessContext, r *http
 		return rest.ErrBadRequest.WithMessage("Invalid track id.")
 	}
 
-	duration, err := h.app.Music.RemoteGetTrackDuration.Execute(r.Context(), accessCtx, music.RemoteGetTrackDuration{InstanceId: instanceId, TrackId: trackId})
+	duration, err := h.app.Music.RemoteGetTrackDuration.Execute(r.Context(), accessCtx, music.NewRemoteGetTrackDuration(instanceId, trackId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden
@@ -181,7 +181,7 @@ func (h *Handler) remoteRootAlbum(accessCtx accessctx.AccessContext, r *http.Req
 		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
 	}
 
-	album, err := h.app.Music.RemoteGetRootAlbum.Execute(r.Context(), accessCtx, music.RemoteGetRootAlbum{InstanceId: instanceId})
+	album, err := h.app.Music.RemoteGetRootAlbum.Execute(r.Context(), accessCtx, music.NewRemoteGetRootAlbum(instanceId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden
@@ -209,7 +209,7 @@ func (h *Handler) remoteAlbum(accessCtx accessctx.AccessContext, r *http.Request
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
 
-	album, err := h.app.Music.RemoteGetAlbum.Execute(r.Context(), accessCtx, music.RemoteGetAlbum{InstanceId: instanceId, AlbumId: albumId})
+	album, err := h.app.Music.RemoteGetAlbum.Execute(r.Context(), accessCtx, music.NewRemoteGetAlbum(instanceId, albumId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden
@@ -242,11 +242,7 @@ func (h *Handler) remoteStartStream(accessCtx accessctx.AccessContext, r *http.R
 		return rest.ErrBadRequest.WithMessage("Invalid seek param.")
 	}
 
-	streamId, err := h.app.Music.RemoteStartStreaming.Execute(r.Context(), accessCtx, music.RemoteStartStreaming{
-		InstanceId:   instanceId,
-		TrackId:      trackId,
-		SeekPosition: seekPos,
-	})
+	streamId, err := h.app.Music.RemoteStartStreaming.Execute(r.Context(), accessCtx, music.NewRemoteStartStreaming(instanceId, trackId, seekPos))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden
@@ -280,11 +276,7 @@ func (h *Handler) remoteStreamPlaylist(accessCtx accessctx.AccessContext, w http
 		return
 	}
 
-	body, err := h.app.Music.RemoteStreamPlaylist.Execute(r.Context(), accessCtx, music.RemoteStreamPlaylist{
-		InstanceId: instanceId,
-		TrackId:    trackId,
-		StreamId:   streamId,
-	})
+	body, err := h.app.Music.RemoteStreamPlaylist.Execute(r.Context(), accessCtx, music.NewRemoteStreamPlaylist(instanceId, trackId, streamId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			w.WriteHeader(http.StatusForbidden)
@@ -325,11 +317,7 @@ func (h *Handler) remoteStreamInit(accessCtx accessctx.AccessContext, w http.Res
 		return
 	}
 
-	body, err := h.app.Music.RemoteStreamInit.Execute(r.Context(), accessCtx, music.RemoteStreamInit{
-		InstanceId: instanceId,
-		TrackId:    trackId,
-		StreamId:   streamId,
-	})
+	body, err := h.app.Music.RemoteStreamInit.Execute(r.Context(), accessCtx, music.NewRemoteStreamInit(instanceId, trackId, streamId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			w.WriteHeader(http.StatusForbidden)
@@ -382,12 +370,7 @@ func (h *Handler) remoteStreamFragment(accessCtx accessctx.AccessContext, w http
 		return
 	}
 
-	body, err := h.app.Music.RemoteStreamFragment.Execute(r.Context(), accessCtx, music.RemoteStreamFragment{
-		InstanceId: instanceId,
-		TrackId:    trackId,
-		StreamId:   streamId,
-		FragmentId: fragmentId,
-	})
+	body, err := h.app.Music.RemoteStreamFragment.Execute(r.Context(), accessCtx, music.NewRemoteStreamFragment(instanceId, trackId, streamId, fragmentId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			w.WriteHeader(http.StatusForbidden)
@@ -428,11 +411,7 @@ func (h *Handler) remoteKeepAliveStream(accessCtx accessctx.AccessContext, w htt
 		return
 	}
 
-	if err := h.app.Music.RemoteKeepAliveStream.Execute(r.Context(), accessCtx, music.RemoteKeepAliveStream{
-		InstanceId: instanceId,
-		TrackId:    trackId,
-		StreamId:   streamId,
-	}); err != nil {
+	if err := h.app.Music.RemoteKeepAliveStream.Execute(r.Context(), accessCtx, music.NewRemoteKeepAliveStream(instanceId, trackId, streamId)); err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			w.WriteHeader(http.StatusForbidden)
 			return
@@ -463,10 +442,7 @@ func (h *Handler) remoteThumbnail(accessCtx accessctx.AccessContext, w http.Resp
 		return
 	}
 
-	body, err := h.app.Music.RemoteGetThumbnail.Execute(r.Context(), accessCtx, music.RemoteGetThumbnail{
-		InstanceId:  instanceId,
-		ThumbnailId: thumbnailId,
-	})
+	body, err := h.app.Music.RemoteGetThumbnail.Execute(r.Context(), accessCtx, music.NewRemoteGetThumbnail(instanceId, thumbnailId))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			w.WriteHeader(http.StatusForbidden)
@@ -510,7 +486,7 @@ func (h *Handler) remoteSetPairingToken(accessCtx accessctx.AccessContext, r *ht
 		return rest.ErrBadRequest.WithMessage("Invalid peer token.")
 	}
 
-	if err := h.app.Remote.SetRemotePairingToken.Execute(accessCtx, remote.SetRemotePairingToken{ID: id, RemotePairingToken: peerToken}); err != nil {
+	if err := h.app.Remote.SetRemotePairingToken.Execute(accessCtx, remote.NewSetRemotePairingToken(id, peerToken)); err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
 		}
@@ -547,10 +523,7 @@ func (h *Handler) remoteSetAuthToken(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid outbound token.")
 	}
 
-	cmd := remote.SetRemoteAuthToken{
-		LocalPairingToken: token,
-		RemoteAuthToken:   outboundToken,
-	}
+	cmd := remote.NewSetRemoteAuthToken(token, outboundToken)
 
 	if err := h.app.Remote.SetRemoteAuthToken.Execute(cmd); err != nil {
 		if errors.Is(err, remote.ErrNotFound) {

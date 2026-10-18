@@ -47,7 +47,17 @@ func (q Query) String() string {
 }
 
 type Search struct {
-	Query Query
+	query Query
+}
+
+func NewSearch(query Query) Search {
+	return Search{
+		query: query,
+	}
+}
+
+func (s Search) Query() Query {
+	return s.query
 }
 
 type SearchHandler struct {
@@ -65,7 +75,7 @@ func NewSearchHandler(repo LibraryRepository, remoteLibrary RemoteLibrary) *Sear
 }
 
 func (h *SearchHandler) Execute(ctx context.Context, accessCtx accessctx.AccessContext, cmd Search) (library.SearchResults, error) {
-	if cmd.Query.IsZero() {
+	if cmd.Query().IsZero() {
 		return library.SearchResults{}, errors.New("zero value of query")
 	}
 	lib, err := h.repo.Get()
@@ -73,7 +83,7 @@ func (h *SearchHandler) Execute(ctx context.Context, accessCtx accessctx.AccessC
 		return library.SearchResults{}, errors.Wrap(err, "could not get the library")
 	}
 
-	localResults, err := lib.Search(accessCtx, cmd.Query.String())
+	localResults, err := lib.Search(accessCtx, cmd.Query().String())
 	if err != nil {
 		return library.SearchResults{}, errors.Wrap(err, "local search failed")
 	}
@@ -82,7 +92,7 @@ func (h *SearchHandler) Execute(ctx context.Context, accessCtx accessctx.AccessC
 		return localResults, nil
 	}
 
-	remoteResults, err := h.remoteLibrary.Search(ctx, cmd.Query.String())
+	remoteResults, err := h.remoteLibrary.Search(ctx, cmd.Query().String())
 	if err != nil {
 		h.log.Error("remote search failed", "err", err)
 		return localResults, nil

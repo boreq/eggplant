@@ -10,9 +10,29 @@ import (
 )
 
 type RemoteStartStreaming struct {
-	InstanceId   remote.RemoteInstanceID
-	TrackId      music.TrackId
-	SeekPosition *music.RequestedSeekPosition
+	instanceId   remote.RemoteInstanceID
+	trackId      music.TrackId
+	seekPosition *music.RequestedSeekPosition
+}
+
+func NewRemoteStartStreaming(instanceId remote.RemoteInstanceID, trackId music.TrackId, seekPosition *music.RequestedSeekPosition) RemoteStartStreaming {
+	return RemoteStartStreaming{
+		instanceId:   instanceId,
+		trackId:      trackId,
+		seekPosition: seekPosition,
+	}
+}
+
+func (r RemoteStartStreaming) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteStartStreaming) TrackId() music.TrackId {
+	return r.trackId
+}
+
+func (r RemoteStartStreaming) SeekPosition() *music.RequestedSeekPosition {
+	return r.seekPosition
 }
 
 type RemoteStartStreamingHandler struct {
@@ -28,7 +48,7 @@ func (h *RemoteStartStreamingHandler) Execute(ctx context.Context, accessCtx acc
 		return music.StreamId{}, accessctx.ErrPermissionDenied
 	}
 
-	streamId, err := h.remoteLibrary.StartTrackStream(ctx, cmd.InstanceId, cmd.TrackId, cmd.SeekPosition)
+	streamId, err := h.remoteLibrary.StartTrackStream(ctx, cmd.InstanceId(), cmd.TrackId(), cmd.SeekPosition())
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not start the remote stream")
 	}

@@ -6,7 +6,17 @@ import (
 )
 
 type Remove struct {
-	Username authdomain.Username
+	username authdomain.Username
+}
+
+func NewRemove(username authdomain.Username) Remove {
+	return Remove{
+		username: username,
+	}
+}
+
+func (r Remove) Username() authdomain.Username {
+	return r.username
 }
 
 type RemoveHandler struct {
@@ -24,11 +34,11 @@ func (h *RemoveHandler) Execute(accessCtx accessctx.UserAccessContext, cmd Remov
 		return accessctx.ErrPermissionDenied
 	}
 
-	if accessCtx.Username() == cmd.Username {
+	if accessCtx.Username() == cmd.Username() {
 		return ErrCannotRemoveSelf
 	}
 
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		return r.Users.Remove(cmd.Username)
+		return r.Users.Remove(cmd.Username())
 	})
 }

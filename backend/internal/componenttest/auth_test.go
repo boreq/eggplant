@@ -41,10 +41,7 @@ func TestRegisterInitial(t *testing.T) {
 			require.NoError(t, usernameErr)
 			require.NoError(t, passwordErr)
 
-			cmd := auth.RegisterInitial{
-				Username: username,
-				Password: password,
-			}
+			cmd := auth.NewRegisterInitial(username, password)
 
 			err := a.RegisterInitial.Execute(cmd)
 			require.NoError(t, err)
@@ -65,10 +62,7 @@ func TestRegisterInitialCanOnlyBePerformedOnce(t *testing.T) {
 	a, cleanup := NewAuth(t)
 	defer cleanup()
 
-	cmd := auth.RegisterInitial{
-		Username: mustUsername(t, "username"),
-		Password: mustPassword(t, "password"),
-	}
+	cmd := auth.NewRegisterInitial(mustUsername(t, "username"), mustPassword(t, "password"))
 
 	err := a.RegisterInitial.Execute(cmd)
 	require.NoError(t, err)
@@ -85,36 +79,24 @@ func TestLoginInitialUser(t *testing.T) {
 	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
-		auth.RegisterInitial{
-			Username: username,
-			Password: password,
-		},
+		auth.NewRegisterInitial(username, password),
 	)
 	require.NoError(t, err)
 
 	token, err := a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: password,
-		},
+		auth.NewLogin(username, password),
 	)
 	require.NoError(t, err)
 	require.NotEmpty(t, token.String())
 
 	_, err = a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: mustPassword(t, "other-password"),
-		},
+		auth.NewLogin(username, mustPassword(t, "other-password")),
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 	require.EqualError(t, err, "transaction failed: invalid password: unauthorized")
 
 	_, err = a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: mustUsername(t, "other-username"),
-			Password: password,
-		},
+		auth.NewLogin(mustUsername(t, "other-username"), password),
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 	require.EqualError(t, err, "transaction failed: user not found: unauthorized")
@@ -127,20 +109,14 @@ func TestCheckAccessToken(t *testing.T) {
 	username := mustUsername(t, "username")
 	password := mustPassword(t, "password")
 
-	err := a.RegisterInitial.Execute(auth.RegisterInitial{
-		Username: username,
-		Password: password,
-	})
+	err := a.RegisterInitial.Execute(auth.NewRegisterInitial(username, password))
 	require.NoError(t, err)
 
-	token, err := a.Login.Execute(anonCtx, auth.Login{
-		Username: username,
-		Password: password,
-	})
+	token, err := a.Login.Execute(anonCtx, auth.NewLogin(username, password))
 	require.NoError(t, err)
 
 	ctx, err := a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: token},
+		auth.NewCheckAccessToken(token),
 	)
 	require.NoError(t, err)
 
@@ -151,19 +127,19 @@ func TestCheckAccessToken(t *testing.T) {
 	require.Nil(t, u.LastSeen())
 
 	_, err = a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: mustAccessToken(t, "fake")},
+		auth.NewCheckAccessToken(mustAccessToken(t, "fake")),
 	)
 	require.EqualError(t, err, "transaction failed: session token not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: mustAccessToken(t, "fake-ab")},
+		auth.NewCheckAccessToken(mustAccessToken(t, "fake-ab")),
 	)
 	require.EqualError(t, err, "transaction failed: session token not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{Token: mustAccessToken(t, "fake-757365726E616D65")},
+		auth.NewCheckAccessToken(mustAccessToken(t, "fake-757365726E616D65")),
 	)
 	require.EqualError(t, err, "transaction failed: session token not found: unauthorized")
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
@@ -177,34 +153,24 @@ func TestUpdateLastSeen(t *testing.T) {
 	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
-		auth.RegisterInitial{
-			Username: username,
-			Password: password,
-		},
+		auth.NewRegisterInitial(username, password),
 	)
 	require.NoError(t, err)
 
 	token, err := a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: password,
-		},
+		auth.NewLogin(username, password),
 	)
 	require.NoError(t, err)
 
 	ctx1, err := a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{
-			Token: token,
-		},
+		auth.NewCheckAccessToken(token),
 	)
 	require.NoError(t, err)
 
 	<-time.After(10 * time.Millisecond)
 
 	ctx2, err := a.CheckAccessToken.Execute(
-		auth.CheckAccessToken{
-			Token: token,
-		},
+		auth.NewCheckAccessToken(token),
 	)
 	require.NoError(t, err)
 
@@ -225,22 +191,16 @@ func TestLogout(t *testing.T) {
 	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
-		auth.RegisterInitial{
-			Username: username,
-			Password: password,
-		},
+		auth.NewRegisterInitial(username, password),
 	)
 	require.NoError(t, err)
 
 	token, err := a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: password,
-		},
+		auth.NewLogin(username, password),
 	)
 	require.NoError(t, err)
 
-	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
+	ctx, err := a.CheckAccessToken.Execute(auth.NewCheckAccessToken(token))
 	require.NoError(t, err)
 
 	authCtx, ok := ctx.(accessctx.UserAccessContext)
@@ -258,10 +218,7 @@ func TestList(t *testing.T) {
 	password := mustPassword(t, "password")
 
 	err := a.RegisterInitial.Execute(
-		auth.RegisterInitial{
-			Username: username,
-			Password: password,
-		},
+		auth.NewRegisterInitial(username, password),
 	)
 	require.NoError(t, err)
 
@@ -291,11 +248,7 @@ func TestRegisterInvalidInvitationToken(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: mustUsername(t, "username"),
-			Password: mustPassword(t, "password"),
-			Token:    invalidToken,
-		},
+		auth.NewRegister(mustUsername(t, "username"), mustPassword(t, "password"), invalidToken),
 	)
 	require.Error(t, err)
 }
@@ -308,20 +261,12 @@ func TestRegisterTokenCanNotBeReused(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: mustUsername(t, "username"),
-			Password: mustPassword(t, "password"),
-			Token:    token,
-		},
+		auth.NewRegister(mustUsername(t, "username"), mustPassword(t, "password"), token),
 	)
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: mustUsername(t, "other-username"),
-			Password: mustPassword(t, "other-password"),
-			Token:    token,
-		},
+		auth.NewRegister(mustUsername(t, "other-username"), mustPassword(t, "other-password"), token),
 	)
 	require.Error(t, err)
 	require.EqualError(t, err, "transaction failed: could not get the invitation: not found")
@@ -338,11 +283,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: username,
-			Password: password,
-			Token:    token,
-		},
+		auth.NewRegister(username, password, token),
 	)
 	require.NoError(t, err)
 
@@ -350,11 +291,7 @@ func TestRegisterUsernameCanNotBeTaken(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: username,
-			Password: password,
-			Token:    token,
-		},
+		auth.NewRegister(username, password, token),
 	)
 	require.EqualError(t, err, "transaction failed: username taken")
 	require.True(t, errors.Is(err, auth.ErrUsernameTaken))
@@ -386,11 +323,7 @@ func TestRegisterInvalid(t *testing.T) {
 			require.NoError(t, err)
 
 			err = a.Register.Execute(anonCtx,
-				auth.Register{
-					Username: username,
-					Password: password,
-					Token:    token,
-				},
+				auth.NewRegister(username, password, token),
 			)
 			require.NoError(t, err)
 
@@ -416,36 +349,23 @@ func TestLogin(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: username,
-			Password: password,
-			Token:    invitationToken,
-		},
+		auth.NewRegister(username, password, invitationToken),
 	)
 	require.NoError(t, err)
 
 	accessToken, err := a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: password,
-		},
+		auth.NewLogin(username, password),
 	)
 	require.NoError(t, err)
 	require.NotEmpty(t, accessToken.String())
 
 	_, err = a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: mustPassword(t, "other-password"),
-		},
+		auth.NewLogin(username, mustPassword(t, "other-password")),
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 
 	_, err = a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: mustUsername(t, "other-username"),
-			Password: password,
-		},
+		auth.NewLogin(mustUsername(t, "other-username"), password),
 	)
 	require.True(t, errors.Is(err, auth.ErrUnauthorized))
 }
@@ -463,11 +383,7 @@ func TestRemove(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: username,
-			Password: password,
-			Token:    invitationToken,
-		},
+		auth.NewRegister(username, password, invitationToken),
 	)
 	require.NoError(t, err)
 
@@ -476,9 +392,7 @@ func TestRemove(t *testing.T) {
 	require.Equal(t, 2, len(users))
 
 	err = a.Remove.Execute(adminAuthCtx,
-		auth.Remove{
-			Username: username,
-		},
+		auth.NewRemove(username),
 	)
 	require.NoError(t, err)
 
@@ -498,9 +412,7 @@ func TestRemoveNoUser(t *testing.T) {
 	require.Equal(t, 1, len(users))
 
 	err = a.Remove.Execute(adminAuthCtx,
-		auth.Remove{
-			Username: mustUsername(t, "username"),
-		},
+		auth.NewRemove(mustUsername(t, "username")),
 	)
 	require.NoError(t, err)
 
@@ -522,35 +434,22 @@ func TestSetPassword(t *testing.T) {
 	require.NoError(t, err)
 
 	err = a.Register.Execute(anonCtx,
-		auth.Register{
-			Username: username,
-			Password: password,
-			Token:    invitationToken,
-		},
+		auth.NewRegister(username, password, invitationToken),
 	)
 	require.NoError(t, err)
 
 	_, err = a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: password,
-		},
+		auth.NewLogin(username, password),
 	)
 	require.NoError(t, err)
 
 	err = a.SetPassword.Execute(adminCtx,
-		auth.SetPassword{
-			Username: username,
-			Password: newPassword,
-		},
+		auth.NewSetPassword(username, newPassword),
 	)
 	require.NoError(t, err)
 
 	_, err = a.Login.Execute(anonCtx,
-		auth.Login{
-			Username: username,
-			Password: newPassword,
-		},
+		auth.NewLogin(username, newPassword),
 	)
 	require.NoError(t, err)
 }
@@ -615,19 +514,13 @@ func userFromCtx(t *testing.T, a *auth.Auth, ctx accessctx.AccessContext) authdo
 }
 
 func newAdminAuthCtx(t *testing.T, a *auth.Auth, username authdomain.Username, password authdomain.Password) accessctx.UserAccessContext {
-	err := a.RegisterInitial.Execute(auth.RegisterInitial{
-		Username: username,
-		Password: password,
-	})
+	err := a.RegisterInitial.Execute(auth.NewRegisterInitial(username, password))
 	require.NoError(t, err)
 
-	token, err := a.Login.Execute(anonCtx, auth.Login{
-		Username: username,
-		Password: password,
-	})
+	token, err := a.Login.Execute(anonCtx, auth.NewLogin(username, password))
 	require.NoError(t, err)
 
-	ctx, err := a.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
+	ctx, err := a.CheckAccessToken.Execute(auth.NewCheckAccessToken(token))
 	require.NoError(t, err)
 
 	authCtx, ok := ctx.(accessctx.UserAccessContext)

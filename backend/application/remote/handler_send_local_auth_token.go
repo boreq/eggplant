@@ -8,7 +8,17 @@ import (
 )
 
 type SendLocalAuthToken struct {
-	RemoteInstanceID remotedomain.RemoteInstanceID
+	remoteInstanceID remotedomain.RemoteInstanceID
+}
+
+func NewSendLocalAuthToken(remoteInstanceID remotedomain.RemoteInstanceID) SendLocalAuthToken {
+	return SendLocalAuthToken{
+		remoteInstanceID: remoteInstanceID,
+	}
+}
+
+func (s SendLocalAuthToken) RemoteInstanceID() remotedomain.RemoteInstanceID {
+	return s.remoteInstanceID
 }
 
 type SendLocalAuthTokenHandler struct {
@@ -32,7 +42,7 @@ func (h *SendLocalAuthTokenHandler) Execute(ctx context.Context, cmd SendLocalAu
 	var localAuthToken remotedomain.AuthToken
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.RemoteInstanceID)
+		instance, err := r.RemoteInstances.GetByID(cmd.RemoteInstanceID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}

@@ -10,9 +10,29 @@ import (
 )
 
 type RemoteKeepAliveStream struct {
-	InstanceId remote.RemoteInstanceID
-	TrackId    music.TrackId
-	StreamId   music.StreamId
+	instanceId remote.RemoteInstanceID
+	trackId    music.TrackId
+	streamId   music.StreamId
+}
+
+func NewRemoteKeepAliveStream(instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId) RemoteKeepAliveStream {
+	return RemoteKeepAliveStream{
+		instanceId: instanceId,
+		trackId:    trackId,
+		streamId:   streamId,
+	}
+}
+
+func (r RemoteKeepAliveStream) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteKeepAliveStream) TrackId() music.TrackId {
+	return r.trackId
+}
+
+func (r RemoteKeepAliveStream) StreamId() music.StreamId {
+	return r.streamId
 }
 
 type RemoteKeepAliveStreamHandler struct {
@@ -28,7 +48,7 @@ func (h *RemoteKeepAliveStreamHandler) Execute(ctx context.Context, accessCtx ac
 		return accessctx.ErrPermissionDenied
 	}
 
-	if err := h.remoteLibrary.KeepAliveStream(ctx, cmd.InstanceId, cmd.TrackId, cmd.StreamId); err != nil {
+	if err := h.remoteLibrary.KeepAliveStream(ctx, cmd.InstanceId(), cmd.TrackId(), cmd.StreamId()); err != nil {
 		return errors.Wrap(err, "could not keep alive the remote stream")
 	}
 

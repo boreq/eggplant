@@ -11,8 +11,23 @@ import (
 )
 
 type RemoteGetThumbnail struct {
-	InstanceId  remote.RemoteInstanceID
-	ThumbnailId music.ThumbnailId
+	instanceId  remote.RemoteInstanceID
+	thumbnailId music.ThumbnailId
+}
+
+func NewRemoteGetThumbnail(instanceId remote.RemoteInstanceID, thumbnailId music.ThumbnailId) RemoteGetThumbnail {
+	return RemoteGetThumbnail{
+		instanceId:  instanceId,
+		thumbnailId: thumbnailId,
+	}
+}
+
+func (r RemoteGetThumbnail) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteGetThumbnail) ThumbnailId() music.ThumbnailId {
+	return r.thumbnailId
 }
 
 type RemoteGetThumbnailHandler struct {
@@ -28,7 +43,7 @@ func (h *RemoteGetThumbnailHandler) Execute(ctx context.Context, accessCtx acces
 		return nil, accessctx.ErrPermissionDenied
 	}
 
-	body, err := h.client.GetThumbnail(ctx, cmd.InstanceId, cmd.ThumbnailId)
+	body, err := h.client.GetThumbnail(ctx, cmd.InstanceId(), cmd.ThumbnailId())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get the remote thumbnail")
 	}

@@ -7,8 +7,23 @@ import (
 )
 
 type KeepAliveStream struct {
-	TrackId  music.TrackId
-	StreamId music.StreamId
+	trackId  music.TrackId
+	streamId music.StreamId
+}
+
+func NewKeepAliveStream(trackId music.TrackId, streamId music.StreamId) KeepAliveStream {
+	return KeepAliveStream{
+		trackId:  trackId,
+		streamId: streamId,
+	}
+}
+
+func (k KeepAliveStream) TrackId() music.TrackId {
+	return k.trackId
+}
+
+func (k KeepAliveStream) StreamId() music.StreamId {
+	return k.streamId
 }
 
 type KeepAliveStreamHandler struct {
@@ -29,7 +44,7 @@ func (h *KeepAliveStreamHandler) Execute(accessCtx library.AccessContext, cmd Ke
 		return errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
+	track, err := lib.GetTrack(accessCtx, cmd.TrackId())
 	if err != nil {
 		return errors.Wrap(err, "could not get the track")
 	}
@@ -39,5 +54,5 @@ func (h *KeepAliveStreamHandler) Execute(accessCtx library.AccessContext, cmd Ke
 		return errors.New("track has no file id")
 	}
 
-	return h.trackConverter.KeepAliveStream(fileId, cmd.StreamId)
+	return h.trackConverter.KeepAliveStream(fileId, cmd.StreamId())
 }

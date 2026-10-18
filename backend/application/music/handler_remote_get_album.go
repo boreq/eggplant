@@ -10,8 +10,23 @@ import (
 )
 
 type RemoteGetAlbum struct {
-	InstanceId remote.RemoteInstanceID
-	AlbumId    music.AlbumId
+	instanceId remote.RemoteInstanceID
+	albumId    music.AlbumId
+}
+
+func NewRemoteGetAlbum(instanceId remote.RemoteInstanceID, albumId music.AlbumId) RemoteGetAlbum {
+	return RemoteGetAlbum{
+		instanceId: instanceId,
+		albumId:    albumId,
+	}
+}
+
+func (r RemoteGetAlbum) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteGetAlbum) AlbumId() music.AlbumId {
+	return r.albumId
 }
 
 type RemoteGetAlbumHandler struct {
@@ -27,7 +42,7 @@ func (h *RemoteGetAlbumHandler) Execute(ctx context.Context, accessCtx accessctx
 		return music.Album{}, accessctx.ErrPermissionDenied
 	}
 
-	album, err := h.remoteLibrary.GetAlbum(ctx, cmd.InstanceId, cmd.AlbumId)
+	album, err := h.remoteLibrary.GetAlbum(ctx, cmd.InstanceId(), cmd.AlbumId())
 	if err != nil {
 		return music.Album{}, errors.Wrap(err, "could not get the remote album")
 	}

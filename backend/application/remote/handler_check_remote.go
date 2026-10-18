@@ -9,7 +9,17 @@ import (
 )
 
 type CheckRemote struct {
-	ID remotedomain.RemoteInstanceID
+	id remotedomain.RemoteInstanceID
+}
+
+func NewCheckRemote(id remotedomain.RemoteInstanceID) CheckRemote {
+	return CheckRemote{
+		id: id,
+	}
+}
+
+func (c CheckRemote) ID() remotedomain.RemoteInstanceID {
+	return c.id
 }
 
 type CheckRemoteHandler struct {
@@ -29,7 +39,7 @@ func (h *CheckRemoteHandler) Execute(ctx context.Context, cmd CheckRemote) error
 	var authToken remotedomain.AuthToken
 	var hasAuthToken bool
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.ID)
+		instance, err := r.RemoteInstances.GetByID(cmd.ID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
@@ -50,7 +60,7 @@ func (h *CheckRemoteHandler) Execute(ctx context.Context, cmd CheckRemote) error
 	}
 
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.ID)
+		instance, err := r.RemoteInstances.GetByID(cmd.ID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}

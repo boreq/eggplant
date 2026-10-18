@@ -34,7 +34,7 @@ func (h *RemotePairedHandler) Handle(msg *message.Message) error {
 		return errors.Wrap(err, "could not unmarshal the event")
 	}
 
-	if err := h.checkRemote.Execute(msg.Context(), remoteapp.CheckRemote{ID: event.RemoteInstanceID()}); err != nil {
+	if err := h.checkRemote.Execute(msg.Context(), remoteapp.NewCheckRemote(event.RemoteInstanceID())); err != nil {
 		h.log.Error("could not handle an event", "topic", adapters.TopicRemotePaired, "err", err)
 		return err
 	}

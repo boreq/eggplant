@@ -9,8 +9,23 @@ import (
 )
 
 type StartStreaming struct {
-	TrackId      music.TrackId
-	SeekPosition *music.RequestedSeekPosition
+	trackId      music.TrackId
+	seekPosition *music.RequestedSeekPosition
+}
+
+func NewStartStreaming(trackId music.TrackId, seekPosition *music.RequestedSeekPosition) StartStreaming {
+	return StartStreaming{
+		trackId:      trackId,
+		seekPosition: seekPosition,
+	}
+}
+
+func (s StartStreaming) TrackId() music.TrackId {
+	return s.trackId
+}
+
+func (s StartStreaming) SeekPosition() *music.RequestedSeekPosition {
+	return s.seekPosition
 }
 
 type StartStreamingHandler struct {
@@ -31,7 +46,7 @@ func (h *StartStreamingHandler) Execute(ctx context.Context, accessCtx library.A
 		return music.StreamId{}, errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
+	track, err := lib.GetTrack(accessCtx, cmd.TrackId())
 	if err != nil {
 		return music.StreamId{}, errors.Wrap(err, "could not get the track")
 	}
@@ -49,9 +64,9 @@ func (h *StartStreamingHandler) Execute(ctx context.Context, accessCtx library.A
 }
 
 func (h *StartStreamingHandler) seekPosition(cmd StartStreaming) *music.SeekPosition {
-	if cmd.SeekPosition == nil {
+	if cmd.SeekPosition() == nil {
 		return nil
 	}
-	seekPosition := music.NewSeekPosition(*cmd.SeekPosition)
+	seekPosition := music.NewSeekPosition(*cmd.SeekPosition())
 	return &seekPosition
 }

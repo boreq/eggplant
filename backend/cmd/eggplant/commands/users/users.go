@@ -117,10 +117,7 @@ func runResetPassword(c guinea.Context) error {
 		return errors.Wrap(err, "failed to generate a password")
 	}
 
-	cmd := auth.SetPassword{
-		Username: username,
-		Password: rawPassword,
-	}
+	cmd := auth.NewSetPassword(username, rawPassword)
 
 	if err := a.SetPassword.Execute(accessctx.NewCommandLineAccessContext(), cmd); err != nil {
 		return errors.Wrap(err, "failed to set a password")

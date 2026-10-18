@@ -7,8 +7,23 @@ import (
 )
 
 type SetRemotePairingToken struct {
-	ID                 remotedomain.RemoteInstanceID
-	RemotePairingToken remotedomain.PairingToken
+	id                 remotedomain.RemoteInstanceID
+	remotePairingToken remotedomain.PairingToken
+}
+
+func NewSetRemotePairingToken(id remotedomain.RemoteInstanceID, remotePairingToken remotedomain.PairingToken) SetRemotePairingToken {
+	return SetRemotePairingToken{
+		id:                 id,
+		remotePairingToken: remotePairingToken,
+	}
+}
+
+func (s SetRemotePairingToken) ID() remotedomain.RemoteInstanceID {
+	return s.id
+}
+
+func (s SetRemotePairingToken) RemotePairingToken() remotedomain.PairingToken {
+	return s.remotePairingToken
 }
 
 type SetRemotePairingTokenHandler struct {
@@ -25,12 +40,12 @@ func (h *SetRemotePairingTokenHandler) Execute(accessCtx accessctx.AccessContext
 	}
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.ID)
+		instance, err := r.RemoteInstances.GetByID(cmd.ID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
 
-		if err := instance.SetRemotePairingToken(cmd.RemotePairingToken); err != nil {
+		if err := instance.SetRemotePairingToken(cmd.RemotePairingToken()); err != nil {
 			return errors.Wrap(err, "could not set the remote pairing token")
 		}
 

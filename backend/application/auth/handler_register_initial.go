@@ -8,8 +8,23 @@ import (
 )
 
 type RegisterInitial struct {
-	Username authdomain.Username
-	Password authdomain.Password
+	username authdomain.Username
+	password authdomain.Password
+}
+
+func NewRegisterInitial(username authdomain.Username, password authdomain.Password) RegisterInitial {
+	return RegisterInitial{
+		username: username,
+		password: password,
+	}
+}
+
+func (r RegisterInitial) Username() authdomain.Username {
+	return r.username
+}
+
+func (r RegisterInitial) Password() authdomain.Password {
+	return r.password
 }
 
 type RegisterInitialHandler struct {
@@ -28,12 +43,12 @@ func NewRegisterInitialHandler(
 }
 
 func (h *RegisterInitialHandler) Execute(cmd RegisterInitial) error {
-	passwordHash, err := h.passwordHasher.Hash(cmd.Password)
+	passwordHash, err := h.passwordHasher.Hash(cmd.Password())
 	if err != nil {
 		return errors.Wrap(err, "hashing the password failed")
 	}
 
-	u := authdomain.NewUser(cmd.Username, passwordHash, true, time.Now())
+	u := authdomain.NewUser(cmd.Username(), passwordHash, true, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		n, err := r.Users.Count()

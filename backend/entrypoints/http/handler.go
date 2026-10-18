@@ -132,7 +132,7 @@ func (h *Handler) addAccessContext(handler func(accessctx.AccessContext, http.Re
 }
 
 func (h *Handler) browse(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx, music.GetRootAlbum{})
+	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx, music.NewGetRootAlbum())
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
@@ -148,7 +148,7 @@ func (h *Handler) browseById(accessCtx accessctx.AccessContext, r *http.Request)
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
 
-	album, err := h.app.Music.GetAlbum.Execute(accessCtx, music.GetAlbum{Id: albumId})
+	album, err := h.app.Music.GetAlbum.Execute(accessCtx, music.NewGetAlbum(albumId))
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
@@ -173,7 +173,7 @@ func (h *Handler) search(accessCtx accessctx.AccessContext, r *http.Request) res
 		return rest.ErrBadRequest.WithMessage("Invalid query.")
 	}
 
-	result, err := h.app.Music.Search.Execute(r.Context(), accessCtx, music.Search{Query: query})
+	result, err := h.app.Music.Search.Execute(r.Context(), accessCtx, music.NewSearch(query))
 	if err != nil {
 		h.log.Error("search error", "err", err)
 		return rest.ErrInternalServerError
@@ -200,10 +200,7 @@ func (h *Handler) startTrackStream(accessCtx accessctx.AccessContext, r *http.Re
 	}
 
 	h.log.Debug("calling StartStreaming handler", "trackId", trackId.String(), "seekPos", seekPos)
-	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx, music.StartStreaming{
-		TrackId:      trackId,
-		SeekPosition: seekPos,
-	})
+	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx, music.NewStartStreaming(trackId, seekPos))
 	h.log.Debug("StartStreaming handler returned", "err", err)
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
@@ -228,9 +225,7 @@ func (h *Handler) getTrackDuration(accessCtx accessctx.AccessContext, r *http.Re
 		return rest.ErrBadRequest.WithMessage("Invalid track id.")
 	}
 
-	duration, err := h.app.Music.GetTrackDuration.Execute(r.Context(), accessCtx, music.GetTrackDuration{
-		TrackId: trackId,
-	})
+	duration, err := h.app.Music.GetTrackDuration.Execute(r.Context(), accessCtx, music.NewGetTrackDuration(trackId))
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
 			return rest.ErrNotFound
@@ -266,10 +261,7 @@ func (h *Handler) keepAliveStream(accessCtx accessctx.AccessContext, w http.Resp
 		return
 	}
 
-	err := h.app.Music.KeepAliveStream.Execute(accessCtx, music.KeepAliveStream{
-		TrackId:  trackId,
-		StreamId: streamId,
-	})
+	err := h.app.Music.KeepAliveStream.Execute(accessCtx, music.NewKeepAliveStream(trackId, streamId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
@@ -284,10 +276,7 @@ func (h *Handler) streamPlaylist(accessCtx accessctx.AccessContext, w http.Respo
 		return
 	}
 
-	res, err := h.app.Music.StreamPlaylist.Execute(accessCtx, music.StreamPlaylist{
-		TrackId:  trackId,
-		StreamId: streamId,
-	})
+	res, err := h.app.Music.StreamPlaylist.Execute(accessCtx, music.NewStreamPlaylist(trackId, streamId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
@@ -311,10 +300,7 @@ func (h *Handler) streamInit(accessCtx accessctx.AccessContext, w http.ResponseW
 		return
 	}
 
-	p, err := h.app.Music.StreamInit.Execute(accessCtx, music.StreamInit{
-		TrackId:  trackId,
-		StreamId: streamId,
-	})
+	p, err := h.app.Music.StreamInit.Execute(accessCtx, music.NewStreamInit(trackId, streamId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
@@ -343,11 +329,7 @@ func (h *Handler) streamFragment(accessCtx accessctx.AccessContext, w http.Respo
 		return
 	}
 
-	p, err := h.app.Music.StreamFragment.Execute(accessCtx, music.StreamFragment{
-		TrackId:    trackId,
-		StreamId:   streamId,
-		FragmentId: fragmentId,
-	})
+	p, err := h.app.Music.StreamFragment.Execute(accessCtx, music.NewStreamFragment(trackId, streamId, fragmentId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
@@ -452,10 +434,7 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 		return rest.ErrBadRequest.WithMessage("Invalid password.")
 	}
 
-	cmd := auth.RegisterInitial{
-		Username: username,
-		Password: password,
-	}
+	cmd := auth.NewRegisterInitial(username, password)
 
 	if err := h.app.Auth.RegisterInitial.Execute(cmd); err != nil {
 		if errors.Is(err, auth.ErrUsersAlreadyExist) {
@@ -485,10 +464,7 @@ func (h *Handler) login(accessCtx accessctx.AccessContext, r *http.Request) rest
 		return rest.ErrForbidden.WithMessage("Invalid credentials.")
 	}
 
-	cmd := auth.Login{
-		Username: username,
-		Password: password,
-	}
+	cmd := auth.NewLogin(username, password)
 
 	token, err := h.app.Auth.Login.Execute(accessCtx, cmd)
 	if err != nil {
@@ -587,11 +563,7 @@ func (h *Handler) register(accessCtx accessctx.AccessContext, r *http.Request) r
 		return rest.ErrBadRequest.WithMessage("Invalid password.")
 	}
 
-	cmd := auth.Register{
-		Username: username,
-		Password: password,
-		Token:    invitationToken,
-	}
+	cmd := auth.NewRegister(username, password, invitationToken)
 
 	if err := h.app.Auth.Register.Execute(accessCtx, cmd); err != nil {
 		if errors.Is(err, auth.ErrUsernameTaken) {
@@ -619,9 +591,7 @@ func (h *Handler) removeUser(accessCtx accessctx.AccessContext, r *http.Request)
 		return rest.ErrUnauthorized
 	}
 
-	cmd := auth.Remove{
-		Username: username,
-	}
+	cmd := auth.NewRemove(username)
 
 	if err := h.app.Auth.Remove.Execute(authCtx, cmd); err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {

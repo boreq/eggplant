@@ -9,8 +9,23 @@ import (
 )
 
 type Login struct {
-	Username authdomain.Username
-	Password authdomain.Password
+	username authdomain.Username
+	password authdomain.Password
+}
+
+func NewLogin(username authdomain.Username, password authdomain.Password) Login {
+	return Login{
+		username: username,
+		password: password,
+	}
+}
+
+func (l Login) Username() authdomain.Username {
+	return l.username
+}
+
+func (l Login) Password() authdomain.Password {
+	return l.password
 }
 
 type LoginHandler struct {
@@ -36,7 +51,7 @@ func (h *LoginHandler) Execute(accessCtx accessctx.AccessContext, cmd Login) (au
 	var token authdomain.AccessToken
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		u, err := r.Users.Get(cmd.Username)
+		u, err := r.Users.Get(cmd.Username())
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				return errors.Wrap(ErrUnauthorized, "user not found")
@@ -44,7 +59,7 @@ func (h *LoginHandler) Execute(accessCtx accessctx.AccessContext, cmd Login) (au
 			return errors.Wrap(err, "could not get the user")
 		}
 
-		if err := h.passwordHasher.Compare(u.Password(), cmd.Password); err != nil {
+		if err := h.passwordHasher.Compare(u.Password(), cmd.Password()); err != nil {
 			return errors.Wrap(ErrUnauthorized, "invalid password")
 		}
 

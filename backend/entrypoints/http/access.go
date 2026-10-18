@@ -27,7 +27,7 @@ func NewAccessContextProvider(app *application.Application) *AccessContextProvid
 
 func (h *AccessContextProvider) Get(r *http.Request) (accessctx.AccessContext, error) {
 	if token, ok := h.getCookieAccessToken(r); ok {
-		authCtx, err := h.app.Auth.CheckAccessToken.Execute(auth.CheckAccessToken{Token: token})
+		authCtx, err := h.app.Auth.CheckAccessToken.Execute(auth.NewCheckAccessToken(token))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not check the access token")
 		}
@@ -35,7 +35,7 @@ func (h *AccessContextProvider) Get(r *http.Request) (accessctx.AccessContext, e
 	}
 
 	if token, ok := remoteadapter.GetAuthToken(r); ok {
-		remoteCtx, err := h.app.Remote.CheckLocalAuthToken.Execute(remote.CheckLocalAuthToken{Token: token})
+		remoteCtx, err := h.app.Remote.CheckLocalAuthToken.Execute(remote.NewCheckLocalAuthToken(token))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not check the remote auth token")
 		}

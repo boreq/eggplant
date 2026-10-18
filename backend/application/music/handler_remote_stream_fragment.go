@@ -11,10 +11,35 @@ import (
 )
 
 type RemoteStreamFragment struct {
-	InstanceId remote.RemoteInstanceID
-	TrackId    music.TrackId
-	StreamId   music.StreamId
-	FragmentId music.FragmentId
+	instanceId remote.RemoteInstanceID
+	trackId    music.TrackId
+	streamId   music.StreamId
+	fragmentId music.FragmentId
+}
+
+func NewRemoteStreamFragment(instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId, fragmentId music.FragmentId) RemoteStreamFragment {
+	return RemoteStreamFragment{
+		instanceId: instanceId,
+		trackId:    trackId,
+		streamId:   streamId,
+		fragmentId: fragmentId,
+	}
+}
+
+func (r RemoteStreamFragment) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteStreamFragment) TrackId() music.TrackId {
+	return r.trackId
+}
+
+func (r RemoteStreamFragment) StreamId() music.StreamId {
+	return r.streamId
+}
+
+func (r RemoteStreamFragment) FragmentId() music.FragmentId {
+	return r.fragmentId
 }
 
 type RemoteStreamFragmentHandler struct {
@@ -30,7 +55,7 @@ func (h *RemoteStreamFragmentHandler) Execute(ctx context.Context, accessCtx acc
 		return nil, accessctx.ErrPermissionDenied
 	}
 
-	body, err := h.remoteLibrary.GetStreamFragment(ctx, cmd.InstanceId, cmd.TrackId, cmd.StreamId, cmd.FragmentId)
+	body, err := h.remoteLibrary.GetStreamFragment(ctx, cmd.InstanceId(), cmd.TrackId(), cmd.StreamId(), cmd.FragmentId())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get the remote stream fragment")
 	}

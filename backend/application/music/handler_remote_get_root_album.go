@@ -10,7 +10,17 @@ import (
 )
 
 type RemoteGetRootAlbum struct {
-	InstanceId remote.RemoteInstanceID
+	instanceId remote.RemoteInstanceID
+}
+
+func NewRemoteGetRootAlbum(instanceId remote.RemoteInstanceID) RemoteGetRootAlbum {
+	return RemoteGetRootAlbum{
+		instanceId: instanceId,
+	}
+}
+
+func (r RemoteGetRootAlbum) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
 }
 
 type RemoteGetRootAlbumHandler struct {
@@ -26,7 +36,7 @@ func (h *RemoteGetRootAlbumHandler) Execute(ctx context.Context, accessCtx acces
 		return music.RootAlbum{}, accessctx.ErrPermissionDenied
 	}
 
-	album, err := h.remoteLibrary.GetRootAlbum(ctx, cmd.InstanceId)
+	album, err := h.remoteLibrary.GetRootAlbum(ctx, cmd.InstanceId())
 	if err != nil {
 		return music.RootAlbum{}, errors.Wrap(err, "could not get the remote root album")
 	}

@@ -9,7 +9,17 @@ import (
 )
 
 type CheckAccessToken struct {
-	Token authdomain.AccessToken
+	token authdomain.AccessToken
+}
+
+func NewCheckAccessToken(token authdomain.AccessToken) CheckAccessToken {
+	return CheckAccessToken{
+		token: token,
+	}
+}
+
+func (c CheckAccessToken) Token() authdomain.AccessToken {
+	return c.token
 }
 
 type CheckAccessTokenHandler struct {
@@ -32,7 +42,7 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (accessctx.Acces
 	var foundSession *authdomain.Session
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		u, err := r.Users.GetByToken(cmd.Token)
+		u, err := r.Users.GetByToken(cmd.Token())
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				return errors.Wrap(ErrUnauthorized, "session token not found")
@@ -43,7 +53,7 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (accessctx.Acces
 		foundUser = u
 
 		for _, s := range u.Sessions() {
-			if s.Token() == cmd.Token {
+			if s.Token() == cmd.Token() {
 				session := s
 				foundSession = &session
 				return nil

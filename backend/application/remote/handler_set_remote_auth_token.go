@@ -6,8 +6,23 @@ import (
 )
 
 type SetRemoteAuthToken struct {
-	LocalPairingToken remotedomain.PairingToken
-	RemoteAuthToken   remotedomain.AuthToken
+	localPairingToken remotedomain.PairingToken
+	remoteAuthToken   remotedomain.AuthToken
+}
+
+func NewSetRemoteAuthToken(localPairingToken remotedomain.PairingToken, remoteAuthToken remotedomain.AuthToken) SetRemoteAuthToken {
+	return SetRemoteAuthToken{
+		localPairingToken: localPairingToken,
+		remoteAuthToken:   remoteAuthToken,
+	}
+}
+
+func (s SetRemoteAuthToken) LocalPairingToken() remotedomain.PairingToken {
+	return s.localPairingToken
+}
+
+func (s SetRemoteAuthToken) RemoteAuthToken() remotedomain.AuthToken {
+	return s.remoteAuthToken
 }
 
 type SetRemoteAuthTokenHandler struct {
@@ -20,12 +35,12 @@ func NewSetRemoteAuthTokenHandler(transactionProvider TransactionProvider) *SetR
 
 func (h *SetRemoteAuthTokenHandler) Execute(cmd SetRemoteAuthToken) error {
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByLocalPairingTokenHash(cmd.LocalPairingToken.Hash())
+		instance, err := r.RemoteInstances.GetByLocalPairingTokenHash(cmd.LocalPairingToken().Hash())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
 
-		if err := instance.SetRemoteAuthToken(cmd.LocalPairingToken, cmd.RemoteAuthToken); err != nil {
+		if err := instance.SetRemoteAuthToken(cmd.LocalPairingToken(), cmd.RemoteAuthToken()); err != nil {
 			return errors.Wrap(err, "could not store the remote auth token")
 		}
 

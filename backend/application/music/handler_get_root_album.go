@@ -17,6 +17,10 @@ func NewGetRootAlbumHandler(repo LibraryRepository) *GetRootAlbumHandler {
 type GetRootAlbum struct {
 }
 
+func NewGetRootAlbum() GetRootAlbum {
+	return GetRootAlbum{}
+}
+
 func (h *GetRootAlbumHandler) Execute(accessCtx library.AccessContext, cmd GetRootAlbum) (music.RootAlbum, error) {
 	lib, err := h.libraryRepository.Get()
 	if err != nil {

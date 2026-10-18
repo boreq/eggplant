@@ -7,9 +7,29 @@ import (
 )
 
 type StreamFragment struct {
-	TrackId    music.TrackId
-	StreamId   music.StreamId
-	FragmentId music.FragmentId
+	trackId    music.TrackId
+	streamId   music.StreamId
+	fragmentId music.FragmentId
+}
+
+func NewStreamFragment(trackId music.TrackId, streamId music.StreamId, fragmentId music.FragmentId) StreamFragment {
+	return StreamFragment{
+		trackId:    trackId,
+		streamId:   streamId,
+		fragmentId: fragmentId,
+	}
+}
+
+func (s StreamFragment) TrackId() music.TrackId {
+	return s.trackId
+}
+
+func (s StreamFragment) StreamId() music.StreamId {
+	return s.streamId
+}
+
+func (s StreamFragment) FragmentId() music.FragmentId {
+	return s.fragmentId
 }
 
 type StreamFragmentHandler struct {
@@ -30,7 +50,7 @@ func (h *StreamFragmentHandler) Execute(accessCtx library.AccessContext, cmd Str
 		return ConvertedFile{}, errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
+	track, err := lib.GetTrack(accessCtx, cmd.TrackId())
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the track")
 	}
@@ -40,7 +60,7 @@ func (h *StreamFragmentHandler) Execute(accessCtx library.AccessContext, cmd Str
 		return ConvertedFile{}, errors.New("track has no file id")
 	}
 
-	cf, err := h.trackConverter.GetFragment(fileId, cmd.StreamId, cmd.FragmentId)
+	cf, err := h.trackConverter.GetFragment(fileId, cmd.StreamId(), cmd.FragmentId())
 	if err != nil {
 		return ConvertedFile{}, errors.Wrap(err, "could not get the fragment")
 	}

@@ -9,7 +9,17 @@ import (
 )
 
 type GetTrackDuration struct {
-	TrackId music.TrackId
+	trackId music.TrackId
+}
+
+func NewGetTrackDuration(trackId music.TrackId) GetTrackDuration {
+	return GetTrackDuration{
+		trackId: trackId,
+	}
+}
+
+func (g GetTrackDuration) TrackId() music.TrackId {
+	return g.trackId
 }
 
 type GetTrackDurationHandler struct {
@@ -30,7 +40,7 @@ func (h *GetTrackDurationHandler) Execute(ctx context.Context, accessCtx library
 		return music.TrackDuration{}, errors.Wrap(err, "could not get the library")
 	}
 
-	track, err := lib.GetTrack(accessCtx, cmd.TrackId)
+	track, err := lib.GetTrack(accessCtx, cmd.TrackId())
 	if err != nil {
 		return music.TrackDuration{}, errors.Wrap(err, "could not get the track")
 	}

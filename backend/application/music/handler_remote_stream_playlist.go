@@ -11,9 +11,29 @@ import (
 )
 
 type RemoteStreamPlaylist struct {
-	InstanceId remote.RemoteInstanceID
-	TrackId    music.TrackId
-	StreamId   music.StreamId
+	instanceId remote.RemoteInstanceID
+	trackId    music.TrackId
+	streamId   music.StreamId
+}
+
+func NewRemoteStreamPlaylist(instanceId remote.RemoteInstanceID, trackId music.TrackId, streamId music.StreamId) RemoteStreamPlaylist {
+	return RemoteStreamPlaylist{
+		instanceId: instanceId,
+		trackId:    trackId,
+		streamId:   streamId,
+	}
+}
+
+func (r RemoteStreamPlaylist) InstanceId() remote.RemoteInstanceID {
+	return r.instanceId
+}
+
+func (r RemoteStreamPlaylist) TrackId() music.TrackId {
+	return r.trackId
+}
+
+func (r RemoteStreamPlaylist) StreamId() music.StreamId {
+	return r.streamId
 }
 
 type RemoteStreamPlaylistHandler struct {
@@ -29,7 +49,7 @@ func (h *RemoteStreamPlaylistHandler) Execute(ctx context.Context, accessCtx acc
 		return nil, accessctx.ErrPermissionDenied
 	}
 
-	body, err := h.remoteLibrary.GetStreamPlaylist(ctx, cmd.InstanceId, cmd.TrackId, cmd.StreamId)
+	body, err := h.remoteLibrary.GetStreamPlaylist(ctx, cmd.InstanceId(), cmd.TrackId(), cmd.StreamId())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get the remote stream playlist")
 	}

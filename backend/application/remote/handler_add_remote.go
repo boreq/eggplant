@@ -7,7 +7,17 @@ import (
 )
 
 type AddRemote struct {
-	Address remotedomain.RemoteInstanceAddress
+	address remotedomain.RemoteInstanceAddress
+}
+
+func NewAddRemote(address remotedomain.RemoteInstanceAddress) AddRemote {
+	return AddRemote{
+		address: address,
+	}
+}
+
+func (a AddRemote) Address() remotedomain.RemoteInstanceAddress {
+	return a.address
 }
 
 type AddRemoteResult struct {
@@ -38,7 +48,7 @@ func (h *AddRemoteHandler) Execute(accessCtx accessctx.AccessContext, cmd AddRem
 		return AddRemoteResult{}, errors.Wrap(err, "could not generate the local pairing token")
 	}
 
-	instance := remotedomain.NewRemoteInstance(id, cmd.Address, localPairingToken.Hash())
+	instance := remotedomain.NewRemoteInstance(id, cmd.Address(), localPairingToken.Hash())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
 		return r.RemoteInstances.Save(instance)
