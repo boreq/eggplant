@@ -86,8 +86,7 @@ func newFileId(t *testing.T, path string) musicdomain.FileId {
 	t.Helper()
 	p, err := musicdomain.NewFilePath(path)
 	require.NoError(t, err)
-	id, err := musicdomain.NewFileId(p)
-	require.NoError(t, err)
+	id := musicdomain.NewFileId(p)
 	return id
 }
 

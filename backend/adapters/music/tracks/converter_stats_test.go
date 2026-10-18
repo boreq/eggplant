@@ -40,7 +40,6 @@ func newTrackStoreItem(t *testing.T, path string) music.TrackStoreItem {
 	t.Helper()
 	filePath, err := musicdomain.NewFilePath(path)
 	require.NoError(t, err)
-	fileId, err := musicdomain.NewFileId(filePath)
-	require.NoError(t, err)
+	fileId := musicdomain.NewFileId(filePath)
 	return music.NewTrackStoreItem(fileId, filePath)
 }

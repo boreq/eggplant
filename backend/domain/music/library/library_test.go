@@ -633,8 +633,7 @@ func mkTrack(t *testing.T, title string) music.Track {
 	id := trackIdFor(t, title)
 	p, err := music.NewFilePath("/test/" + title)
 	require.NoError(t, err)
-	fileId, err := music.NewFileId(p)
-	require.NoError(t, err)
+	fileId := music.NewFileId(p)
 	return music.NewTrack(id, fileId, tt)
 }
 
@@ -671,8 +670,7 @@ func mkThumb(t *testing.T, filename string) music.Thumbnail {
 	id := thumbnailIdFor(t, filename)
 	p, err := music.NewFilePath("/test/thumb/" + filename)
 	require.NoError(t, err)
-	fileId, err := music.NewFileId(p)
-	require.NoError(t, err)
+	fileId := music.NewFileId(p)
 	return music.NewThumbnail(id, fileId)
 }
 

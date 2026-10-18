@@ -79,12 +79,9 @@ type FileId struct {
 	value string
 }
 
-func NewFileId(path FilePath) (FileId, error) {
-	if path.value == "" {
-		return FileId{}, errors.New("file path must not be empty")
-	}
+func NewFileId(path FilePath) FileId {
 	sum := sha256.Sum256([]byte(path.value))
-	return FileId{value: crockford.Encode(sum[:])}, nil
+	return FileId{value: crockford.Encode(sum[:])}
 }
 
 func (f FileId) String() string {

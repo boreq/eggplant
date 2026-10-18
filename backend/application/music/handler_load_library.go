@@ -150,10 +150,7 @@ func (b *libraryBuilder) buildTracks(parents []music.AlbumId, src map[music.Trac
 			return nil, errors.Wrapf(err, "could not generate track id for '%s'", title)
 		}
 
-		fileId, err := music.NewFileId(path)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not generate file id for '%s'", path)
-		}
+		fileId := music.NewFileId(path)
 
 		out = append(out, music.NewTrack(id, fileId, title))
 		b.trackItems = append(b.trackItems, NewTrackStoreItem(fileId, path))
@@ -191,10 +188,7 @@ func (b *libraryBuilder) buildThumbnail(file *music.FilePath, parents []music.Al
 		return nil, errors.Wrap(err, "could not generate thumbnail id")
 	}
 
-	fileId, err := music.NewFileId(*file)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate file id for '%s'", *file)
-	}
+	fileId := music.NewFileId(*file)
 
 	b.thumbnailItems = append(b.thumbnailItems, NewThumbnailStoreItem(fileId, *file))
 

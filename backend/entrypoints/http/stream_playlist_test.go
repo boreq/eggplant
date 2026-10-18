@@ -54,8 +54,7 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 	require.NoError(t, err)
 	path, err := musicdomain.NewFilePath("/tracks/track.flac")
 	require.NoError(t, err)
-	fileId, err := musicdomain.NewFileId(path)
-	require.NoError(t, err)
+	fileId := musicdomain.NewFileId(path)
 	track := musicdomain.NewTrack(testTrackId(t), fileId, title)
 
 	visibility := library.VisibilityPublic
