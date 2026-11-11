@@ -48,7 +48,7 @@ func runList(c guinea.Context) error {
 		return errors.Wrap(err, "failed to build the application")
 	}
 
-	users, err := a.List.Execute(accessctx.NewCommandLineAccessContext())
+	users, err := a.List().Execute(accessctx.NewCommandLineAccessContext())
 	if err != nil {
 		return errors.Wrap(err, "failed to list users")
 	}
@@ -119,7 +119,7 @@ func runResetPassword(c guinea.Context) error {
 
 	cmd := auth.NewSetPassword(username, rawPassword)
 
-	if err := a.SetPassword.Execute(accessctx.NewCommandLineAccessContext(), cmd); err != nil {
+	if err := a.SetPassword().Execute(accessctx.NewCommandLineAccessContext(), cmd); err != nil {
 		return errors.Wrap(err, "failed to set a password")
 	}
 

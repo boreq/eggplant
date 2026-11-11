@@ -42,7 +42,7 @@ func (h *ListRemoteLibrariesHandler) Execute(accessCtx accessctx.AccessContext) 
 	var libraries []RemoteLibrary
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		instances, err := r.RemoteInstances.GetAll()
+		instances, err := r.RemoteInstances().GetAll()
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instances")
 		}

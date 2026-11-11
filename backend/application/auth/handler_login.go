@@ -51,7 +51,7 @@ func (h *LoginHandler) Execute(accessCtx accessctx.AccessContext, cmd Login) (au
 	var token authdomain.AccessToken
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		u, err := r.Users.Get(cmd.Username())
+		u, err := r.Users().Get(cmd.Username())
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				return errors.Wrap(ErrUnauthorized, "user not found")
@@ -71,7 +71,7 @@ func (h *LoginHandler) Execute(accessCtx accessctx.AccessContext, cmd Login) (au
 
 		u.AddSession(authdomain.NewSession(t, time.Now()))
 
-		if err := r.Users.Put(*u); err != nil {
+		if err := r.Users().Put(*u); err != nil {
 			return errors.Wrap(err, "could not put the user")
 		}
 

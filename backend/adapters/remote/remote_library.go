@@ -215,7 +215,7 @@ func (l *RemoteLibrary) targetByID(id remotedomain.RemoteInstanceID) (remoteTarg
 func (l *RemoteLibrary) pairedTargets() ([]remoteTarget, error) {
 	var targets []remoteTarget
 	if err := l.transactionProvider.Read(func(r *appremote.TransactableRepositories) error {
-		instances, err := r.RemoteInstances.GetAll()
+		instances, err := r.RemoteInstances().GetAll()
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instances")
 		}

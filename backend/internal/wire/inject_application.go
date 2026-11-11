@@ -19,9 +19,9 @@ func newMusicHandlerLogger() logging.Logger {
 
 //lint:ignore U1000 because
 var appSet = wire.NewSet(
-	wire.Struct(new(application.Application), "*"),
+	application.NewApplication,
 
-	wire.Struct(new(auth.Auth), "*"),
+	auth.NewAuth,
 	auth.NewRegisterInitialHandler,
 	auth.NewLoginHandler,
 	auth.NewLogoutHandler,
@@ -33,7 +33,7 @@ var appSet = wire.NewSet(
 	auth.NewSetPasswordHandler,
 	auth.NewGetCurrentUserHandler,
 
-	wire.Struct(new(music.Music), "*"),
+	music.NewMusic,
 	newMusicHandlerLogger,
 	music.NewStartStreamingHandler,
 	music.NewStreamPlaylistHandler,
@@ -77,7 +77,7 @@ var appSet = wire.NewSet(
 	music.NewLoggingLoadLibraryHandler,
 	wire.Bind(new(filesystem.LoadLibraryHandler), new(*music.LoggingLoadLibraryHandler)),
 
-	wire.Struct(new(application.Queries), "*"),
+	application.NewQueries,
 	queries.NewStatsHandler,
 	newVersionHandler,
 
@@ -87,8 +87,8 @@ var appSet = wire.NewSet(
 	authAdapters.NewQueryTransactionProvider,
 	wire.Bind(new(queries.TransactionProvider), new(*authAdapters.QueryTransactionProvider)),
 
-	wire.Struct(new(auth.TransactableRepositories), "*"),
-	wire.Struct(new(queries.TransactableRepositories), "*"),
+	auth.NewTransactableRepositories,
+	queries.NewTransactableRepositories,
 
 	newQueryRepositoriesProvider,
 	wire.Bind(new(authAdapters.QueryRepositoriesProvider), new(*queryRepositoriesProvider)),

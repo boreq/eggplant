@@ -13,7 +13,7 @@ import (
 
 //lint:ignore U1000 because
 var remoteSet = wire.NewSet(
-	wire.Struct(new(remote.Remote), "*"),
+	remote.NewRemote,
 	remote.NewAddRemoteHandler,
 	remote.NewSetRemotePairingTokenHandler,
 	remote.NewSendLocalAuthTokenHandler,
@@ -43,7 +43,7 @@ var remoteSet = wire.NewSet(
 	wire.Bind(new(outboxEntrypoint.SendLocalAuthTokenHandler), new(*remote.SendLocalAuthTokenHandler)),
 	wire.Bind(new(outboxEntrypoint.CheckRemoteHandler), new(*remote.CheckRemoteHandler)),
 
-	wire.Struct(new(remote.TransactableRepositories), "*"),
+	remote.NewTransactableRepositories,
 	wire.Bind(new(remote.RemoteInstanceRepository), new(*remoteAdapters.RemoteInstanceRepository)),
 	remoteAdapters.NewRemoteInstanceRepository,
 	wire.Bind(new(remote.OutboxRepository), new(*adapters.OutboxRepository)),

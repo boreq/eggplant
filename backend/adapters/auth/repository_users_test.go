@@ -39,12 +39,12 @@ func TestRemoveOldSessionsWhenSavingUsers(t *testing.T) {
 	)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		u, err := r.Users.Get(username)
+		u, err := r.Users().Get(username)
 		if err != nil {
 			return errors.Wrap(err, "get failed")
 		}
@@ -85,12 +85,12 @@ func TestSaveAndLoadUser(t *testing.T) {
 	)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		u, err := r.Users.Get(username)
+		u, err := r.Users().Get(username)
 		if err != nil {
 			return errors.Wrap(err, "get failed")
 		}
@@ -129,12 +129,12 @@ func TestGetByToken(t *testing.T) {
 	)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		u, err := r.Users.GetByToken(token)
+		u, err := r.Users().GetByToken(token)
 		require.NoError(t, err)
 		require.Equal(t, username, u.Username())
 		return nil
@@ -150,7 +150,7 @@ func TestGetByTokenNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		_, err := r.Users.GetByToken(token)
+		_, err := r.Users().GetByToken(token)
 		require.ErrorIs(t, err, app.ErrNotFound)
 		return nil
 	})
@@ -180,16 +180,16 @@ func TestPutIndexesNewSessions(t *testing.T) {
 	)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		u, err := r.Users.GetByToken(tokenA)
+		u, err := r.Users().GetByToken(tokenA)
 		require.NoError(t, err)
 		require.Equal(t, username, u.Username())
 
-		u, err = r.Users.GetByToken(tokenB)
+		u, err = r.Users().GetByToken(tokenB)
 		require.NoError(t, err)
 		require.Equal(t, username, u.Username())
 		return nil
@@ -213,7 +213,7 @@ func TestPutRemovesStaleSessionIndex(t *testing.T) {
 	now := time.Now()
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(authdomain.NewUserFromDatabase(
+		return r.Users().Put(authdomain.NewUserFromDatabase(
 			username, password, false, &now, &now,
 			[]authdomain.Session{
 				authdomain.NewSession(tokenA, now),
@@ -224,7 +224,7 @@ func TestPutRemovesStaleSessionIndex(t *testing.T) {
 	require.NoError(t, err)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(authdomain.NewUserFromDatabase(
+		return r.Users().Put(authdomain.NewUserFromDatabase(
 			username, password, false, &now, &now,
 			[]authdomain.Session{authdomain.NewSession(tokenB, now)},
 		))
@@ -232,10 +232,10 @@ func TestPutRemovesStaleSessionIndex(t *testing.T) {
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		_, err := r.Users.GetByToken(tokenA)
+		_, err := r.Users().GetByToken(tokenA)
 		require.ErrorIs(t, err, app.ErrNotFound)
 
-		u, err := r.Users.GetByToken(tokenB)
+		u, err := r.Users().GetByToken(tokenB)
 		require.NoError(t, err)
 		require.Equal(t, username, u.Username())
 		return nil
@@ -266,15 +266,15 @@ func TestPutRemovesExpiredSessionIndex(t *testing.T) {
 	)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		_, err := r.Users.GetByToken(tokenOld)
+		_, err := r.Users().GetByToken(tokenOld)
 		require.ErrorIs(t, err, app.ErrNotFound)
 
-		u, err := r.Users.GetByToken(tokenRecent)
+		u, err := r.Users().GetByToken(tokenRecent)
 		require.NoError(t, err)
 		require.Equal(t, username, u.Username())
 		return nil
@@ -305,19 +305,19 @@ func TestRemoveSweepsSessionIndex(t *testing.T) {
 	)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Remove(username)
+		return r.Users().Remove(username)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		_, err := r.Users.GetByToken(tokenA)
+		_, err := r.Users().GetByToken(tokenA)
 		require.ErrorIs(t, err, app.ErrNotFound)
-		_, err = r.Users.GetByToken(tokenB)
+		_, err = r.Users().GetByToken(tokenB)
 		require.ErrorIs(t, err, app.ErrNotFound)
 		return nil
 	})
@@ -344,13 +344,13 @@ func TestPutIndexIsolatedAcrossUsers(t *testing.T) {
 	now := time.Now()
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		if err := r.Users.Put(authdomain.NewUserFromDatabase(
+		if err := r.Users().Put(authdomain.NewUserFromDatabase(
 			usernameA, password, false, &now, &now,
 			[]authdomain.Session{authdomain.NewSession(tokenA, now)},
 		)); err != nil {
 			return err
 		}
-		return r.Users.Put(authdomain.NewUserFromDatabase(
+		return r.Users().Put(authdomain.NewUserFromDatabase(
 			usernameB, password, false, &now, &now,
 			[]authdomain.Session{authdomain.NewSession(tokenB, now)},
 		))
@@ -358,15 +358,15 @@ func TestPutIndexIsolatedAcrossUsers(t *testing.T) {
 	require.NoError(t, err)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Remove(usernameA)
+		return r.Users().Remove(usernameA)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		_, err := r.Users.GetByToken(tokenA)
+		_, err := r.Users().GetByToken(tokenA)
 		require.ErrorIs(t, err, app.ErrNotFound)
 
-		u, err := r.Users.GetByToken(tokenB)
+		u, err := r.Users().GetByToken(tokenB)
 		require.NoError(t, err)
 		require.Equal(t, usernameB, u.Username())
 		return nil
@@ -386,12 +386,12 @@ func TestUserWithMissingCreatedAndLastSeen(t *testing.T) {
 	user := authdomain.NewUserFromDatabase(username, password, false, nil, nil, nil)
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
-		return r.Users.Put(user)
+		return r.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		u, err := r.Users.Get(username)
+		u, err := r.Users().Get(username)
 		if err != nil {
 			return errors.Wrap(err, "get failed")
 		}

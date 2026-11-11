@@ -39,6 +39,6 @@ func (h *RemoveHandler) Execute(accessCtx accessctx.UserAccessContext, cmd Remov
 	}
 
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		return r.Users.Remove(cmd.Username())
+		return r.Users().Remove(cmd.Username())
 	})
 }

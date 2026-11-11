@@ -31,13 +31,13 @@ func TestSaveAndGetByIDRoundTripsAllFields(t *testing.T) {
 	require.NoError(t, instance.RecordHealthcheck(remotedomain.HealthcheckStatusAlive, healthcheckTime))
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	}))
 
 	var got *remotedomain.RemoteInstance
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
 		var err error
-		got, err = r.RemoteInstances.GetByID(instance.Id())
+		got, err = r.RemoteInstances().GetByID(instance.Id())
 		return err
 	}))
 
@@ -73,13 +73,13 @@ func TestSaveAndGetByIDRoundTripsMinimalInstance(t *testing.T) {
 	instance := newTestInstance(t)
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	}))
 
 	var got *remotedomain.RemoteInstance
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
 		var err error
-		got, err = r.RemoteInstances.GetByID(instance.Id())
+		got, err = r.RemoteInstances().GetByID(instance.Id())
 		return err
 	}))
 
@@ -111,7 +111,7 @@ func TestGetByIDReturnsNotFoundForUnknownID(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
-		_, err := r.RemoteInstances.GetByID(id)
+		_, err := r.RemoteInstances().GetByID(id)
 		require.ErrorIs(t, err, appremote.ErrNotFound)
 		return nil
 	}))
@@ -124,19 +124,19 @@ func TestSaveOverwritesExistingInstanceWithSameID(t *testing.T) {
 	instance := newTestInstance(t)
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	}))
 
 	require.NoError(t, instance.RecordHealthcheck(remotedomain.HealthcheckStatusDead, time.Date(2026, 6, 20, 12, 0, 0, 0, time.UTC)))
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	}))
 
 	var all []*remotedomain.RemoteInstance
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
 		var err error
-		all, err = r.RemoteInstances.GetAll()
+		all, err = r.RemoteInstances().GetAll()
 		return err
 	}))
 
@@ -151,7 +151,7 @@ func TestGetAllReturnsNilWhenEmpty(t *testing.T) {
 	defer cleanup()
 
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
-		all, err := r.RemoteInstances.GetAll()
+		all, err := r.RemoteInstances().GetAll()
 		require.NoError(t, err)
 		require.Empty(t, all)
 		return nil
@@ -166,16 +166,16 @@ func TestGetAllReturnsEverySavedInstance(t *testing.T) {
 	second := newTestInstance(t)
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		if err := r.RemoteInstances.Save(first); err != nil {
+		if err := r.RemoteInstances().Save(first); err != nil {
 			return err
 		}
-		return r.RemoteInstances.Save(second)
+		return r.RemoteInstances().Save(second)
 	}))
 
 	var all []*remotedomain.RemoteInstance
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
 		var err error
-		all, err = r.RemoteInstances.GetAll()
+		all, err = r.RemoteInstances().GetAll()
 		return err
 	}))
 
@@ -196,14 +196,14 @@ func TestGetByLocalPairingTokenFindsMatchingInstance(t *testing.T) {
 	other := newTestInstance(t)
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		if err := r.RemoteInstances.Save(wanted); err != nil {
+		if err := r.RemoteInstances().Save(wanted); err != nil {
 			return err
 		}
-		return r.RemoteInstances.Save(other)
+		return r.RemoteInstances().Save(other)
 	}))
 
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
-		got, err := r.RemoteInstances.GetByLocalPairingTokenHash(token.Hash())
+		got, err := r.RemoteInstances().GetByLocalPairingTokenHash(token.Hash())
 		require.NoError(t, err)
 		require.Equal(t, wanted.Id().String(), got.Id().String())
 		return nil
@@ -215,14 +215,14 @@ func TestGetByLocalPairingTokenReturnsNotFound(t *testing.T) {
 	defer cleanup()
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		return r.RemoteInstances.Save(newTestInstance(t))
+		return r.RemoteInstances().Save(newTestInstance(t))
 	}))
 
 	token, err := remotedomain.NewPairingToken()
 	require.NoError(t, err)
 
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
-		_, err := r.RemoteInstances.GetByLocalPairingTokenHash(token.Hash())
+		_, err := r.RemoteInstances().GetByLocalPairingTokenHash(token.Hash())
 		require.ErrorIs(t, err, appremote.ErrNotFound)
 		return nil
 	}))
@@ -238,14 +238,14 @@ func TestGetByLocalAuthTokenFindsMatchingInstance(t *testing.T) {
 	other := newTestInstance(t)
 
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		if err := r.RemoteInstances.Save(wanted); err != nil {
+		if err := r.RemoteInstances().Save(wanted); err != nil {
 			return err
 		}
-		return r.RemoteInstances.Save(other)
+		return r.RemoteInstances().Save(other)
 	}))
 
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
-		got, err := r.RemoteInstances.GetByLocalAuthTokenHash(authToken.Hash())
+		got, err := r.RemoteInstances().GetByLocalAuthTokenHash(authToken.Hash())
 		require.NoError(t, err)
 		require.Equal(t, wanted.Id().String(), got.Id().String())
 		return nil
@@ -258,14 +258,14 @@ func TestGetByLocalAuthTokenReturnsNotFound(t *testing.T) {
 
 	// Saved instance has no local auth token hash at all.
 	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
-		return r.RemoteInstances.Save(newTestInstance(t))
+		return r.RemoteInstances().Save(newTestInstance(t))
 	}))
 
 	token, err := remotedomain.NewAuthToken()
 	require.NoError(t, err)
 
 	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
-		_, err := r.RemoteInstances.GetByLocalAuthTokenHash(token.Hash())
+		_, err := r.RemoteInstances().GetByLocalAuthTokenHash(token.Hash())
 		require.ErrorIs(t, err, appremote.ErrNotFound)
 		return nil
 	}))

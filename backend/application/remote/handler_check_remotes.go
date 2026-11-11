@@ -26,7 +26,7 @@ func NewCheckRemotesHandler(transactionProvider TransactionProvider, client Remo
 func (h *CheckRemotesHandler) Execute(ctx context.Context) error {
 	var instances []*remotedomain.RemoteInstance
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		all, err := r.RemoteInstances.GetAll()
+		all, err := r.RemoteInstances().GetAll()
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instances")
 		}
@@ -58,7 +58,7 @@ func (h *CheckRemotesHandler) Execute(ctx context.Context) error {
 
 func (h *CheckRemotesHandler) record(id remotedomain.RemoteInstanceID, status remotedomain.HealthcheckStatus) error {
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(id)
+		instance, err := r.RemoteInstances().GetByID(id)
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
@@ -67,6 +67,6 @@ func (h *CheckRemotesHandler) record(id remotedomain.RemoteInstanceID, status re
 			return errors.Wrap(err, "could not record the healthcheck")
 		}
 
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	})
 }

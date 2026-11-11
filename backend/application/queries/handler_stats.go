@@ -23,7 +23,7 @@ func NewStatsHandler(
 func (h *StatsHandler) Execute() (Stats, error) {
 	var users int
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		n, err := r.Users.Count()
+		n, err := r.Users().Count()
 		if err != nil {
 			return errors.Wrap(err, "count failed")
 		}
@@ -43,11 +43,5 @@ func (h *StatsHandler) Execute() (Stats, error) {
 		return Stats{}, errors.Wrap(err, "could not get the track stas")
 	}
 
-	stats := Stats{
-		Users:      users,
-		Thumbnails: thumbnails,
-		Tracks:     tracks,
-	}
-
-	return stats, nil
+	return NewStats(users, thumbnails, tracks), nil
 }

@@ -19,7 +19,7 @@ func NewGetCurrentUserHandler(transactionProvider TransactionProvider) *GetCurre
 func (h *GetCurrentUserHandler) Execute(accessCtx accessctx.UserAccessContext) (authdomain.User, error) {
 	var user authdomain.User
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		u, err := r.Users.Get(accessCtx.Username())
+		u, err := r.Users().Get(accessCtx.Username())
 		if err != nil {
 			return errors.Wrap(err, "could not get the user")
 		}

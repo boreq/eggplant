@@ -52,13 +52,13 @@ func (h *SetPasswordHandler) Execute(accessCtx accessctx.AccessContext, cmd SetP
 	}
 
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		u, err := r.Users.Get(cmd.Username())
+		u, err := r.Users().Get(cmd.Username())
 		if err != nil {
 			return errors.Wrap(err, "could not get the user")
 		}
 
 		u.SetPassword(passwordHash)
 
-		return r.Users.Put(*u)
+		return r.Users().Put(*u)
 	})
 }

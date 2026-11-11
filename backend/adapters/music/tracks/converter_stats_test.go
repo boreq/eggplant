@@ -32,8 +32,8 @@ func TestConverterGetStatsSkipsMissingFiles(t *testing.T) {
 
 	stats, err := converter.GetStats()
 	require.NoError(t, err)
-	require.Equal(t, int64(2), stats.NumberOfTracks)
-	require.Equal(t, int64(len(content)), stats.SizeOfTracks)
+	require.Equal(t, int64(2), stats.NumberOfTracks())
+	require.Equal(t, int64(len(content)), stats.SizeOfTracks())
 }
 
 func newTrackStoreItem(t *testing.T, path string) music.TrackStoreItem {

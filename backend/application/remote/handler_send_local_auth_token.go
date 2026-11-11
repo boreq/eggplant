@@ -42,7 +42,7 @@ func (h *SendLocalAuthTokenHandler) Execute(ctx context.Context, cmd SendLocalAu
 	var localAuthToken remotedomain.AuthToken
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.RemoteInstanceID())
+		instance, err := r.RemoteInstances().GetByID(cmd.RemoteInstanceID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
@@ -61,11 +61,11 @@ func (h *SendLocalAuthTokenHandler) Execute(ctx context.Context, cmd SendLocalAu
 		localAuthToken = token
 		address = instance.Address()
 
-		if err := r.RemoteInstances.Save(instance); err != nil {
+		if err := r.RemoteInstances().Save(instance); err != nil {
 			return errors.Wrap(err, "could not save the remote instance")
 		}
 
-		if err := r.Outbox.AddEvents(instance); err != nil {
+		if err := r.Outbox().AddEvents(instance); err != nil {
 			return errors.Wrap(err, "could not add the events to the outbox")
 		}
 

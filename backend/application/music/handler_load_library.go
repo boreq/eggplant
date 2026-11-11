@@ -47,9 +47,7 @@ func (h *LoadLibraryHandler) Execute(ctx context.Context) error {
 		return errors.Wrap(err, "scan failed")
 	}
 
-	b := &libraryBuilder{
-		accessLoader: h.accessLoader,
-	}
+	b := newLibraryBuilder(h.accessLoader)
 
 	root, err := b.buildRoot(scan)
 	if err != nil {
@@ -67,6 +65,14 @@ type libraryBuilder struct {
 	accessLoader   AccessLoader
 	trackItems     []TrackStoreItem
 	thumbnailItems []ThumbnailStoreItem
+}
+
+func newLibraryBuilder(accessLoader AccessLoader) *libraryBuilder {
+	return &libraryBuilder{
+		accessLoader:   accessLoader,
+		trackItems:     nil,
+		thumbnailItems: nil,
+	}
 }
 
 func (b *libraryBuilder) buildRoot(scan scannerdomain.FoundRootAlbum) (library.RootAlbum, error) {

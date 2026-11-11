@@ -22,7 +22,7 @@ func (h *LogoutHandler) Execute(accessCtx accessctx.UserAccessContext) error {
 	username := accessCtx.Username()
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		u, err := r.Users.Get(username)
+		u, err := r.Users().Get(username)
 		if err != nil {
 			return errors.Wrap(err, "could not get the user")
 		}
@@ -31,7 +31,7 @@ func (h *LogoutHandler) Execute(accessCtx accessctx.UserAccessContext) error {
 			return errors.New("session not found")
 		}
 
-		if err := r.Users.Put(*u); err != nil {
+		if err := r.Users().Put(*u); err != nil {
 			return errors.Wrap(err, "could not put the user")
 		}
 

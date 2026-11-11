@@ -92,13 +92,7 @@ func (s *Store) GetStats() (queries.ThumbnailStats, error) {
 		return queries.ThumbnailStats{}, errors.Wrap(err, "could not get the converted size")
 	}
 
-	stats := queries.ThumbnailStats{
-		AllItems:       int64(len(s.items)),
-		ConvertedItems: convertedCount,
-		OriginalSize:   originalSize,
-		ConvertedSize:  convertedSize,
-	}
-	return stats, nil
+	return queries.NewThumbnailStats(int64(len(s.items)), convertedCount, originalSize, convertedSize), nil
 }
 
 func (s *Store) SetItems(items []Item) {
@@ -169,10 +163,7 @@ func (s *Store) getConvertedFile(ctx context.Context, id string) (music.Converte
 		return music.ConvertedFile{}, errors.Wrap(err, "stat error")
 	}
 
-	return music.ConvertedFile{
-		Modtime: fileInfo.ModTime(),
-		Content: f,
-	}, nil
+	return music.NewConvertedFile(fileInfo.ModTime(), f), nil
 }
 
 func (s *Store) getFile(id string) (*os.File, error) {

@@ -23,7 +23,7 @@ func (h *ListHandler) Execute(accessCtx accessctx.AccessContext) ([]authdomain.U
 
 	var users []authdomain.User
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		u, err := r.Users.List()
+		u, err := r.Users().List()
 		if err != nil {
 			return errors.Wrap(err, "could not list the users")
 		}

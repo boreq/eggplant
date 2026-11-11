@@ -25,26 +25,152 @@ var (
 )
 
 type Music struct {
-	Thumbnail              *LoggingThumbnailHandler
-	StartStreaming         *LoggingStartStreamingHandler
-	StreamPlaylist         *LoggingStreamPlaylistHandler
-	StreamInit             *LoggingStreamInitHandler
-	StreamFragment         *LoggingStreamFragmentHandler
-	KeepAliveStream        *LoggingKeepAliveStreamHandler
-	GetRootAlbum           *LoggingGetRootAlbumHandler
-	GetAlbum               *LoggingGetAlbumHandler
-	RemoteGetRootAlbum     *LoggingRemoteGetRootAlbumHandler
-	RemoteGetAlbum         *LoggingRemoteGetAlbumHandler
-	RemoteGetThumbnail     *LoggingRemoteGetThumbnailHandler
-	RemoteGetTrackDuration *LoggingRemoteGetTrackDurationHandler
-	RemoteStartStreaming   *LoggingRemoteStartStreamingHandler
-	RemoteStreamPlaylist   *LoggingRemoteStreamPlaylistHandler
-	RemoteStreamInit       *LoggingRemoteStreamInitHandler
-	RemoteStreamFragment   *LoggingRemoteStreamFragmentHandler
-	RemoteKeepAliveStream  *LoggingRemoteKeepAliveStreamHandler
-	GetTrackDuration       *LoggingGetTrackDurationHandler
-	Search                 *LoggingSearchHandler
-	LoadLibrary            *LoggingLoadLibraryHandler
+	thumbnail              *LoggingThumbnailHandler
+	startStreaming         *LoggingStartStreamingHandler
+	streamPlaylist         *LoggingStreamPlaylistHandler
+	streamInit             *LoggingStreamInitHandler
+	streamFragment         *LoggingStreamFragmentHandler
+	keepAliveStream        *LoggingKeepAliveStreamHandler
+	getRootAlbum           *LoggingGetRootAlbumHandler
+	getAlbum               *LoggingGetAlbumHandler
+	remoteGetRootAlbum     *LoggingRemoteGetRootAlbumHandler
+	remoteGetAlbum         *LoggingRemoteGetAlbumHandler
+	remoteGetThumbnail     *LoggingRemoteGetThumbnailHandler
+	remoteGetTrackDuration *LoggingRemoteGetTrackDurationHandler
+	remoteStartStreaming   *LoggingRemoteStartStreamingHandler
+	remoteStreamPlaylist   *LoggingRemoteStreamPlaylistHandler
+	remoteStreamInit       *LoggingRemoteStreamInitHandler
+	remoteStreamFragment   *LoggingRemoteStreamFragmentHandler
+	remoteKeepAliveStream  *LoggingRemoteKeepAliveStreamHandler
+	getTrackDuration       *LoggingGetTrackDurationHandler
+	search                 *LoggingSearchHandler
+	loadLibrary            *LoggingLoadLibraryHandler
+}
+
+func NewMusic(
+	thumbnail *LoggingThumbnailHandler,
+	startStreaming *LoggingStartStreamingHandler,
+	streamPlaylist *LoggingStreamPlaylistHandler,
+	streamInit *LoggingStreamInitHandler,
+	streamFragment *LoggingStreamFragmentHandler,
+	keepAliveStream *LoggingKeepAliveStreamHandler,
+	getRootAlbum *LoggingGetRootAlbumHandler,
+	getAlbum *LoggingGetAlbumHandler,
+	remoteGetRootAlbum *LoggingRemoteGetRootAlbumHandler,
+	remoteGetAlbum *LoggingRemoteGetAlbumHandler,
+	remoteGetThumbnail *LoggingRemoteGetThumbnailHandler,
+	remoteGetTrackDuration *LoggingRemoteGetTrackDurationHandler,
+	remoteStartStreaming *LoggingRemoteStartStreamingHandler,
+	remoteStreamPlaylist *LoggingRemoteStreamPlaylistHandler,
+	remoteStreamInit *LoggingRemoteStreamInitHandler,
+	remoteStreamFragment *LoggingRemoteStreamFragmentHandler,
+	remoteKeepAliveStream *LoggingRemoteKeepAliveStreamHandler,
+	getTrackDuration *LoggingGetTrackDurationHandler,
+	search *LoggingSearchHandler,
+	loadLibrary *LoggingLoadLibraryHandler,
+) *Music {
+	return &Music{
+		thumbnail:              thumbnail,
+		startStreaming:         startStreaming,
+		streamPlaylist:         streamPlaylist,
+		streamInit:             streamInit,
+		streamFragment:         streamFragment,
+		keepAliveStream:        keepAliveStream,
+		getRootAlbum:           getRootAlbum,
+		getAlbum:               getAlbum,
+		remoteGetRootAlbum:     remoteGetRootAlbum,
+		remoteGetAlbum:         remoteGetAlbum,
+		remoteGetThumbnail:     remoteGetThumbnail,
+		remoteGetTrackDuration: remoteGetTrackDuration,
+		remoteStartStreaming:   remoteStartStreaming,
+		remoteStreamPlaylist:   remoteStreamPlaylist,
+		remoteStreamInit:       remoteStreamInit,
+		remoteStreamFragment:   remoteStreamFragment,
+		remoteKeepAliveStream:  remoteKeepAliveStream,
+		getTrackDuration:       getTrackDuration,
+		search:                 search,
+		loadLibrary:            loadLibrary,
+	}
+}
+
+func (m Music) Thumbnail() *LoggingThumbnailHandler {
+	return m.thumbnail
+}
+
+func (m Music) StartStreaming() *LoggingStartStreamingHandler {
+	return m.startStreaming
+}
+
+func (m Music) StreamPlaylist() *LoggingStreamPlaylistHandler {
+	return m.streamPlaylist
+}
+
+func (m Music) StreamInit() *LoggingStreamInitHandler {
+	return m.streamInit
+}
+
+func (m Music) StreamFragment() *LoggingStreamFragmentHandler {
+	return m.streamFragment
+}
+
+func (m Music) KeepAliveStream() *LoggingKeepAliveStreamHandler {
+	return m.keepAliveStream
+}
+
+func (m Music) GetRootAlbum() *LoggingGetRootAlbumHandler {
+	return m.getRootAlbum
+}
+
+func (m Music) GetAlbum() *LoggingGetAlbumHandler {
+	return m.getAlbum
+}
+
+func (m Music) RemoteGetRootAlbum() *LoggingRemoteGetRootAlbumHandler {
+	return m.remoteGetRootAlbum
+}
+
+func (m Music) RemoteGetAlbum() *LoggingRemoteGetAlbumHandler {
+	return m.remoteGetAlbum
+}
+
+func (m Music) RemoteGetThumbnail() *LoggingRemoteGetThumbnailHandler {
+	return m.remoteGetThumbnail
+}
+
+func (m Music) RemoteGetTrackDuration() *LoggingRemoteGetTrackDurationHandler {
+	return m.remoteGetTrackDuration
+}
+
+func (m Music) RemoteStartStreaming() *LoggingRemoteStartStreamingHandler {
+	return m.remoteStartStreaming
+}
+
+func (m Music) RemoteStreamPlaylist() *LoggingRemoteStreamPlaylistHandler {
+	return m.remoteStreamPlaylist
+}
+
+func (m Music) RemoteStreamInit() *LoggingRemoteStreamInitHandler {
+	return m.remoteStreamInit
+}
+
+func (m Music) RemoteStreamFragment() *LoggingRemoteStreamFragmentHandler {
+	return m.remoteStreamFragment
+}
+
+func (m Music) RemoteKeepAliveStream() *LoggingRemoteKeepAliveStreamHandler {
+	return m.remoteKeepAliveStream
+}
+
+func (m Music) GetTrackDuration() *LoggingGetTrackDurationHandler {
+	return m.getTrackDuration
+}
+
+func (m Music) Search() *LoggingSearchHandler {
+	return m.search
+}
+
+func (m Music) LoadLibrary() *LoggingLoadLibraryHandler {
+	return m.loadLibrary
 }
 
 type TrackConverter interface {
@@ -123,16 +249,46 @@ type RemoteLibrary interface {
 }
 
 type Playlist struct {
-	Playlist hls.Playlist
-	Modtime  time.Time
+	playlist hls.Playlist
+	modtime  time.Time
+}
+
+func NewPlaylist(playlist hls.Playlist, modtime time.Time) Playlist {
+	return Playlist{
+		playlist: playlist,
+		modtime:  modtime,
+	}
+}
+
+func (p Playlist) Playlist() hls.Playlist {
+	return p.playlist
+}
+
+func (p Playlist) Modtime() time.Time {
+	return p.modtime
 }
 
 type ConvertedFile struct {
 	// Modtime is used to figure out if the content has changed.
-	Modtime time.Time
+	modtime time.Time
 
 	// Content must be closed by the caller.
-	Content io.ReadSeekCloser
+	content io.ReadSeekCloser
+}
+
+func NewConvertedFile(modtime time.Time, content io.ReadSeekCloser) ConvertedFile {
+	return ConvertedFile{
+		modtime: modtime,
+		content: content,
+	}
+}
+
+func (f ConvertedFile) Modtime() time.Time {
+	return f.modtime
+}
+
+func (f ConvertedFile) Content() io.ReadSeekCloser {
+	return f.content
 }
 
 var nonLoggableErrors = []error{

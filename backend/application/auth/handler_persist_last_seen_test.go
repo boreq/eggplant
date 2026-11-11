@@ -52,18 +52,14 @@ func TestPersistLastSeenHandler_PersistsBufferedUpdates(t *testing.T) {
 	)
 
 	err = transactionProvider.Write(func(adapters *app.TransactableRepositories) error {
-		return adapters.Users.Put(user)
+		return adapters.Users().Put(user)
 	})
 	require.NoError(t, err)
 
 	newValue := time.Now()
 	stub := &lastSeenUpdaterStub{
 		updates: []app.LastSeenUpdate{
-			{
-				Username: username,
-				LastSeen: newValue,
-				Sessions: map[authdomain.AccessToken]time.Time{tokenA: newValue},
-			},
+			app.NewLastSeenUpdate(username, newValue, map[authdomain.AccessToken]time.Time{tokenA: newValue}),
 		},
 	}
 
@@ -71,7 +67,7 @@ func TestPersistLastSeenHandler_PersistsBufferedUpdates(t *testing.T) {
 	require.NoError(t, handler.Execute(context.Background()))
 
 	err = transactionProvider.Read(func(adapters *app.TransactableRepositories) error {
-		u, err := adapters.Users.Get(username)
+		u, err := adapters.Users().Get(username)
 		require.NoError(t, err)
 
 		require.Len(t, u.Sessions(), 2)
@@ -99,11 +95,7 @@ func TestPersistLastSeenHandler_SkipsUnknownUser(t *testing.T) {
 
 	stub := &lastSeenUpdaterStub{
 		updates: []app.LastSeenUpdate{
-			{
-				Username: username,
-				LastSeen: time.Now(),
-				Sessions: map[authdomain.AccessToken]time.Time{token: time.Now()},
-			},
+			app.NewLastSeenUpdate(username, time.Now(), map[authdomain.AccessToken]time.Time{token: time.Now()}),
 		},
 	}
 

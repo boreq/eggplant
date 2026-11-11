@@ -59,9 +59,29 @@ type InvitationRepository interface {
 }
 
 type LastSeenUpdate struct {
-	Username authdomain.Username
-	LastSeen time.Time
-	Sessions map[authdomain.AccessToken]time.Time
+	username authdomain.Username
+	lastSeen time.Time
+	sessions map[authdomain.AccessToken]time.Time
+}
+
+func NewLastSeenUpdate(username authdomain.Username, lastSeen time.Time, sessions map[authdomain.AccessToken]time.Time) LastSeenUpdate {
+	return LastSeenUpdate{
+		username: username,
+		lastSeen: lastSeen,
+		sessions: sessions,
+	}
+}
+
+func (u LastSeenUpdate) Username() authdomain.Username {
+	return u.username
+}
+
+func (u LastSeenUpdate) LastSeen() time.Time {
+	return u.lastSeen
+}
+
+func (u LastSeenUpdate) Sessions() map[authdomain.AccessToken]time.Time {
+	return u.sessions
 }
 
 type LastSeenUpdater interface {
@@ -77,19 +97,103 @@ type TransactionProvider interface {
 type TransactionHandler func(repositories *TransactableRepositories) error
 
 type TransactableRepositories struct {
-	Invitations InvitationRepository
-	Users       UserRepository
+	invitations InvitationRepository
+	users       UserRepository
+}
+
+func NewTransactableRepositories(
+	invitations InvitationRepository,
+	users UserRepository,
+) *TransactableRepositories {
+	return &TransactableRepositories{
+		invitations: invitations,
+		users:       users,
+	}
+}
+
+func (r TransactableRepositories) Invitations() InvitationRepository {
+	return r.invitations
+}
+
+func (r TransactableRepositories) Users() UserRepository {
+	return r.users
 }
 
 type Auth struct {
-	RegisterInitial  *RegisterInitialHandler
-	Register         *RegisterHandler
-	Login            *LoginHandler
-	Logout           *LogoutHandler
-	CheckAccessToken *CheckAccessTokenHandler
-	List             *ListHandler
-	CreateInvitation *CreateInvitationHandler
-	Remove           *RemoveHandler
-	SetPassword      *SetPasswordHandler
-	GetCurrentUser   *GetCurrentUserHandler
+	registerInitial  *RegisterInitialHandler
+	register         *RegisterHandler
+	login            *LoginHandler
+	logout           *LogoutHandler
+	checkAccessToken *CheckAccessTokenHandler
+	list             *ListHandler
+	createInvitation *CreateInvitationHandler
+	remove           *RemoveHandler
+	setPassword      *SetPasswordHandler
+	getCurrentUser   *GetCurrentUserHandler
+}
+
+func NewAuth(
+	registerInitial *RegisterInitialHandler,
+	register *RegisterHandler,
+	login *LoginHandler,
+	logout *LogoutHandler,
+	checkAccessToken *CheckAccessTokenHandler,
+	list *ListHandler,
+	createInvitation *CreateInvitationHandler,
+	remove *RemoveHandler,
+	setPassword *SetPasswordHandler,
+	getCurrentUser *GetCurrentUserHandler,
+) *Auth {
+	return &Auth{
+		registerInitial:  registerInitial,
+		register:         register,
+		login:            login,
+		logout:           logout,
+		checkAccessToken: checkAccessToken,
+		list:             list,
+		createInvitation: createInvitation,
+		remove:           remove,
+		setPassword:      setPassword,
+		getCurrentUser:   getCurrentUser,
+	}
+}
+
+func (a Auth) RegisterInitial() *RegisterInitialHandler {
+	return a.registerInitial
+}
+
+func (a Auth) Register() *RegisterHandler {
+	return a.register
+}
+
+func (a Auth) Login() *LoginHandler {
+	return a.login
+}
+
+func (a Auth) Logout() *LogoutHandler {
+	return a.logout
+}
+
+func (a Auth) CheckAccessToken() *CheckAccessTokenHandler {
+	return a.checkAccessToken
+}
+
+func (a Auth) List() *ListHandler {
+	return a.list
+}
+
+func (a Auth) CreateInvitation() *CreateInvitationHandler {
+	return a.createInvitation
+}
+
+func (a Auth) Remove() *RemoveHandler {
+	return a.remove
+}
+
+func (a Auth) SetPassword() *SetPasswordHandler {
+	return a.setPassword
+}
+
+func (a Auth) GetCurrentUser() *GetCurrentUserHandler {
+	return a.getCurrentUser
 }

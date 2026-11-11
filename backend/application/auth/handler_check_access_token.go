@@ -42,7 +42,7 @@ func (h *CheckAccessTokenHandler) Execute(cmd CheckAccessToken) (accessctx.Acces
 	var foundSession *authdomain.Session
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		u, err := r.Users.GetByToken(cmd.Token())
+		u, err := r.Users().GetByToken(cmd.Token())
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				return errors.Wrap(ErrUnauthorized, "session token not found")

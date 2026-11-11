@@ -32,7 +32,7 @@ func (h *CheckLocalAuthTokenHandler) Execute(cmd CheckLocalAuthToken) (accessctx
 	var remoteCtx accessctx.RemoteInstanceAccessContext
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByLocalAuthTokenHash(cmd.Token().Hash())
+		instance, err := r.RemoteInstances().GetByLocalAuthTokenHash(cmd.Token().Hash())
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				return ErrUnauthorized

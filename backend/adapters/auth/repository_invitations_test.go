@@ -27,7 +27,7 @@ func TestRemoveOldInvitationsWhenSavingNewOnes(t *testing.T) {
 
 	err = tp.Write(func(r *app.TransactableRepositories) error {
 		for _, invitation := range []authdomain.Invitation{invitation1, invitation2, invitation3} {
-			if err := r.Invitations.Put(invitation); err != nil {
+			if err := r.Invitations().Put(invitation); err != nil {
 				return err
 			}
 		}
@@ -36,13 +36,13 @@ func TestRemoveOldInvitationsWhenSavingNewOnes(t *testing.T) {
 	require.NoError(t, err)
 
 	err = tp.Read(func(r *app.TransactableRepositories) error {
-		_, err := r.Invitations.Get(invitation1.Token())
+		_, err := r.Invitations().Get(invitation1.Token())
 		require.ErrorIs(t, err, app.ErrNotFound)
 
-		_, err = r.Invitations.Get(invitation2.Token())
+		_, err = r.Invitations().Get(invitation2.Token())
 		require.NoError(t, err)
 
-		_, err = r.Invitations.Get(invitation3.Token())
+		_, err = r.Invitations().Get(invitation3.Token())
 		require.NoError(t, err)
 
 		return nil

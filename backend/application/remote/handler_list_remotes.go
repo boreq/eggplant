@@ -22,7 +22,7 @@ func (h *ListRemotesHandler) Execute(accessCtx accessctx.AccessContext) ([]*remo
 	var instances []*remotedomain.RemoteInstance
 
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		all, err := r.RemoteInstances.GetAll()
+		all, err := r.RemoteInstances().GetAll()
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instances")
 		}

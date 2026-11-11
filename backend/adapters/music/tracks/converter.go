@@ -226,17 +226,14 @@ func (c *Converter) GetPlaylist(fileId musicdomain.FileId, streamId musicdomain.
 		}
 		return music.Playlist{}, err
 	}
-	defer cf.Content.Close()
+	defer cf.Content().Close()
 
-	playlist, err := hls.Parse(cf.Content)
+	playlist, err := hls.Parse(cf.Content())
 	if err != nil {
 		return music.Playlist{}, errors.Wrap(err, "could not parse the playlist")
 	}
 
-	return music.Playlist{
-		Playlist: playlist,
-		Modtime:  cf.Modtime,
-	}, nil
+	return music.NewPlaylist(playlist, cf.Modtime()), nil
 }
 
 func (c *Converter) GetInit(fileId musicdomain.FileId, streamId musicdomain.StreamId) (music.ConvertedFile, error) {
@@ -290,13 +287,7 @@ func (c *Converter) GetStats() (queries.TrackStats, error) {
 		return queries.TrackStats{}, errors.Wrap(err, "could not read stream stats")
 	}
 
-	return queries.TrackStats{
-		NumberOfTracks: int64(len(c.items)),
-		SizeOfTracks:   originalSize,
-
-		NumberOfStreams: convertedCount,
-		StreamCacheSize: convertedSize,
-	}, nil
+	return queries.NewTrackStats(int64(len(c.items)), originalSize, convertedCount, convertedSize), nil
 }
 
 func (c *Converter) streamsStats() (size int64, count int64, err error) {
@@ -518,10 +509,7 @@ func openFile(p string) (music.ConvertedFile, error) {
 		f.Close()
 		return music.ConvertedFile{}, errors.Wrap(err, "stat failed")
 	}
-	return music.ConvertedFile{
-		Modtime: info.ModTime(),
-		Content: f,
-	}, nil
+	return music.NewConvertedFile(info.ModTime(), f), nil
 }
 
 func fileExists(p string) bool {

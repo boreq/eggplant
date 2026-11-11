@@ -9,7 +9,7 @@ type EventRecorder struct {
 }
 
 func NewEventRecorder() EventRecorder {
-	return EventRecorder{}
+	return EventRecorder{recordedEvents: nil}
 }
 
 func (r *EventRecorder) RecordEvent(event Event) {

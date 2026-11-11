@@ -51,7 +51,7 @@ func TestStoreGetStatsSkipsMissingFiles(t *testing.T) {
 
 	stats, err := s.GetStats()
 	require.NoError(t, err)
-	require.Equal(t, int64(2), stats.AllItems)
-	require.Equal(t, int64(len(content)), stats.OriginalSize)
-	require.Equal(t, int64(0), stats.ConvertedItems)
+	require.Equal(t, int64(2), stats.AllItems())
+	require.Equal(t, int64(len(content)), stats.OriginalSize())
+	require.Equal(t, int64(0), stats.ConvertedItems())
 }

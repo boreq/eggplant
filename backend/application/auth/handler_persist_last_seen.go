@@ -33,7 +33,7 @@ func (h *PersistLastSeenHandler) Execute(ctx context.Context) error {
 	if err := h.transactionProvider.Write(
 		func(adapters *TransactableRepositories) error {
 			for _, update := range updates {
-				user, err := adapters.Users.Get(update.Username)
+				user, err := adapters.Users().Get(update.Username())
 				if err != nil {
 					if errors.Is(err, ErrNotFound) {
 						continue
@@ -41,12 +41,12 @@ func (h *PersistLastSeenHandler) Execute(ctx context.Context) error {
 					return errors.Wrap(err, "could not get the user")
 				}
 
-				user.UpdateLastSeen(update.LastSeen)
-				for token, t := range update.Sessions {
+				user.UpdateLastSeen(update.LastSeen())
+				for token, t := range update.Sessions() {
 					user.UpdateSessionLastSeen(token, t)
 				}
 
-				if err := adapters.Users.Put(*user); err != nil {
+				if err := adapters.Users().Put(*user); err != nil {
 					return errors.Wrap(err, "failed to put the user")
 				}
 			}

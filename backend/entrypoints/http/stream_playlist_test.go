@@ -65,11 +65,29 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 		staticLibraryRepository{library.NewLibrary(root)},
 		fakeTrackConverter{playlist: testPlaylist(t)},
 	)
-	app := &application.Application{
-		Music: appmusic.Music{
-			StreamPlaylist: appmusic.NewLoggingStreamPlaylistHandler(inner, logging.New("test")),
-		},
-	}
+	music := appmusic.NewMusic(
+		nil,
+		nil,
+		appmusic.NewLoggingStreamPlaylistHandler(inner, logging.New("test")),
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	app := application.NewApplication(nil, music, nil, nil)
 
 	h, err := httpentrypoint.NewHandler(app, anonymousAuthProvider{})
 	require.NoError(t, err)
@@ -105,7 +123,7 @@ func testPlaylist(t *testing.T) appmusic.Playlist {
 		true,
 	)
 	require.NoError(t, err)
-	return appmusic.Playlist{Playlist: p}
+	return appmusic.NewPlaylist(p, time.Time{})
 }
 
 type staticLibraryRepository struct {

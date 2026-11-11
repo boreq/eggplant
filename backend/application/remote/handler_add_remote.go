@@ -21,8 +21,23 @@ func (a AddRemote) Address() remotedomain.RemoteInstanceAddress {
 }
 
 type AddRemoteResult struct {
-	ID                remotedomain.RemoteInstanceID
-	LocalPairingToken remotedomain.PairingToken
+	id                remotedomain.RemoteInstanceID
+	localPairingToken remotedomain.PairingToken
+}
+
+func NewAddRemoteResult(id remotedomain.RemoteInstanceID, localPairingToken remotedomain.PairingToken) AddRemoteResult {
+	return AddRemoteResult{
+		id:                id,
+		localPairingToken: localPairingToken,
+	}
+}
+
+func (r AddRemoteResult) ID() remotedomain.RemoteInstanceID {
+	return r.id
+}
+
+func (r AddRemoteResult) LocalPairingToken() remotedomain.PairingToken {
+	return r.localPairingToken
 }
 
 type AddRemoteHandler struct {
@@ -51,10 +66,10 @@ func (h *AddRemoteHandler) Execute(accessCtx accessctx.AccessContext, cmd AddRem
 	instance := remotedomain.NewRemoteInstance(id, cmd.Address(), localPairingToken.Hash())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	}); err != nil {
 		return AddRemoteResult{}, errors.Wrap(err, "transaction failed")
 	}
 
-	return AddRemoteResult{ID: id, LocalPairingToken: localPairingToken}, nil
+	return NewAddRemoteResult(id, localPairingToken), nil
 }

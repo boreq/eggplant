@@ -57,11 +57,7 @@ func (u *LastSeenUpdater) PopUpdates() []auth.LastSeenUpdate {
 
 	updates := make([]auth.LastSeenUpdate, 0, len(u.userUpdates))
 	for username, cache := range u.userUpdates {
-		updates = append(updates, auth.LastSeenUpdate{
-			Username: username,
-			LastSeen: cache.LastSeen,
-			Sessions: cache.Sessions,
-		})
+		updates = append(updates, auth.NewLastSeenUpdate(username, cache.LastSeen, cache.Sessions))
 	}
 
 	u.userUpdates = make(map[authdomain.Username]*updateCache)

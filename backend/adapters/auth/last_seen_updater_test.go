@@ -26,10 +26,10 @@ func TestLastSeenUpdater_PopUpdatesReturnsBufferedUpdates(t *testing.T) {
 	require.Len(t, updates, 1)
 
 	update := updates[0]
-	require.Equal(t, username, update.Username)
-	require.True(t, update.LastSeen.Equal(t2))
-	require.True(t, update.Sessions[tokenA].Equal(t1))
-	require.True(t, update.Sessions[tokenB].Equal(t2))
+	require.Equal(t, username, update.Username())
+	require.True(t, update.LastSeen().Equal(t2))
+	require.True(t, update.Sessions()[tokenA].Equal(t1))
+	require.True(t, update.Sessions()[tokenB].Equal(t2))
 }
 
 func TestLastSeenUpdater_KeepsLatestTimestamp(t *testing.T) {
@@ -46,8 +46,8 @@ func TestLastSeenUpdater_KeepsLatestTimestamp(t *testing.T) {
 
 	updates := u.PopUpdates()
 	require.Len(t, updates, 1)
-	require.True(t, updates[0].LastSeen.Equal(newer))
-	require.True(t, updates[0].Sessions[token].Equal(newer))
+	require.True(t, updates[0].LastSeen().Equal(newer))
+	require.True(t, updates[0].Sessions()[token].Equal(newer))
 }
 
 func TestLastSeenUpdater_PopUpdatesClearsBuffer(t *testing.T) {

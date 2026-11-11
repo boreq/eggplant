@@ -33,11 +33,11 @@ func (h *CreateInvitationHandler) Execute(accessCtx accessctx.AccessContext) (au
 	i := authdomain.NewInvitation(token, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		_, err := r.Invitations.Get(token)
+		_, err := r.Invitations().Get(token)
 		if !errors.Is(err, ErrNotFound) {
 			return errors.Wrap(err, "token already exists, if you play the lottery right now you are guaranteed to win")
 		}
-		return r.Invitations.Put(i)
+		return r.Invitations().Put(i)
 	}); err != nil {
 		return authdomain.InvitationToken{}, errors.Wrap(err, "transaction failed")
 	}

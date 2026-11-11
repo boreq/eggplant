@@ -35,8 +35,26 @@ type TransactionProvider interface {
 type TransactionHandler func(repositories *TransactableRepositories) error
 
 type TransactableRepositories struct {
-	RemoteInstances RemoteInstanceRepository
-	Outbox          OutboxRepository
+	remoteInstances RemoteInstanceRepository
+	outbox          OutboxRepository
+}
+
+func NewTransactableRepositories(
+	remoteInstances RemoteInstanceRepository,
+	outbox OutboxRepository,
+) *TransactableRepositories {
+	return &TransactableRepositories{
+		remoteInstances: remoteInstances,
+		outbox:          outbox,
+	}
+}
+
+func (r TransactableRepositories) RemoteInstances() RemoteInstanceRepository {
+	return r.remoteInstances
+}
+
+func (r TransactableRepositories) Outbox() OutboxRepository {
+	return r.outbox
 }
 
 type RemoteClient interface {
@@ -45,13 +63,73 @@ type RemoteClient interface {
 }
 
 type Remote struct {
-	AddRemote             *AddRemoteHandler
-	SetRemotePairingToken *SetRemotePairingTokenHandler
-	SendLocalAuthToken    *SendLocalAuthTokenHandler
-	SetRemoteAuthToken    *SetRemoteAuthTokenHandler
-	CheckLocalAuthToken   *CheckLocalAuthTokenHandler
-	ListRemotes           *ListRemotesHandler
-	ListRemoteLibraries   *ListRemoteLibrariesHandler
-	CheckRemotes          *CheckRemotesHandler
-	CheckRemote           *CheckRemoteHandler
+	addRemote             *AddRemoteHandler
+	setRemotePairingToken *SetRemotePairingTokenHandler
+	sendLocalAuthToken    *SendLocalAuthTokenHandler
+	setRemoteAuthToken    *SetRemoteAuthTokenHandler
+	checkLocalAuthToken   *CheckLocalAuthTokenHandler
+	listRemotes           *ListRemotesHandler
+	listRemoteLibraries   *ListRemoteLibrariesHandler
+	checkRemotes          *CheckRemotesHandler
+	checkRemote           *CheckRemoteHandler
+}
+
+func NewRemote(
+	addRemote *AddRemoteHandler,
+	setRemotePairingToken *SetRemotePairingTokenHandler,
+	sendLocalAuthToken *SendLocalAuthTokenHandler,
+	setRemoteAuthToken *SetRemoteAuthTokenHandler,
+	checkLocalAuthToken *CheckLocalAuthTokenHandler,
+	listRemotes *ListRemotesHandler,
+	listRemoteLibraries *ListRemoteLibrariesHandler,
+	checkRemotes *CheckRemotesHandler,
+	checkRemote *CheckRemoteHandler,
+) *Remote {
+	return &Remote{
+		addRemote:             addRemote,
+		setRemotePairingToken: setRemotePairingToken,
+		sendLocalAuthToken:    sendLocalAuthToken,
+		setRemoteAuthToken:    setRemoteAuthToken,
+		checkLocalAuthToken:   checkLocalAuthToken,
+		listRemotes:           listRemotes,
+		listRemoteLibraries:   listRemoteLibraries,
+		checkRemotes:          checkRemotes,
+		checkRemote:           checkRemote,
+	}
+}
+
+func (r Remote) AddRemote() *AddRemoteHandler {
+	return r.addRemote
+}
+
+func (r Remote) SetRemotePairingToken() *SetRemotePairingTokenHandler {
+	return r.setRemotePairingToken
+}
+
+func (r Remote) SendLocalAuthToken() *SendLocalAuthTokenHandler {
+	return r.sendLocalAuthToken
+}
+
+func (r Remote) SetRemoteAuthToken() *SetRemoteAuthTokenHandler {
+	return r.setRemoteAuthToken
+}
+
+func (r Remote) CheckLocalAuthToken() *CheckLocalAuthTokenHandler {
+	return r.checkLocalAuthToken
+}
+
+func (r Remote) ListRemotes() *ListRemotesHandler {
+	return r.listRemotes
+}
+
+func (r Remote) ListRemoteLibraries() *ListRemoteLibrariesHandler {
+	return r.listRemoteLibraries
+}
+
+func (r Remote) CheckRemotes() *CheckRemotesHandler {
+	return r.checkRemotes
+}
+
+func (r Remote) CheckRemote() *CheckRemoteHandler {
+	return r.checkRemote
 }

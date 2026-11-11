@@ -51,14 +51,14 @@ func (h *RegisterInitialHandler) Execute(cmd RegisterInitial) error {
 	u := authdomain.NewUser(cmd.Username(), passwordHash, true, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		n, err := r.Users.Count()
+		n, err := r.Users().Count()
 		if err != nil {
 			return errors.Wrap(err, "could not get a count")
 		}
 		if n != 0 {
 			return ErrUsersAlreadyExist
 		}
-		return r.Users.Put(u)
+		return r.Users().Put(u)
 	}); err != nil {
 		return errors.Wrap(err, "transaction failed")
 	}

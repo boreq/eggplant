@@ -62,15 +62,15 @@ func (h *RegisterHandler) Execute(accessCtx accessctx.AccessContext, cmd Registe
 	u := authdomain.NewUser(cmd.Username(), passwordHash, false, time.Now())
 
 	if err := h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		if _, err := r.Invitations.Get(cmd.Token()); err != nil {
+		if _, err := r.Invitations().Get(cmd.Token()); err != nil {
 			return errors.Wrap(err, "could not get the invitation")
 		}
 
-		if err := r.Invitations.Remove(cmd.Token()); err != nil {
+		if err := r.Invitations().Remove(cmd.Token()); err != nil {
 			return errors.Wrap(err, "could not remove the invitation")
 		}
 
-		if _, err := r.Users.Get(cmd.Username()); err != nil {
+		if _, err := r.Users().Get(cmd.Username()); err != nil {
 			if !errors.Is(err, ErrNotFound) {
 				return errors.Wrap(err, "could not get the user")
 			}
@@ -78,7 +78,7 @@ func (h *RegisterHandler) Execute(accessCtx accessctx.AccessContext, cmd Registe
 			return ErrUsernameTaken
 		}
 
-		return r.Users.Put(u)
+		return r.Users().Put(u)
 	}); err != nil {
 		return errors.Wrap(err, "transaction failed")
 	}

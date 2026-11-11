@@ -39,7 +39,7 @@ func (h *CheckRemoteHandler) Execute(ctx context.Context, cmd CheckRemote) error
 	var authToken remotedomain.AuthToken
 	var hasAuthToken bool
 	if err := h.transactionProvider.Read(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.ID())
+		instance, err := r.RemoteInstances().GetByID(cmd.ID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
@@ -60,7 +60,7 @@ func (h *CheckRemoteHandler) Execute(ctx context.Context, cmd CheckRemote) error
 	}
 
 	return h.transactionProvider.Write(func(r *TransactableRepositories) error {
-		instance, err := r.RemoteInstances.GetByID(cmd.ID())
+		instance, err := r.RemoteInstances().GetByID(cmd.ID())
 		if err != nil {
 			return errors.Wrap(err, "could not get the remote instance")
 		}
@@ -69,6 +69,6 @@ func (h *CheckRemoteHandler) Execute(ctx context.Context, cmd CheckRemote) error
 			return errors.Wrap(err, "could not record the healthcheck")
 		}
 
-		return r.RemoteInstances.Save(instance)
+		return r.RemoteInstances().Save(instance)
 	})
 }

@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/boreq/eggplant/adapters/openapi"
+	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/domain/music"
 	"github.com/boreq/eggplant/domain/music/library"
 	"github.com/boreq/eggplant/domain/remote"
@@ -120,4 +121,22 @@ func toTracks(tracks []music.Track) []openapi.Track {
 		result = append(result, toTrack(t))
 	}
 	return result
+}
+
+func toStats(stats queries.Stats) openapi.Stats {
+	return openapi.Stats{
+		Users: stats.Users(),
+		Thumbnails: openapi.ThumbnailStats{
+			AllItems:       stats.Thumbnails().AllItems(),
+			ConvertedItems: stats.Thumbnails().ConvertedItems(),
+			OriginalSize:   stats.Thumbnails().OriginalSize(),
+			ConvertedSize:  stats.Thumbnails().ConvertedSize(),
+		},
+		Tracks: openapi.TrackStats{
+			NumberOfTracks:  stats.Tracks().NumberOfTracks(),
+			SizeOfTracks:    stats.Tracks().SizeOfTracks(),
+			NumberOfStreams: stats.Tracks().NumberOfStreams(),
+			StreamCacheSize: stats.Tracks().StreamCacheSize(),
+		},
+	}
 }

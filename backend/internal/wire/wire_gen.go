@@ -39,10 +39,7 @@ func BuildTransactableAuthRepositories(tx *bbolt.Tx) (*auth.TransactableReposito
 	if err != nil {
 		return nil, err
 	}
-	transactableRepositories := &auth.TransactableRepositories{
-		Invitations: invitationRepository,
-		Users:       userRepository,
-	}
+	transactableRepositories := auth.NewTransactableRepositories(invitationRepository, userRepository)
 	return transactableRepositories, nil
 }
 
@@ -51,9 +48,7 @@ func BuildTransactableQueryRepositories(tx *bbolt.Tx) (*queries.TransactableRepo
 	if err != nil {
 		return nil, err
 	}
-	transactableRepositories := &queries.TransactableRepositories{
-		Users: userRepository,
-	}
+	transactableRepositories := queries.NewTransactableRepositories(userRepository)
 	return transactableRepositories, nil
 }
 
@@ -72,18 +67,7 @@ func BuildAuthForTest(db *bbolt.DB) (*auth.Auth, error) {
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
-	authAuth := &auth.Auth{
-		RegisterInitial:  registerInitialHandler,
-		Register:         registerHandler,
-		Login:            loginHandler,
-		Logout:           logoutHandler,
-		CheckAccessToken: checkAccessTokenHandler,
-		List:             listHandler,
-		CreateInvitation: createInvitationHandler,
-		Remove:           removeHandler,
-		SetPassword:      setPasswordHandler,
-		GetCurrentUser:   getCurrentUserHandler,
-	}
+	authAuth := auth.NewAuth(registerInitialHandler, registerHandler, loginHandler, logoutHandler, checkAccessTokenHandler, listHandler, createInvitationHandler, removeHandler, setPasswordHandler, getCurrentUserHandler)
 	return authAuth, nil
 }
 
@@ -106,18 +90,7 @@ func BuildAuth(conf *config.Config) (*auth.Auth, error) {
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
-	authAuth := &auth.Auth{
-		RegisterInitial:  registerInitialHandler,
-		Register:         registerHandler,
-		Login:            loginHandler,
-		Logout:           logoutHandler,
-		CheckAccessToken: checkAccessTokenHandler,
-		List:             listHandler,
-		CreateInvitation: createInvitationHandler,
-		Remove:           removeHandler,
-		SetPassword:      setPasswordHandler,
-		GetCurrentUser:   getCurrentUserHandler,
-	}
+	authAuth := auth.NewAuth(registerInitialHandler, registerHandler, loginHandler, logoutHandler, checkAccessTokenHandler, listHandler, createInvitationHandler, removeHandler, setPasswordHandler, getCurrentUserHandler)
 	return authAuth, nil
 }
 
@@ -130,10 +103,7 @@ func BuildTransactableRemoteRepositories(tx *bbolt.Tx) (*remote.TransactableRepo
 	if err != nil {
 		return nil, err
 	}
-	transactableRepositories := &remote.TransactableRepositories{
-		RemoteInstances: remoteInstanceRepository,
-		Outbox:          outboxRepository,
-	}
+	transactableRepositories := remote.NewTransactableRepositories(remoteInstanceRepository, outboxRepository)
 	return transactableRepositories, nil
 }
 
@@ -156,18 +126,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
-	authAuth := auth.Auth{
-		RegisterInitial:  registerInitialHandler,
-		Register:         registerHandler,
-		Login:            loginHandler,
-		Logout:           logoutHandler,
-		CheckAccessToken: checkAccessTokenHandler,
-		List:             listHandler,
-		CreateInvitation: createInvitationHandler,
-		Remove:           removeHandler,
-		SetPassword:      setPasswordHandler,
-		GetCurrentUser:   getCurrentUserHandler,
-	}
+	authAuth := auth.NewAuth(registerInitialHandler, registerHandler, loginHandler, logoutHandler, checkAccessTokenHandler, listHandler, createInvitationHandler, removeHandler, setPasswordHandler, getCurrentUserHandler)
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
@@ -236,36 +195,12 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
 	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, durationStore)
 	loggingLoadLibraryHandler := music.NewLoggingLoadLibraryHandler(loadLibraryHandler, v)
-	musicMusic := music.Music{
-		Thumbnail:              loggingThumbnailHandler,
-		StartStreaming:         loggingStartStreamingHandler,
-		StreamPlaylist:         loggingStreamPlaylistHandler,
-		StreamInit:             loggingStreamInitHandler,
-		StreamFragment:         loggingStreamFragmentHandler,
-		KeepAliveStream:        loggingKeepAliveStreamHandler,
-		GetRootAlbum:           loggingGetRootAlbumHandler,
-		GetAlbum:               loggingGetAlbumHandler,
-		RemoteGetRootAlbum:     loggingRemoteGetRootAlbumHandler,
-		RemoteGetAlbum:         loggingRemoteGetAlbumHandler,
-		RemoteGetThumbnail:     loggingRemoteGetThumbnailHandler,
-		RemoteGetTrackDuration: loggingRemoteGetTrackDurationHandler,
-		RemoteStartStreaming:   loggingRemoteStartStreamingHandler,
-		RemoteStreamPlaylist:   loggingRemoteStreamPlaylistHandler,
-		RemoteStreamInit:       loggingRemoteStreamInitHandler,
-		RemoteStreamFragment:   loggingRemoteStreamFragmentHandler,
-		RemoteKeepAliveStream:  loggingRemoteKeepAliveStreamHandler,
-		GetTrackDuration:       loggingGetTrackDurationHandler,
-		Search:                 loggingSearchHandler,
-		LoadLibrary:            loggingLoadLibraryHandler,
-	}
+	musicMusic := music.NewMusic(loggingThumbnailHandler, loggingStartStreamingHandler, loggingStreamPlaylistHandler, loggingStreamInitHandler, loggingStreamFragmentHandler, loggingKeepAliveStreamHandler, loggingGetRootAlbumHandler, loggingGetAlbumHandler, loggingRemoteGetRootAlbumHandler, loggingRemoteGetAlbumHandler, loggingRemoteGetThumbnailHandler, loggingRemoteGetTrackDurationHandler, loggingRemoteStartStreamingHandler, loggingRemoteStreamPlaylistHandler, loggingRemoteStreamInitHandler, loggingRemoteStreamFragmentHandler, loggingRemoteKeepAliveStreamHandler, loggingGetTrackDurationHandler, loggingSearchHandler, loggingLoadLibraryHandler)
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
 	statsHandler := queries.NewStatsHandler(converter, thumbnailStore, queryTransactionProvider)
 	versionHandler := newVersionHandler()
-	applicationQueries := application.Queries{
-		Stats:   statsHandler,
-		Version: versionHandler,
-	}
+	applicationQueries := application.NewQueries(statsHandler, versionHandler)
 	addRemoteHandler := remote.NewAddRemoteHandler(remoteTransactionProvider)
 	setRemotePairingTokenHandler := remote.NewSetRemotePairingTokenHandler(remoteTransactionProvider)
 	sendLocalAuthTokenHandler := remote.NewSendLocalAuthTokenHandler(remoteTransactionProvider, remoteClient)
@@ -275,23 +210,8 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	listRemoteLibrariesHandler := remote.NewListRemoteLibrariesHandler(remoteTransactionProvider)
 	checkRemotesHandler := remote.NewCheckRemotesHandler(remoteTransactionProvider, remoteClient)
 	checkRemoteHandler := remote.NewCheckRemoteHandler(remoteTransactionProvider, remoteClient)
-	remoteRemote := remote.Remote{
-		AddRemote:             addRemoteHandler,
-		SetRemotePairingToken: setRemotePairingTokenHandler,
-		SendLocalAuthToken:    sendLocalAuthTokenHandler,
-		SetRemoteAuthToken:    setRemoteAuthTokenHandler,
-		CheckLocalAuthToken:   checkLocalAuthTokenHandler,
-		ListRemotes:           listRemotesHandler,
-		ListRemoteLibraries:   listRemoteLibrariesHandler,
-		CheckRemotes:          checkRemotesHandler,
-		CheckRemote:           checkRemoteHandler,
-	}
-	applicationApplication := &application.Application{
-		Auth:    authAuth,
-		Music:   musicMusic,
-		Queries: applicationQueries,
-		Remote:  remoteRemote,
-	}
+	remoteRemote := remote.NewRemote(addRemoteHandler, setRemotePairingTokenHandler, sendLocalAuthTokenHandler, setRemoteAuthTokenHandler, checkLocalAuthTokenHandler, listRemotesHandler, listRemoteLibrariesHandler, checkRemotesHandler, checkRemoteHandler)
+	applicationApplication := application.NewApplication(authAuth, musicMusic, applicationQueries, remoteRemote)
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
 	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
 	if err != nil {
@@ -332,18 +252,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	removeHandler := auth.NewRemoveHandler(authTransactionProvider)
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
-	authAuth := auth.Auth{
-		RegisterInitial:  registerInitialHandler,
-		Register:         registerHandler,
-		Login:            loginHandler,
-		Logout:           logoutHandler,
-		CheckAccessToken: checkAccessTokenHandler,
-		List:             listHandler,
-		CreateInvitation: createInvitationHandler,
-		Remove:           removeHandler,
-		SetPassword:      setPasswordHandler,
-		GetCurrentUser:   getCurrentUserHandler,
-	}
+	authAuth := auth.NewAuth(registerInitialHandler, registerHandler, loginHandler, logoutHandler, checkAccessTokenHandler, listHandler, createInvitationHandler, removeHandler, setPasswordHandler, getCurrentUserHandler)
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
@@ -412,36 +321,12 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	delimiterAccessLoader := library.NewDelimiterAccessLoader()
 	loadLibraryHandler := music.NewLoadLibraryHandler(inMemoryRepository, scanner, converter, thumbnailStore, delimiterAccessLoader, durationStore)
 	loggingLoadLibraryHandler := music.NewLoggingLoadLibraryHandler(loadLibraryHandler, v)
-	musicMusic := music.Music{
-		Thumbnail:              loggingThumbnailHandler,
-		StartStreaming:         loggingStartStreamingHandler,
-		StreamPlaylist:         loggingStreamPlaylistHandler,
-		StreamInit:             loggingStreamInitHandler,
-		StreamFragment:         loggingStreamFragmentHandler,
-		KeepAliveStream:        loggingKeepAliveStreamHandler,
-		GetRootAlbum:           loggingGetRootAlbumHandler,
-		GetAlbum:               loggingGetAlbumHandler,
-		RemoteGetRootAlbum:     loggingRemoteGetRootAlbumHandler,
-		RemoteGetAlbum:         loggingRemoteGetAlbumHandler,
-		RemoteGetThumbnail:     loggingRemoteGetThumbnailHandler,
-		RemoteGetTrackDuration: loggingRemoteGetTrackDurationHandler,
-		RemoteStartStreaming:   loggingRemoteStartStreamingHandler,
-		RemoteStreamPlaylist:   loggingRemoteStreamPlaylistHandler,
-		RemoteStreamInit:       loggingRemoteStreamInitHandler,
-		RemoteStreamFragment:   loggingRemoteStreamFragmentHandler,
-		RemoteKeepAliveStream:  loggingRemoteKeepAliveStreamHandler,
-		GetTrackDuration:       loggingGetTrackDurationHandler,
-		Search:                 loggingSearchHandler,
-		LoadLibrary:            loggingLoadLibraryHandler,
-	}
+	musicMusic := music.NewMusic(loggingThumbnailHandler, loggingStartStreamingHandler, loggingStreamPlaylistHandler, loggingStreamInitHandler, loggingStreamFragmentHandler, loggingKeepAliveStreamHandler, loggingGetRootAlbumHandler, loggingGetAlbumHandler, loggingRemoteGetRootAlbumHandler, loggingRemoteGetAlbumHandler, loggingRemoteGetThumbnailHandler, loggingRemoteGetTrackDurationHandler, loggingRemoteStartStreamingHandler, loggingRemoteStreamPlaylistHandler, loggingRemoteStreamInitHandler, loggingRemoteStreamFragmentHandler, loggingRemoteKeepAliveStreamHandler, loggingGetTrackDurationHandler, loggingSearchHandler, loggingLoadLibraryHandler)
 	wireQueryRepositoriesProvider := newQueryRepositoriesProvider()
 	queryTransactionProvider := auth2.NewQueryTransactionProvider(db, wireQueryRepositoriesProvider)
 	statsHandler := queries.NewStatsHandler(converter, thumbnailStore, queryTransactionProvider)
 	versionHandler := newVersionHandler()
-	applicationQueries := application.Queries{
-		Stats:   statsHandler,
-		Version: versionHandler,
-	}
+	applicationQueries := application.NewQueries(statsHandler, versionHandler)
 	addRemoteHandler := remote.NewAddRemoteHandler(remoteTransactionProvider)
 	setRemotePairingTokenHandler := remote.NewSetRemotePairingTokenHandler(remoteTransactionProvider)
 	sendLocalAuthTokenHandler := remote.NewSendLocalAuthTokenHandler(remoteTransactionProvider, remoteClient)
@@ -451,23 +336,8 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	listRemoteLibrariesHandler := remote.NewListRemoteLibrariesHandler(remoteTransactionProvider)
 	checkRemotesHandler := remote.NewCheckRemotesHandler(remoteTransactionProvider, remoteClient)
 	checkRemoteHandler := remote.NewCheckRemoteHandler(remoteTransactionProvider, remoteClient)
-	remoteRemote := remote.Remote{
-		AddRemote:             addRemoteHandler,
-		SetRemotePairingToken: setRemotePairingTokenHandler,
-		SendLocalAuthToken:    sendLocalAuthTokenHandler,
-		SetRemoteAuthToken:    setRemoteAuthTokenHandler,
-		CheckLocalAuthToken:   checkLocalAuthTokenHandler,
-		ListRemotes:           listRemotesHandler,
-		ListRemoteLibraries:   listRemoteLibrariesHandler,
-		CheckRemotes:          checkRemotesHandler,
-		CheckRemote:           checkRemoteHandler,
-	}
-	applicationApplication := &application.Application{
-		Auth:    authAuth,
-		Music:   musicMusic,
-		Queries: applicationQueries,
-		Remote:  remoteRemote,
-	}
+	remoteRemote := remote.NewRemote(addRemoteHandler, setRemotePairingTokenHandler, sendLocalAuthTokenHandler, setRemoteAuthTokenHandler, checkLocalAuthTokenHandler, listRemotesHandler, listRemoteLibrariesHandler, checkRemotesHandler, checkRemoteHandler)
+	applicationApplication := application.NewApplication(authAuth, musicMusic, applicationQueries, remoteRemote)
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
 	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
 	if err != nil {

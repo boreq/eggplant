@@ -306,7 +306,7 @@ func newTestService(t *testing.T) *testService {
 	require.NoError(t, err)
 
 	// Scan the fixture library synchronously so the music endpoints have data.
-	require.NoError(t, svc.App.Music.LoadLibrary.Execute(ctx))
+	require.NoError(t, svc.App.Music().LoadLibrary().Execute(ctx))
 
 	pubSubDone := make(chan struct{})
 	go func() {

@@ -132,7 +132,7 @@ func (h *Handler) addAccessContext(handler func(accessctx.AccessContext, http.Re
 }
 
 func (h *Handler) browse(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	a, err := h.app.Music.GetRootAlbum.Execute(accessCtx, music.NewGetRootAlbum())
+	a, err := h.app.Music().GetRootAlbum().Execute(accessCtx, music.NewGetRootAlbum())
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
@@ -148,7 +148,7 @@ func (h *Handler) browseById(accessCtx accessctx.AccessContext, r *http.Request)
 		return rest.ErrBadRequest.WithMessage("Invalid album id.")
 	}
 
-	album, err := h.app.Music.GetAlbum.Execute(accessCtx, music.NewGetAlbum(albumId))
+	album, err := h.app.Music().GetAlbum().Execute(accessCtx, music.NewGetAlbum(albumId))
 	if err != nil {
 		return h.handleBrowseError(err)
 	}
@@ -173,7 +173,7 @@ func (h *Handler) search(accessCtx accessctx.AccessContext, r *http.Request) res
 		return rest.ErrBadRequest.WithMessage("Invalid query.")
 	}
 
-	result, err := h.app.Music.Search.Execute(r.Context(), accessCtx, music.NewSearch(query))
+	result, err := h.app.Music().Search().Execute(r.Context(), accessCtx, music.NewSearch(query))
 	if err != nil {
 		h.log.Error("search error", "err", err)
 		return rest.ErrInternalServerError
@@ -200,7 +200,7 @@ func (h *Handler) startTrackStream(accessCtx accessctx.AccessContext, r *http.Re
 	}
 
 	h.log.Debug("calling StartStreaming handler", "trackId", trackId.String(), "seekPos", seekPos)
-	streamId, err := h.app.Music.StartStreaming.Execute(r.Context(), accessCtx, music.NewStartStreaming(trackId, seekPos))
+	streamId, err := h.app.Music().StartStreaming().Execute(r.Context(), accessCtx, music.NewStartStreaming(trackId, seekPos))
 	h.log.Debug("StartStreaming handler returned", "err", err)
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
@@ -225,7 +225,7 @@ func (h *Handler) getTrackDuration(accessCtx accessctx.AccessContext, r *http.Re
 		return rest.ErrBadRequest.WithMessage("Invalid track id.")
 	}
 
-	duration, err := h.app.Music.GetTrackDuration.Execute(r.Context(), accessCtx, music.NewGetTrackDuration(trackId))
+	duration, err := h.app.Music().GetTrackDuration().Execute(r.Context(), accessCtx, music.NewGetTrackDuration(trackId))
 	if err != nil {
 		if errors.Is(err, library.ErrTrackNotFound) {
 			return rest.ErrNotFound
@@ -261,7 +261,7 @@ func (h *Handler) keepAliveStream(accessCtx accessctx.AccessContext, w http.Resp
 		return
 	}
 
-	err := h.app.Music.KeepAliveStream.Execute(accessCtx, music.NewKeepAliveStream(trackId, streamId))
+	err := h.app.Music().KeepAliveStream().Execute(accessCtx, music.NewKeepAliveStream(trackId, streamId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
@@ -276,7 +276,7 @@ func (h *Handler) streamPlaylist(accessCtx accessctx.AccessContext, w http.Respo
 		return
 	}
 
-	res, err := h.app.Music.StreamPlaylist.Execute(accessCtx, music.NewStreamPlaylist(trackId, streamId))
+	res, err := h.app.Music().StreamPlaylist().Execute(accessCtx, music.NewStreamPlaylist(trackId, streamId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
@@ -291,7 +291,7 @@ func (h *Handler) streamPlaylist(accessCtx accessctx.AccessContext, w http.Respo
 	// has (issue #83). Pass a zero modtime to disable conditional requests;
 	// no-store keeps it out of the browser cache too.
 	w.Header().Set("Cache-Control", "no-store")
-	http.ServeContent(w, r, "playlist.m3u8", time.Time{}, bytes.NewReader(res.Playlist.Bytes()))
+	http.ServeContent(w, r, "playlist.m3u8", time.Time{}, bytes.NewReader(res.Playlist().Bytes()))
 }
 
 func (h *Handler) streamInit(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -300,12 +300,12 @@ func (h *Handler) streamInit(accessCtx accessctx.AccessContext, w http.ResponseW
 		return
 	}
 
-	p, err := h.app.Music.StreamInit.Execute(accessCtx, music.NewStreamInit(trackId, streamId))
+	p, err := h.app.Music().StreamInit().Execute(accessCtx, music.NewStreamInit(trackId, streamId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
 	}
-	defer p.Content.Close()
+	defer p.Content().Close()
 
 	h.serveConvertedFile(w, r, p, "video/mp4")
 }
@@ -329,12 +329,12 @@ func (h *Handler) streamFragment(accessCtx accessctx.AccessContext, w http.Respo
 		return
 	}
 
-	p, err := h.app.Music.StreamFragment.Execute(accessCtx, music.NewStreamFragment(trackId, streamId, fragmentId))
+	p, err := h.app.Music().StreamFragment().Execute(accessCtx, music.NewStreamFragment(trackId, streamId, fragmentId))
 	if err != nil {
 		h.translateAndWriteStreamError(w, err)
 		return
 	}
-	defer p.Content.Close()
+	defer p.Content().Close()
 
 	h.serveConvertedFile(w, r, p, "video/iso.segment")
 }
@@ -382,7 +382,7 @@ func (h *Handler) translateAndWriteStreamError(w http.ResponseWriter, err error)
 func (h *Handler) serveConvertedFile(w http.ResponseWriter, r *http.Request, p music.ConvertedFile, contentType string) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Accept-Ranges", "bytes")
-	http.ServeContent(w, r, "", p.Modtime, p.Content)
+	http.ServeContent(w, r, "", p.Modtime(), p.Content())
 }
 
 func (h *Handler) thumbnail(accessCtx accessctx.AccessContext, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -393,7 +393,7 @@ func (h *Handler) thumbnail(accessCtx accessctx.AccessContext, w http.ResponseWr
 		return
 	}
 
-	p, err := h.app.Music.Thumbnail.Execute(r.Context(), accessCtx, id)
+	p, err := h.app.Music().Thumbnail().Execute(r.Context(), accessCtx, id)
 	if err != nil {
 		if errors.Is(err, library.ErrThumbnailNotFound) {
 			w.WriteHeader(http.StatusNotFound)
@@ -403,19 +403,19 @@ func (h *Handler) thumbnail(accessCtx accessctx.AccessContext, w http.ResponseWr
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer p.Content.Close()
+	defer p.Content().Close()
 
 	h.serveConvertedFile(w, r, p, "image/webp")
 }
 
 func (h *Handler) stats(r *http.Request) rest.RestResponse {
-	stats, err := h.app.Queries.Stats.Execute()
+	stats, err := h.app.Queries().Stats().Execute()
 	if err != nil {
 		h.log.Error("stats query error", "err", err)
 		return rest.ErrInternalServerError
 	}
 
-	return rest.NewResponse(stats)
+	return rest.NewResponse(toStats(stats))
 }
 
 func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
@@ -436,7 +436,7 @@ func (h *Handler) registerInitial(r *http.Request) rest.RestResponse {
 
 	cmd := auth.NewRegisterInitial(username, password)
 
-	if err := h.app.Auth.RegisterInitial.Execute(cmd); err != nil {
+	if err := h.app.Auth().RegisterInitial().Execute(cmd); err != nil {
 		if errors.Is(err, auth.ErrUsersAlreadyExist) {
 			return rest.ErrConflict.WithMessage("The initial setup has already been performed.")
 		}
@@ -466,7 +466,7 @@ func (h *Handler) login(accessCtx accessctx.AccessContext, r *http.Request) rest
 
 	cmd := auth.NewLogin(username, password)
 
-	token, err := h.app.Auth.Login.Execute(accessCtx, cmd)
+	token, err := h.app.Auth().Login().Execute(accessCtx, cmd)
 	if err != nil {
 		if errors.Is(err, auth.ErrUnauthorized) {
 			return rest.ErrForbidden.WithMessage("Invalid credentials.")
@@ -491,7 +491,7 @@ func (h *Handler) logout(accessCtx accessctx.AccessContext, r *http.Request) res
 		return rest.ErrUnauthorized
 	}
 
-	if err := h.app.Auth.Logout.Execute(authCtx); err != nil {
+	if err := h.app.Auth().Logout().Execute(authCtx); err != nil {
 		h.log.Error("could not logout the user", "err", err)
 		return rest.ErrInternalServerError
 	}
@@ -504,7 +504,7 @@ func (h *Handler) getCurrentUser(accessCtx accessctx.AccessContext, r *http.Requ
 		return rest.ErrUnauthorized
 	}
 
-	user, err := h.app.Auth.GetCurrentUser.Execute(authCtx)
+	user, err := h.app.Auth().GetCurrentUser().Execute(authCtx)
 	if err != nil {
 		h.log.Error("could not get the current user", "err", err)
 		return rest.ErrInternalServerError
@@ -514,7 +514,7 @@ func (h *Handler) getCurrentUser(accessCtx accessctx.AccessContext, r *http.Requ
 }
 
 func (h *Handler) getUsers(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	users, err := h.app.Auth.List.Execute(accessCtx)
+	users, err := h.app.Auth().List().Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can list users.")
@@ -527,7 +527,7 @@ func (h *Handler) getUsers(accessCtx accessctx.AccessContext, r *http.Request) r
 }
 
 func (h *Handler) createInvitation(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	token, err := h.app.Auth.CreateInvitation.Execute(accessCtx)
+	token, err := h.app.Auth().CreateInvitation().Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can create invites.")
@@ -565,7 +565,7 @@ func (h *Handler) register(accessCtx accessctx.AccessContext, r *http.Request) r
 
 	cmd := auth.NewRegister(username, password, invitationToken)
 
-	if err := h.app.Auth.Register.Execute(accessCtx, cmd); err != nil {
+	if err := h.app.Auth().Register().Execute(accessCtx, cmd); err != nil {
 		if errors.Is(err, auth.ErrUsernameTaken) {
 			return rest.ErrConflict.WithMessage("Username is taken.")
 		}
@@ -593,7 +593,7 @@ func (h *Handler) removeUser(accessCtx accessctx.AccessContext, r *http.Request)
 
 	cmd := auth.NewRemove(username)
 
-	if err := h.app.Auth.Remove.Execute(authCtx, cmd); err != nil {
+	if err := h.app.Auth().Remove().Execute(authCtx, cmd); err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden.WithMessage("Only an administrator can remove users.")
 		}
@@ -608,7 +608,7 @@ func (h *Handler) removeUser(accessCtx accessctx.AccessContext, r *http.Request)
 }
 
 func (h *Handler) getVersion(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
-	version, err := h.app.Queries.Version.Execute(accessCtx)
+	version, err := h.app.Queries().Version().Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
 			return rest.ErrForbidden

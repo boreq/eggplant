@@ -8,15 +8,17 @@ The backend uses hexagonal architecture:
 - `adapters` driven adapters
 - `entrypoints`: driving adapters
 
-### Domain layer
+### Application and domain
 
-- Domain types are structs as well as functions and interfaces.
-- Domain structs have no public fields.
-- Domain structs have constructors which validate their inputs.
-- Domain structs are created through constructors.
+- Structs have no public fields.
+- Structs have constructors which validate their inputs.
+- Structs are created through constructors.
 - Constructors may be public or private.
-- Constructors don't check for zero values of domain structs.
-- Returning a zero value of a domain struct is allowed together with a bool or an error.
+- Constructors don't check for zero values of application structs.
+- Returning a zero value of a struct is allowed together with a bool or an error.
+
+### Enums
+
 - Enums are structs with one private field of type string.
 - Enum values are package-level variables.
 - Enums don't have constructors.
