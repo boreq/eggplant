@@ -15,11 +15,13 @@ import (
 	"github.com/boreq/eggplant/adapters/music/tracks"
 	"github.com/boreq/eggplant/adapters/pubsub"
 	remote2 "github.com/boreq/eggplant/adapters/remote"
+	"github.com/boreq/eggplant/adapters/remotecontrol"
 	"github.com/boreq/eggplant/application"
 	"github.com/boreq/eggplant/application/auth"
 	"github.com/boreq/eggplant/application/music"
 	"github.com/boreq/eggplant/application/queries"
 	"github.com/boreq/eggplant/application/remote"
+	remotecontrol2 "github.com/boreq/eggplant/application/remotecontrol"
 	"github.com/boreq/eggplant/entrypoints/filesystem"
 	"github.com/boreq/eggplant/entrypoints/http"
 	"github.com/boreq/eggplant/entrypoints/outbox"
@@ -127,6 +129,17 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
 	authAuth := auth.NewAuth(registerInitialHandler, registerHandler, loginHandler, logoutHandler, checkAccessTokenHandler, listHandler, createInvitationHandler, removeHandler, setPasswordHandler, getCurrentUserHandler)
+	hub := remotecontrol.NewHub()
+	connectHandler := remotecontrol2.NewConnectHandler(hub)
+	disconnectHandler := remotecontrol2.NewDisconnectHandler(hub)
+	setControllableHandler := remotecontrol2.NewSetControllableHandler(hub)
+	renameHandler := remotecontrol2.NewRenameHandler(hub)
+	takeControlHandler := remotecontrol2.NewTakeControlHandler(hub)
+	releaseControlHandler := remotecontrol2.NewReleaseControlHandler(hub)
+	disconnectControllersHandler := remotecontrol2.NewDisconnectControllersHandler(hub)
+	sendCommandHandler := remotecontrol2.NewSendCommandHandler(hub)
+	publishStateHandler := remotecontrol2.NewPublishStateHandler(hub)
+	control := remotecontrol2.NewControl(connectHandler, disconnectHandler, setControllableHandler, renameHandler, takeControlHandler, releaseControlHandler, disconnectControllersHandler, sendCommandHandler, publishStateHandler)
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
@@ -211,7 +224,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 	checkRemotesHandler := remote.NewCheckRemotesHandler(remoteTransactionProvider, remoteClient)
 	checkRemoteHandler := remote.NewCheckRemoteHandler(remoteTransactionProvider, remoteClient)
 	remoteRemote := remote.NewRemote(addRemoteHandler, setRemotePairingTokenHandler, sendLocalAuthTokenHandler, setRemoteAuthTokenHandler, checkLocalAuthTokenHandler, listRemotesHandler, listRemoteLibrariesHandler, checkRemotesHandler, checkRemoteHandler)
-	applicationApplication := application.NewApplication(authAuth, musicMusic, applicationQueries, remoteRemote)
+	applicationApplication := application.NewApplication(authAuth, control, musicMusic, applicationQueries, remoteRemote)
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
 	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
 	if err != nil {
@@ -253,6 +266,17 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	setPasswordHandler := auth.NewSetPasswordHandler(bcryptPasswordHasher, authTransactionProvider)
 	getCurrentUserHandler := auth.NewGetCurrentUserHandler(authTransactionProvider)
 	authAuth := auth.NewAuth(registerInitialHandler, registerHandler, loginHandler, logoutHandler, checkAccessTokenHandler, listHandler, createInvitationHandler, removeHandler, setPasswordHandler, getCurrentUserHandler)
+	hub := remotecontrol.NewHub()
+	connectHandler := remotecontrol2.NewConnectHandler(hub)
+	disconnectHandler := remotecontrol2.NewDisconnectHandler(hub)
+	setControllableHandler := remotecontrol2.NewSetControllableHandler(hub)
+	renameHandler := remotecontrol2.NewRenameHandler(hub)
+	takeControlHandler := remotecontrol2.NewTakeControlHandler(hub)
+	releaseControlHandler := remotecontrol2.NewReleaseControlHandler(hub)
+	disconnectControllersHandler := remotecontrol2.NewDisconnectControllersHandler(hub)
+	sendCommandHandler := remotecontrol2.NewSendCommandHandler(hub)
+	publishStateHandler := remotecontrol2.NewPublishStateHandler(hub)
+	control := remotecontrol2.NewControl(connectHandler, disconnectHandler, setControllableHandler, renameHandler, takeControlHandler, releaseControlHandler, disconnectControllersHandler, sendCommandHandler, publishStateHandler)
 	inMemoryRepository := library.NewInMemoryRepository()
 	thumbnailStore, err := newThumbnailStore(ctx, conf)
 	if err != nil {
@@ -337,7 +361,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 	checkRemotesHandler := remote.NewCheckRemotesHandler(remoteTransactionProvider, remoteClient)
 	checkRemoteHandler := remote.NewCheckRemoteHandler(remoteTransactionProvider, remoteClient)
 	remoteRemote := remote.NewRemote(addRemoteHandler, setRemotePairingTokenHandler, sendLocalAuthTokenHandler, setRemoteAuthTokenHandler, checkLocalAuthTokenHandler, listRemotesHandler, listRemoteLibrariesHandler, checkRemotesHandler, checkRemoteHandler)
-	applicationApplication := application.NewApplication(authAuth, musicMusic, applicationQueries, remoteRemote)
+	applicationApplication := application.NewApplication(authAuth, control, musicMusic, applicationQueries, remoteRemote)
 	accessContextProvider := http.NewAccessContextProvider(applicationApplication)
 	handler, err := http.NewHandler(applicationApplication, accessContextProvider)
 	if err != nil {

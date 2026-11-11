@@ -7,6 +7,7 @@ require (
 	github.com/boreq/errors v0.1.0
 	github.com/boreq/guinea v0.1.0
 	github.com/boreq/rest v1.0.1
+	github.com/coder/websocket v1.8.14
 	github.com/gen2brain/webp v0.5.5
 	github.com/google/wire v0.7.0
 	github.com/inconshreveable/log15 v2.16.0+incompatible

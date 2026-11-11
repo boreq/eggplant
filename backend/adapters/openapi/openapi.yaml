@@ -18,6 +18,8 @@ tags:
     description: Server metadata.
   - name: remote
     description: Pairing and communication between remote instances.
+  - name: device
+    description: Remote control of playback between the devices of one user.
 security:
   - {}
   - cookieAuth: []
@@ -710,6 +712,37 @@ paths:
           $ref: '#/components/responses/Empty'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/devices/ws:
+    get:
+      tags: [device]
+      operationId: connectDevice
+      summary: Opens the WebSocket that a device uses for remote control.
+      description: |
+        Upgrades the connection to a WebSocket. Only logged-in users can
+        connect, and the Origin header must match the Host header. The
+        messages on the socket are described in spec/remote-control/plan.md.
+      parameters:
+        - name: device
+          in: query
+          required: true
+          description: The random ID that the browser generated for itself.
+          schema:
+            type: string
+        - name: name
+          in: query
+          required: true
+          description: The name of the device.
+          schema:
+            type: string
+      responses:
+        '101':
+          description: The connection was upgraded to a WebSocket.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
 components:

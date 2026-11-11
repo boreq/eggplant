@@ -87,7 +87,7 @@ func newTestHandler(t *testing.T) *httpentrypoint.Handler {
 		nil,
 		nil,
 	)
-	app := application.NewApplication(nil, music, nil, nil)
+	app := application.NewApplication(nil, nil, music, nil, nil)
 
 	h, err := httpentrypoint.NewHandler(app, anonymousAuthProvider{})
 	require.NoError(t, err)

@@ -1,8 +1,9 @@
 import Vue from 'vue';
-import Vuex from 'vuex';
+import Vuex, { MutationTree } from 'vuex';
 import VuexPersistence from 'vuex-persist';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { User } from '@/dto/User';
+import { Device } from '@/dto/Device';
 
 Vue.use(Vuex);
 
@@ -13,6 +14,7 @@ const vuexPersist = new VuexPersistence<State>({
         muted: state.muted,
         shuffle: state.shuffle,
     }),
+    filter: () => !store.state.controlledDevice,
 });
 
 export enum Mutation {
@@ -29,7 +31,25 @@ export enum Mutation {
     Shuffle = 'shuffle',
     NoShuffle = 'noShuffle',
     SetUser = 'setUser',
+    SetDevices = 'setDevices',
+    SetControlledDevice = 'setControlledDevice',
+    SetPlaybackState = 'setPlaybackState',
 }
+
+export const playerMutations: string[] = [
+    Mutation.Replace,
+    Mutation.Append,
+    Mutation.Remove,
+    Mutation.Play,
+    Mutation.Pause,
+    Mutation.Previous,
+    Mutation.Next,
+    Mutation.SetVolume,
+    Mutation.Mute,
+    Mutation.Unmute,
+    Mutation.Shuffle,
+    Mutation.NoShuffle,
+];
 
 
 export class State {
@@ -40,6 +60,17 @@ export class State {
     muted: boolean;
     shuffle: boolean;
     user: User;
+    devices: Device[];
+    controlledDevice: string;
+}
+
+export class PlaybackState {
+    entries: TrackWithAlbum[];
+    playingIndex: number;
+    paused: boolean;
+    volume: number;
+    muted: boolean;
+    shuffle: boolean;
 }
 
 export class ReplaceCommand {
@@ -59,7 +90,7 @@ export class SetVolumeCommand {
     volume: number;
 }
 
-export default new Vuex.Store<State>({
+const store = new Vuex.Store<State>({
     state: {
         entries: [],
         playingIndex: null,
@@ -68,8 +99,10 @@ export default new Vuex.Store<State>({
         muted: false,
         shuffle: false,
         user: undefined,
+        devices: [],
+        controlledDevice: null,
     },
-    mutations: {
+    mutations: guardPlayerMutations({
         [Mutation.Replace](state: State, command: ReplaceCommand): void {
             state.entries = command.entries;
 
@@ -169,7 +202,21 @@ export default new Vuex.Store<State>({
         [Mutation.SetUser](state: State, user: User): void {
             state.user = user;
         },
-    },
+        [Mutation.SetDevices](state: State, devices: Device[]): void {
+            state.devices = devices;
+        },
+        [Mutation.SetControlledDevice](state: State, id: string): void {
+            state.controlledDevice = id;
+        },
+        [Mutation.SetPlaybackState](state: State, playbackState: PlaybackState): void {
+            state.entries = playbackState.entries;
+            state.playingIndex = playbackState.playingIndex;
+            state.paused = playbackState.paused;
+            state.volume = playbackState.volume;
+            state.muted = playbackState.muted;
+            state.shuffle = playbackState.shuffle;
+        },
+    }),
     getters: {
         nowPlaying: (state: State): TrackWithAlbum => {
             return nowPlaying(state);
@@ -186,6 +233,25 @@ export default new Vuex.Store<State>({
     },
     plugins: [vuexPersist.plugin],
 });
+
+export default store;
+
+function guardPlayerMutations(mutations: MutationTree<State>): MutationTree<State> {
+    const guarded: MutationTree<State> = {};
+    for (const [type, mutation] of Object.entries(mutations)) {
+        if (playerMutations.includes(type)) {
+            guarded[type] = (state: State, payload?: any) => {
+                if (state.controlledDevice) {
+                    return;
+                }
+                mutation(state, payload);
+            };
+        } else {
+            guarded[type] = mutation;
+        }
+    }
+    return guarded;
+}
 
 function nowPlaying(state: State): TrackWithAlbum {
     if (emptyArray(state.entries)) {

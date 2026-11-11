@@ -63,6 +63,7 @@ func BuildService(ctx context.Context, conf *config.Config) (*service.Service, e
 		appSet,
 		musicSet,
 		remoteSet,
+		controlSet,
 		boltSet,
 	)
 
@@ -76,6 +77,7 @@ func BuildTestHTTPService(ctx context.Context, conf *config.Config) (*TestHTTPSe
 		appSet,
 		musicSet,
 		remoteSet,
+		controlSet,
 		boltSet,
 	)
 

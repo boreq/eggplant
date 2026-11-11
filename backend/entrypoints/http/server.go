@@ -2,7 +2,9 @@ package http
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/boreq/eggplant/internal/logging"
@@ -22,11 +24,22 @@ func NewServer(handler http.Handler) *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, address string) error {
-	handler := gziphandler.GzipHandler(s.handler)
+	gzipHandler := gziphandler.GzipHandler(s.handler)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
+			s.handler.ServeHTTP(w, r)
+			return
+		}
+		gzipHandler.ServeHTTP(w, r)
+	})
 
 	httpServer := &http.Server{
 		Addr:    address,
 		Handler: handler,
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
 	}
 
 	go func() {
