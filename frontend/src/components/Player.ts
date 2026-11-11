@@ -26,6 +26,7 @@ export default class Player extends Vue {
     private streamGeneration = 0;
 
     private streamStartOffset = 0;
+    private streamLoaded = false;
 
     private keepAliveIntervalID: number = null;
 
@@ -41,12 +42,29 @@ export default class Player extends Vue {
         return this.$store.getters.volume;
     }
 
+    get controlling(): boolean {
+        return !!this.$store.state.controlledDevice;
+    }
+
     get audioElement(): HTMLAudioElement {
         return this.$refs.audio as HTMLAudioElement;
     }
 
+    @Watch('controlling')
+    onControllingChanged(controlling: boolean): void {
+        if (controlling) {
+            this.currentNowPlaying = null;
+            this.audioElement.pause();
+            this.tearDownStream();
+        }
+    }
+
     @Watch('storeNowPlaying')
     onStoreNowPlayingChanged(): void {
+        if (this.controlling) {
+            return;
+        }
+
         if (!this.storeNowPlaying) {
             this.currentNowPlaying = null;
             this.tearDownStream();
@@ -54,20 +72,38 @@ export default class Player extends Vue {
         }
 
         if (!this.currentNowPlaying || this.currentNowPlaying !== this.storeNowPlaying) {
-            const track = this.storeNowPlaying.track;
-            if (track.duration === undefined) {
-                Notifications.pushError(this, `Cannot play "${track.title}", its duration is not loaded yet.`);
-                this.currentNowPlaying = null;
-                this.$store.commit(Mutation.Next);
+            const nowPlaying = this.storeNowPlaying;
+            const track = nowPlaying.track;
+            this.currentNowPlaying = nowPlaying;
+            if (track.duration !== undefined) {
+                this.startStream(track);
                 return;
             }
-            this.currentNowPlaying = this.storeNowPlaying;
-            this.startStream(track);
+            const generation = ++this.streamGeneration;
+            this.streamStartOffset = 0;
+            this.streamLoaded = false;
+            this.apiService.getTrackDuration(track).then((response) => {
+                Vue.set(track, 'duration', response.data.duration);
+                if (this.streamGeneration !== generation || this.currentNowPlaying !== nowPlaying) {
+                    return;
+                }
+                this.startStream(track);
+            }).catch(() => {
+                if (this.streamGeneration !== generation || this.currentNowPlaying !== nowPlaying) {
+                    return;
+                }
+                Notifications.pushError(this, `Cannot play "${track.title}", its duration could not be loaded.`);
+                this.currentNowPlaying = null;
+                this.$store.commit(Mutation.Next);
+            });
         }
     }
 
     @Watch('storePaused')
     onPausedChanged(val: boolean): void {
+        if (this.controlling) {
+            return;
+        }
         if (val) {
             this.audioElement.pause();
         } else {
@@ -77,6 +113,9 @@ export default class Player extends Vue {
 
     @Watch('storeVolume')
     onStoreVolumeChanged(volume: number): void {
+        if (this.controlling) {
+            return;
+        }
         this.audioElement.volume = volume;
     }
 
@@ -87,7 +126,7 @@ export default class Player extends Vue {
     mounted(): void {
         this.audioElement.volume = this.storeVolume;
         this.$root.$on(seekEvent, (position: number) => {
-            if (!this.storeNowPlaying) {
+            if (this.controlling || !this.storeNowPlaying || this.storeNowPlaying.track.duration === undefined) {
                 return;
             }
             const trackTarget = this.storeNowPlaying.track.duration * position;
@@ -107,25 +146,38 @@ export default class Player extends Vue {
     }
 
     onAudioElementEnded(): void {
+        if (this.controlling) {
+            return;
+        }
         this.currentNowPlaying = null;
         this.$store.commit(Mutation.Next);
     }
 
     onAudioElementError(): void {
+        if (this.controlling) {
+            return;
+        }
         Notifications.pushError(this, `Could not play "${this.storeNowPlaying.track.title}".`);
         this.$store.commit(Mutation.Next);
     }
 
     onAudioElementPlay(): void {
+        if (this.controlling) {
+            return;
+        }
         this.$store.commit(Mutation.Play);
     }
 
     onAudioElementPause(): void {
+        if (this.controlling) {
+            return;
+        }
         this.$store.commit(Mutation.Pause);
     }
 
     private startStream(track: Track, seekSeconds = 0): void {
         this.streamGeneration++;
+        this.streamLoaded = false;
         if (!Hls.isSupported()) {
             Notifications.pushError(this, 'Your browser does not support HLS playback.');
             return;
@@ -143,7 +195,7 @@ export default class Player extends Vue {
                 if (this.streamGeneration !== generation) {
                     return;
                 }
-                this.startStream(track, this.streamStartOffset + this.audioElement.currentTime);
+                this.startStream(track, this.currentTrackTime());
             }, streamRecoveryDelay);
         };
 
@@ -152,6 +204,7 @@ export default class Player extends Vue {
                 return;
             }
             this.loadHls(this.apiService.streamPlaylistUrl(track, response.data.streamId), recover);
+            this.streamLoaded = true;
             this.audioElement.play();
             const keepAliveIntervalID = window.setInterval(() => {
                 if (this.streamGeneration !== generation) {
@@ -216,12 +269,16 @@ export default class Player extends Vue {
         this.destroyHls();
     }
 
+    private currentTrackTime(): number {
+        return this.streamStartOffset + (this.streamLoaded ? this.audioElement.currentTime : 0);
+    }
+
     private emitPlaybackData(): void {
         if (!this.audioElement || !this.currentNowPlaying) {
             return;
         }
         const playbackData: PlaybackData = {
-            currentTime: this.streamStartOffset + this.audioElement.currentTime,
+            currentTime: this.currentTrackTime(),
             duration: this.currentNowPlaying.track.duration,
         };
         this.$emit('playback-data', playbackData);

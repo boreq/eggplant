@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue2';
 import checker from 'vite-plugin-checker';
 import path from 'path';
 
+const devBackend = process.env.VITE_DEV_BACKEND ?? 'http://127.0.0.1:8118';
+
 export default defineConfig({
   plugins: [
     vue(),
@@ -31,8 +33,14 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.VITE_DEV_BACKEND ?? 'http://127.0.0.1:8118',
+        target: devBackend,
         changeOrigin: true,
+        ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReqWs', (proxyReq) => {
+            proxyReq.setHeader('origin', devBackend);
+          });
+        },
       },
     },
   },

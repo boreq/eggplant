@@ -1,0 +1,72 @@
+$padding: 2em;
+
+.devices {
+    padding: $padding 0;
+
+    .subheader {
+        margin: 0 $padding 1em $padding;
+    }
+
+    .rename {
+        display: flex;
+        gap: 1em;
+        align-items: center;
+        padding: 0 $padding;
+        margin-bottom: $padding;
+
+        .input {
+            flex: 1;
+        }
+    }
+
+    .message {
+        text-align: center;
+        padding: 2em 0;
+    }
+
+    .list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+
+        .device {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            padding: 1em $padding;
+            color: $box-normal-text-dimmed-color;
+
+            &:nth-child(even) {
+                background-color: $box-normal-background-color-alt;
+            }
+
+            &.selectable {
+                cursor: pointer;
+                color: $box-normal-text-color;
+
+                &:hover {
+                    color: $primary-color;
+                }
+            }
+
+            &.current {
+                color: $primary-color;
+            }
+
+            .icon {
+                width: 2em;
+                text-align: center;
+            }
+
+            .info {
+                .name {
+                    font-weight: $font-weight-bold;
+                }
+
+                .description {
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+}

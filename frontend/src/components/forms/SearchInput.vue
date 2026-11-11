@@ -8,8 +8,7 @@
             </a>
         <input type="text" placeholder="Search"
                maxlength="100" :value="value"
-               @input="onInput"
-               @keydown.stop>
+               @input="onInput">
     </div>
 </template>
 <script lang="ts" src="./SearchInput.ts"></script>
