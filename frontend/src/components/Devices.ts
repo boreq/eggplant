@@ -121,14 +121,12 @@ export default class Devices extends Vue {
         } else if (device.mode === DeviceMode.Target) {
             parts.push('Controlled by ' + this.controllerNames(device));
         } else if (device.mode === DeviceMode.Controller) {
-            parts.push('Controls another device');
+            parts.push(this.isOwn(device) ? 'You are controlling another device' : 'Controls another device');
         } else {
             parts.push('Plays on its own');
         }
 
-        if (this.isOwn(device) && this.controlledDevice) {
-            parts.push('Click to play on this device again');
-        } else if (this.isOwn(device) && device.mode === DeviceMode.Target) {
+        if (this.isOwn(device) && device.mode === DeviceMode.Target) {
             parts.push('Click to disconnect the controllers');
         }
 

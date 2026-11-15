@@ -6,7 +6,7 @@
 
                 <ul class="buttons">
                     <li class="button" :class="{ active: showDevices }" v-if="user">
-                        <a @click="toggleDevices" v-tooltip="showDevices ? 'Close devices.' : devicesTooltip">
+                        <a @click="toggleDevices" v-tooltip="showDevices ? 'Close remote control.' : devicesTooltip">
                             <i class="fas" :class="devicesIcon"></i>
                         </a>
                     </li>
@@ -125,7 +125,7 @@
             </div>
 
             <div class="content devices" v-if="showDevices">
-                <main-header text="Devices"></main-header>
+                <main-header text="Remote control"></main-header>
                 <devices></devices>
             </div>
 

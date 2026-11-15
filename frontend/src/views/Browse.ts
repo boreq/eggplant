@@ -321,11 +321,11 @@ export default class Browse extends Vue {
     get devicesTooltip(): string {
         switch (deviceService.mode) {
             case DeviceMode.Controller:
-                return 'Devices. You control another device.';
+                return 'Remote control. You control another device.';
             case DeviceMode.Target:
-                return 'Devices. Another device controls this device.';
+                return 'Remote control. Another device controls this device.';
             default:
-                return 'Devices.';
+                return 'Remote control.';
         }
     }
 
