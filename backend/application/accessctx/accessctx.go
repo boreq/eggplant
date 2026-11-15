@@ -2,6 +2,7 @@ package accessctx
 
 import (
 	"errors"
+	"fmt"
 
 	authdomain "github.com/boreq/eggplant/domain/auth"
 	"github.com/boreq/eggplant/domain/music/library"
@@ -66,6 +67,10 @@ func (c UserAccessContext) Token() authdomain.AccessToken {
 	return c.token
 }
 
+func (c UserAccessContext) String() string {
+	return fmt.Sprintf("user(username=%s, administrator=%t)", c.username, c.administrator)
+}
+
 type RemoteInstanceAccessContext struct {
 	remoteInstanceID remotedomain.RemoteInstanceID
 }
@@ -91,6 +96,10 @@ func (c RemoteInstanceAccessContext) RemoteInstanceID() remotedomain.RemoteInsta
 	return c.remoteInstanceID
 }
 
+func (c RemoteInstanceAccessContext) String() string {
+	return fmt.Sprintf("remote_instance(id=%s)", c.remoteInstanceID)
+}
+
 type CommandLineAccessContext struct{}
 
 func NewCommandLineAccessContext() CommandLineAccessContext {
@@ -105,6 +114,10 @@ func (CommandLineAccessContext) CanSee(library.Visibility) bool {
 	return true
 }
 
+func (CommandLineAccessContext) String() string {
+	return "command_line"
+}
+
 type AnonymousAccessContext struct{}
 
 func NewAnonymousAccessContext() AnonymousAccessContext {
@@ -117,4 +130,8 @@ func (AnonymousAccessContext) Can(Permission) bool {
 
 func (AnonymousAccessContext) CanSee(v library.Visibility) bool {
 	return v == library.VisibilityPublic
+}
+
+func (AnonymousAccessContext) String() string {
+	return "anonymous"
 }
