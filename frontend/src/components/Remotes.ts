@@ -152,7 +152,7 @@ export default class Remotes extends Vue {
                 },
                 error => {
                     if (!silent) {
-                        Notifications.pushError(this, 'Could not list the connected instances.', error);
+                        Notifications.pushError(this, 'Could not list the instances.', error);
                     }
                 },
             );

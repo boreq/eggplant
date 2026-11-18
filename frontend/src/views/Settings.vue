@@ -16,7 +16,7 @@
             <sub-header text="Users"></sub-header>
             <Users></Users>
 
-            <sub-header text="Connected instances"></sub-header>
+            <sub-header text="Instances"></sub-header>
             <Remotes></Remotes>
 
             <sub-header text="API"></sub-header>

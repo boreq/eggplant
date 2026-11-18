@@ -54,7 +54,7 @@
 
         <spinner v-if="!remotes"></spinner>
         <p v-else-if="!remotes.length" class="empty">
-            There are no connected instances yet.
+            There are no instances yet.
         </p>
     </div>
 </template>

@@ -291,7 +291,7 @@ export default class Browse extends Vue {
         }
         const library = this.remoteLibraries
             .find(v => v.id === this.remoteLibraryId);
-        return library ? library.name : 'Connected instance';
+        return library ? library.name : 'Instance';
     }
 
     get remoteLibraryUrl(): Location {
@@ -512,7 +512,7 @@ export default class Browse extends Vue {
                 },
                 error => {
                     this.remoteLibraries = null;
-                    Notifications.pushError(this, 'Could not list the connected instances.', error);
+                    Notifications.pushError(this, 'Could not list the instances.', error);
                 });
     }
 
