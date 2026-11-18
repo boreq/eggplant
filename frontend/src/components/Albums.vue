@@ -1,6 +1,6 @@
 <template>
     <div class="albums" ref="grid">
-        <a v-for="album in displayedAlbums" :key="album.id" class="album" @click="selectAlbum(album)">
+        <a v-for="album in displayedAlbums" :key="album.id" class="album" :title="album.title" @click="selectAlbum(album)">
             <div class="image">
                 <thumbnail :album="album"></thumbnail>
             </div>

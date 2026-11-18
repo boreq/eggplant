@@ -24,7 +24,9 @@
         .title {
             margin: 0 auto;
             margin-top: .5em;
-            overflow-wrap: anywhere;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         &:hover {
