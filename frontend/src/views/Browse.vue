@@ -34,7 +34,7 @@
                                     Eggplant
                                 </router-link>
                             </li>
-                            <li v-if="remoteLibraryId">
+                            <li v-if="remoteLibraryId && remoteLibraryTitle">
                                 <router-link v-if="album.id" :to="remoteLibraryUrl">
                                     {{ remoteLibraryTitle }}
                                 </router-link>
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="section" v-if="showRemoteLibraries">
-                    <SubHeader text="Remotes"></SubHeader>
+                    <SubHeader text="Connected instances"></SubHeader>
                     <remote-libraries :libraries="remoteLibraries"
                         @select-library="selectRemoteLibrary"></remote-libraries>
                 </div>

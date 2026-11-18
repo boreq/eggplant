@@ -38,7 +38,7 @@ func (h *Handler) remoteAddRemote(accessCtx accessctx.AccessContext, r *http.Req
 	result, err := h.app.Remote().AddRemote().Execute(accessCtx, remote.NewAddRemote(address))
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
-			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
+			return rest.ErrForbidden.WithMessage("Only an administrator can manage connected instances.")
 		}
 		h.log.Error("add remote command failed", "err", err)
 		return rest.ErrInternalServerError
@@ -57,7 +57,7 @@ func (h *Handler) remoteListRemotes(accessCtx accessctx.AccessContext, r *http.R
 	instances, err := h.app.Remote().ListRemotes().Execute(accessCtx)
 	if err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
-			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
+			return rest.ErrForbidden.WithMessage("Only an administrator can manage connected instances.")
 		}
 		h.log.Error("list remotes query failed", "err", err)
 		return rest.ErrInternalServerError
@@ -150,7 +150,7 @@ func (h *Handler) remoteTrackDuration(accessCtx accessctx.AccessContext, r *http
 
 	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
 	if err != nil {
-		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+		return rest.ErrBadRequest.WithMessage("Invalid connected instance id.")
 	}
 
 	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
@@ -164,7 +164,7 @@ func (h *Handler) remoteTrackDuration(accessCtx accessctx.AccessContext, r *http
 			return rest.ErrForbidden
 		}
 		if errors.Is(err, remote.ErrNotFound) {
-			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+			return rest.ErrNotFound.WithMessage("Unknown connected instance.")
 		}
 		h.log.Error("could not get the remote track duration", "err", err)
 		return rest.ErrInternalServerError
@@ -178,7 +178,7 @@ func (h *Handler) remoteRootAlbum(accessCtx accessctx.AccessContext, r *http.Req
 
 	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
 	if err != nil {
-		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+		return rest.ErrBadRequest.WithMessage("Invalid connected instance id.")
 	}
 
 	album, err := h.app.Music().RemoteGetRootAlbum().Execute(r.Context(), accessCtx, music.NewRemoteGetRootAlbum(instanceId))
@@ -187,7 +187,7 @@ func (h *Handler) remoteRootAlbum(accessCtx accessctx.AccessContext, r *http.Req
 			return rest.ErrForbidden
 		}
 		if errors.Is(err, remote.ErrNotFound) {
-			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+			return rest.ErrNotFound.WithMessage("Unknown connected instance.")
 		}
 		h.log.Error("could not get the remote root album", "err", err)
 		return rest.ErrInternalServerError
@@ -201,7 +201,7 @@ func (h *Handler) remoteAlbum(accessCtx accessctx.AccessContext, r *http.Request
 
 	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
 	if err != nil {
-		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+		return rest.ErrBadRequest.WithMessage("Invalid connected instance id.")
 	}
 
 	albumId, err := musicdomain.NewAlbumIdFromString(ps.ByName("albumId"))
@@ -215,7 +215,7 @@ func (h *Handler) remoteAlbum(accessCtx accessctx.AccessContext, r *http.Request
 			return rest.ErrForbidden
 		}
 		if errors.Is(err, remote.ErrNotFound) {
-			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+			return rest.ErrNotFound.WithMessage("Unknown connected instance.")
 		}
 		h.log.Error("could not get the remote album", "err", err)
 		return rest.ErrInternalServerError
@@ -229,7 +229,7 @@ func (h *Handler) remoteStartStream(accessCtx accessctx.AccessContext, r *http.R
 
 	instanceId, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
 	if err != nil {
-		return rest.ErrBadRequest.WithMessage("Invalid remote instance id.")
+		return rest.ErrBadRequest.WithMessage("Invalid connected instance id.")
 	}
 
 	trackId, err := musicdomain.NewTrackIdFromString(ps.ByName("trackId"))
@@ -248,7 +248,7 @@ func (h *Handler) remoteStartStream(accessCtx accessctx.AccessContext, r *http.R
 			return rest.ErrForbidden
 		}
 		if errors.Is(err, remote.ErrNotFound) {
-			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+			return rest.ErrNotFound.WithMessage("Unknown connected instance.")
 		}
 		h.log.Error("could not start the remote stream", "err", err)
 		return rest.ErrInternalServerError
@@ -488,10 +488,10 @@ func (h *Handler) remoteSetPairingToken(accessCtx accessctx.AccessContext, r *ht
 
 	if err := h.app.Remote().SetRemotePairingToken().Execute(accessCtx, remote.NewSetRemotePairingToken(id, peerToken)); err != nil {
 		if errors.Is(err, accessctx.ErrPermissionDenied) {
-			return rest.ErrForbidden.WithMessage("Only an administrator can manage remote instances.")
+			return rest.ErrForbidden.WithMessage("Only an administrator can manage connected instances.")
 		}
 		if errors.Is(err, remote.ErrNotFound) {
-			return rest.ErrNotFound.WithMessage("Unknown remote instance.")
+			return rest.ErrNotFound.WithMessage("Unknown connected instance.")
 		}
 		h.log.Error("set remote pairing token command failed", "err", err)
 		return rest.ErrInternalServerError
