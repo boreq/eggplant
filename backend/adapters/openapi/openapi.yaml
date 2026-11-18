@@ -469,6 +469,24 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/remote/{id}:
+    delete:
+      tags: [remote]
+      operationId: removeRemote
+      summary: Remove a remote instance and forget its tokens (administrators only).
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RemoteInstanceId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Empty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/remote/{id}/pairing-token:
     post:
       tags: [remote]

@@ -15,6 +15,7 @@ import (
 var remoteSet = wire.NewSet(
 	remote.NewRemote,
 	remote.NewAddRemoteHandler,
+	remote.NewRemoveRemoteHandler,
 	remote.NewSetRemotePairingTokenHandler,
 	remote.NewSendLocalAuthTokenHandler,
 	remote.NewSetRemoteAuthTokenHandler,

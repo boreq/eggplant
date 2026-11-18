@@ -67,6 +67,7 @@ func NewHandler(app *application.Application, authProvider AuthProvider) (*Handl
 
 	h.router.HandlerFunc(http.MethodGet, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteListRemotes)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote", rest.Wrap(h.addAccessContextRest(h.remoteAddRemote)))
+	h.router.HandlerFunc(http.MethodDelete, "/api/remote/:id", rest.Wrap(h.addAccessContextRest(h.remoteRemoveRemote)))
 	h.router.HandlerFunc(http.MethodPost, "/api/remote/:id/pairing-token", rest.Wrap(h.addAccessContextRest(h.remoteSetPairingToken)))
 
 	h.router.HandlerFunc(http.MethodGet, "/api/library", rest.Wrap(h.addAccessContextRest(h.listLibraries)))

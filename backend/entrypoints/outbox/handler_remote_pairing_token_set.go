@@ -35,6 +35,10 @@ func (h *RemotePairingTokenSetHandler) Handle(msg *message.Message) error {
 	}
 
 	if err := h.sendLocalAuthToken.Execute(msg.Context(), remoteapp.NewSendLocalAuthToken(event.RemoteInstanceID())); err != nil {
+		if errors.Is(err, remoteapp.ErrNotFound) {
+			h.log.Debug("dropping an event of a removed remote instance", "topic", adapters.TopicRemotePairingTokenSet, "remoteInstanceID", event.RemoteInstanceID())
+			return nil
+		}
 		h.log.Error("could not handle an event", "topic", adapters.TopicRemotePairingTokenSet, "err", err)
 		return err
 	}

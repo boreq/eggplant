@@ -547,6 +547,9 @@ type ClientInterface interface {
 
 	AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RemoveRemote request
+	RemoveRemote(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SetRemotePairingTokenWithBody request with any body
 	SetRemotePairingTokenWithBody(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -921,6 +924,18 @@ func (c *Client) AddRemoteWithBody(ctx context.Context, contentType string, body
 
 func (c *Client) AddRemote(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddRemoteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoveRemote(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveRemoteRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -2000,6 +2015,40 @@ func NewAddRemoteRequestWithBody(server string, contentType string, body io.Read
 	return req, nil
 }
 
+// NewRemoveRemoteRequest generates requests for RemoveRemote
+func NewRemoveRemoteRequest(server string, id RemoteInstanceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/remote/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewSetRemotePairingTokenRequest calls the generic SetRemotePairingToken builder with application/json body
 func NewSetRemotePairingTokenRequest(server string, id RemoteInstanceId, body SetRemotePairingTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -2575,6 +2624,9 @@ type ClientWithResponsesInterface interface {
 	AddRemoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
 
 	AddRemoteWithResponse(ctx context.Context, body AddRemoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRemoteResponse, error)
+
+	// RemoveRemoteWithResponse request
+	RemoveRemoteWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoveRemoteResponse, error)
 
 	// SetRemotePairingTokenWithBodyWithResponse request with any body
 	SetRemotePairingTokenWithBodyWithResponse(ctx context.Context, id RemoteInstanceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRemotePairingTokenResponse, error)
@@ -3364,6 +3416,39 @@ func (r AddRemoteResponse) ContentType() string {
 	return ""
 }
 
+type RemoveRemoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Empty
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoveRemoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoveRemoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RemoveRemoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SetRemotePairingTokenResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3954,6 +4039,15 @@ func (c *ClientWithResponses) AddRemoteWithResponse(ctx context.Context, body Ad
 		return nil, err
 	}
 	return ParseAddRemoteResponse(rsp)
+}
+
+// RemoveRemoteWithResponse request returning *RemoveRemoteResponse
+func (c *ClientWithResponses) RemoveRemoteWithResponse(ctx context.Context, id RemoteInstanceId, reqEditors ...RequestEditorFn) (*RemoveRemoteResponse, error) {
+	rsp, err := c.RemoveRemote(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveRemoteResponse(rsp)
 }
 
 // SetRemotePairingTokenWithBodyWithResponse request with arbitrary body returning *SetRemotePairingTokenResponse
@@ -4893,6 +4987,53 @@ func ParseAddRemoteResponse(rsp *http.Response) (*AddRemoteResponse, error) {
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRemoveRemoteResponse parses an HTTP response from a RemoveRemoteWithResponse call
+func ParseRemoveRemoteResponse(rsp *http.Response) (*RemoveRemoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoveRemoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Empty
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

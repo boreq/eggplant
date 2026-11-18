@@ -46,6 +46,20 @@ func (r *RemoteInstanceRepository) Save(instance *remotedomain.RemoteInstance) e
 	return b.Put([]byte(dto.ID), j)
 }
 
+func (r *RemoteInstanceRepository) Delete(id remotedomain.RemoteInstanceID) error {
+	b := r.tx.Bucket(remoteInstancesBucket)
+	if b == nil {
+		return errors.Wrap(remote.ErrNotFound, "bucket does not exist")
+	}
+
+	key := []byte(id.String())
+	if b.Get(key) == nil {
+		return remote.ErrNotFound
+	}
+
+	return b.Delete(key)
+}
+
 func (r *RemoteInstanceRepository) GetByID(id remotedomain.RemoteInstanceID) (*remotedomain.RemoteInstance, error) {
 	b := r.tx.Bucket(remoteInstancesBucket)
 	if b == nil {

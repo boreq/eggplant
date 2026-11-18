@@ -113,6 +113,65 @@ func TestServiceRemotePairing(t *testing.T) {
 		require.NotNil(t, resp.JSON200.Albums[0].RemoteLibraryId)
 		require.Equal(t, startedA.JSON200.Id, *resp.JSON200.Albums[0].RemoteLibraryId)
 	})
+
+	t.Run("removing the paired instance removes its library", func(t *testing.T) {
+		removed, err := instanceA.client.RemoveRemoteWithResponse(ctx, startedA.JSON200.Id, adminA)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, removed.StatusCode())
+
+		libraries, err := instanceA.client.ListLibrariesWithResponse(ctx, adminA)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, libraries.StatusCode())
+		require.NotNil(t, libraries.JSON200)
+		require.Empty(t, *libraries.JSON200)
+
+		root, err := instanceA.client.RemoteRootAlbumWithResponse(ctx, startedA.JSON200.Id, adminA)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotFound, root.StatusCode())
+	})
+}
+
+func TestServiceRemoveRemote(t *testing.T) {
+	ctx := context.Background()
+
+	instance := newTestService(t)
+	admin := authedAs(registerAdminAndLogin(t, instance))
+
+	started, err := instance.client.AddRemoteWithResponse(ctx, openapi.AddRemoteJSONRequestBody{
+		Url: "https://eggplant.example.com",
+	}, admin)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, started.StatusCode())
+	require.NotNil(t, started.JSON200)
+
+	t.Run("removing is forbidden for anonymous callers", func(t *testing.T) {
+		resp, err := instance.client.RemoveRemoteWithResponse(ctx, started.JSON200.Id)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusForbidden, resp.StatusCode())
+	})
+
+	t.Run("removing with an invalid id fails", func(t *testing.T) {
+		resp, err := instance.client.RemoveRemoteWithResponse(ctx, "invalid", admin)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+	})
+
+	t.Run("an administrator can remove the instance", func(t *testing.T) {
+		resp, err := instance.client.RemoveRemoteWithResponse(ctx, started.JSON200.Id, admin)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+
+		listed, err := instance.client.ListRemotesWithResponse(ctx, admin)
+		require.NoError(t, err)
+		require.NotNil(t, listed.JSON200)
+		require.Empty(t, *listed.JSON200)
+	})
+
+	t.Run("removing an unknown instance fails", func(t *testing.T) {
+		resp, err := instance.client.RemoveRemoteWithResponse(ctx, started.JSON200.Id, admin)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotFound, resp.StatusCode())
+	})
 }
 
 func remoteAuthTokenSet(ts *testService, id remotedomain.RemoteInstanceID) bool {

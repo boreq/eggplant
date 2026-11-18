@@ -222,4 +222,9 @@ export class ApiService {
         return this.axios.post<void>(import.meta.env.VUE_APP_API_PREFIX + url, { peer_token: peerToken });
     }
 
+    removeRemote(id: string): Promise<AxiosResponse<void>> {
+        const url = `remote/${encodeURIComponent(id)}`;
+        return this.axios.delete<void>(import.meta.env.VUE_APP_API_PREFIX + url);
+    }
+
 }

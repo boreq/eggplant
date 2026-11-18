@@ -53,6 +53,27 @@ func (h *Handler) remoteAddRemote(accessCtx accessctx.AccessContext, r *http.Req
 	})
 }
 
+func (h *Handler) remoteRemoveRemote(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+	id, err := remotedomain.NewRemoteInstanceIDFromString(ps.ByName("id"))
+	if err != nil {
+		return rest.ErrBadRequest.WithMessage("Invalid instance id.")
+	}
+
+	if err := h.app.Remote().RemoveRemote().Execute(accessCtx, remote.NewRemoveRemote(id)); err != nil {
+		if errors.Is(err, accessctx.ErrPermissionDenied) {
+			return rest.ErrForbidden.WithMessage("Only an administrator can manage instances.")
+		}
+		if errors.Is(err, remote.ErrNotFound) {
+			return rest.ErrNotFound.WithMessage("Unknown instance.")
+		}
+		h.log.Error("remove remote command failed", "err", err)
+		return rest.ErrInternalServerError
+	}
+
+	return rest.NewResponse(nil)
+}
+
 func (h *Handler) remoteListRemotes(accessCtx accessctx.AccessContext, r *http.Request) rest.RestResponse {
 	instances, err := h.app.Remote().ListRemotes().Execute(accessCtx)
 	if err != nil {

@@ -9,8 +9,23 @@
 
         <ul class="list" v-if="remotes && remotes.length">
             <li class="remote" v-for="remote in remotes" :key="remote.id">
-                <div class="address">
-                    {{ remote.address }}
+                <div class="header">
+                    <div class="address">
+                        {{ remote.address }}
+                    </div>
+
+                    <v-popover offset="16">
+                        <a class="disconnect" v-tooltip="'Disconnect this instance.'">
+                            <i class="fas fa-times"></i>
+                        </a>
+
+                        <template slot="popover">
+                            <p>
+                                To connect again, you and your friend must pair the instances again.
+                            </p>
+                            <app-button text="Disconnect" v-close-popover @click="removeRemote(remote)"></app-button>
+                        </template>
+                    </v-popover>
                 </div>
 
                 <div class="details">

@@ -75,6 +75,21 @@ export default class Remotes extends Vue {
             );
     }
 
+    removeRemote(remote: RemoteInstance): void {
+        this.apiService.removeRemote(remote.id)
+            .then(
+                () => {
+                    Notifications.pushSuccess(this, 'The instance has been disconnected.');
+                    this.$delete(this.localPairingTokens, remote.id);
+                    this.$delete(this.peerTokens, remote.id);
+                    this.load();
+                },
+                error => {
+                    Notifications.pushError(this, 'Could not disconnect the instance.', error);
+                },
+            );
+    }
+
     onPeerTokenInput(remote: RemoteInstance, value: string): void {
         this.$set(this.peerTokens, remote.id, value);
     }

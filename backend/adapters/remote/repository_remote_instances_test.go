@@ -146,6 +146,50 @@ func TestSaveOverwritesExistingInstanceWithSameID(t *testing.T) {
 	require.Equal(t, remotedomain.HealthcheckStatusDead, healthcheck.Status())
 }
 
+func TestDeleteRemovesOnlyTheGivenInstance(t *testing.T) {
+	tp, _, cleanup := fixture.RemoteTransactionProvider(t)
+	defer cleanup()
+
+	removed := newTestInstance(t)
+	kept := newTestInstance(t)
+
+	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
+		if err := r.RemoteInstances().Save(removed); err != nil {
+			return err
+		}
+		return r.RemoteInstances().Save(kept)
+	}))
+
+	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
+		return r.RemoteInstances().Delete(removed.Id())
+	}))
+
+	require.NoError(t, tp.Read(func(r *appremote.TransactableRepositories) error {
+		_, err := r.RemoteInstances().GetByID(removed.Id())
+		require.ErrorIs(t, err, appremote.ErrNotFound)
+
+		all, err := r.RemoteInstances().GetAll()
+		require.NoError(t, err)
+		require.Len(t, all, 1)
+		require.Equal(t, kept.Id().String(), all[0].Id().String())
+		return nil
+	}))
+}
+
+func TestDeleteReturnsNotFoundForUnknownID(t *testing.T) {
+	tp, _, cleanup := fixture.RemoteTransactionProvider(t)
+	defer cleanup()
+
+	id, err := remotedomain.NewRemoteInstanceID()
+	require.NoError(t, err)
+
+	require.NoError(t, tp.Write(func(r *appremote.TransactableRepositories) error {
+		err := r.RemoteInstances().Delete(id)
+		require.ErrorIs(t, err, appremote.ErrNotFound)
+		return nil
+	}))
+}
+
 func TestGetAllReturnsNilWhenEmpty(t *testing.T) {
 	tp, _, cleanup := fixture.RemoteTransactionProvider(t)
 	defer cleanup()

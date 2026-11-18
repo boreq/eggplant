@@ -15,6 +15,7 @@ var (
 // GetBy methods return ErrNotFound when no instance matches.
 type RemoteInstanceRepository interface {
 	Save(instance *remotedomain.RemoteInstance) error
+	Delete(id remotedomain.RemoteInstanceID) error
 
 	GetAll() ([]*remotedomain.RemoteInstance, error)
 	GetByID(id remotedomain.RemoteInstanceID) (*remotedomain.RemoteInstance, error)
@@ -64,6 +65,7 @@ type RemoteClient interface {
 
 type Remote struct {
 	addRemote             *AddRemoteHandler
+	removeRemote          *RemoveRemoteHandler
 	setRemotePairingToken *SetRemotePairingTokenHandler
 	sendLocalAuthToken    *SendLocalAuthTokenHandler
 	setRemoteAuthToken    *SetRemoteAuthTokenHandler
@@ -76,6 +78,7 @@ type Remote struct {
 
 func NewRemote(
 	addRemote *AddRemoteHandler,
+	removeRemote *RemoveRemoteHandler,
 	setRemotePairingToken *SetRemotePairingTokenHandler,
 	sendLocalAuthToken *SendLocalAuthTokenHandler,
 	setRemoteAuthToken *SetRemoteAuthTokenHandler,
@@ -87,6 +90,7 @@ func NewRemote(
 ) *Remote {
 	return &Remote{
 		addRemote:             addRemote,
+		removeRemote:          removeRemote,
 		setRemotePairingToken: setRemotePairingToken,
 		sendLocalAuthToken:    sendLocalAuthToken,
 		setRemoteAuthToken:    setRemoteAuthToken,
@@ -100,6 +104,10 @@ func NewRemote(
 
 func (r Remote) AddRemote() *AddRemoteHandler {
 	return r.addRemote
+}
+
+func (r Remote) RemoveRemote() *RemoveRemoteHandler {
+	return r.removeRemote
 }
 
 func (r Remote) SetRemotePairingToken() *SetRemotePairingTokenHandler {

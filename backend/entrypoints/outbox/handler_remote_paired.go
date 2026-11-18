@@ -35,6 +35,10 @@ func (h *RemotePairedHandler) Handle(msg *message.Message) error {
 	}
 
 	if err := h.checkRemote.Execute(msg.Context(), remoteapp.NewCheckRemote(event.RemoteInstanceID())); err != nil {
+		if errors.Is(err, remoteapp.ErrNotFound) {
+			h.log.Debug("dropping an event of a removed remote instance", "topic", adapters.TopicRemotePaired, "remoteInstanceID", event.RemoteInstanceID())
+			return nil
+		}
 		h.log.Error("could not handle an event", "topic", adapters.TopicRemotePaired, "err", err)
 		return err
 	}

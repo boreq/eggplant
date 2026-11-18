@@ -30,9 +30,21 @@
                 border-top: none;
             }
 
+            .header {
+                display: flex;
+                align-items: flex-start;
+                gap: 1em;
+            }
+
             .address {
+                flex: 1;
+                min-width: 0;
                 font-weight: bold;
                 word-break: break-all;
+            }
+
+            .disconnect:hover {
+                color: $primary-color;
             }
 
             .details {
