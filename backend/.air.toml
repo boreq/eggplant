@@ -1,0 +1,11 @@
+root = "."
+
+[build]
+  include_ext = ["go", "toml"]
+  exclude_regex = ["_test\\.go$", "(^|/)_[^/]*"]
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true

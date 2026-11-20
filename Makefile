@@ -3,11 +3,7 @@ ci: ci-backend ci-frontend
 
 .PHONY: dev
 dev:
-	./tools/dev.sh $(CONFIG)
-
-.PHONY: dev-public
-dev-public:
-	./tools/dev.sh --public $(CONFIG)
+	./tools/dev.sh
 
 .PHONY: ci-backend
 ci-backend:

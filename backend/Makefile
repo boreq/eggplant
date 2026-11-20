@@ -24,10 +24,6 @@ build-with-frontend: build-directory
 		-ldflags "-X github.com/boreq/eggplant/internal/version.Backend=${VERSION} -X github.com/boreq/eggplant/internal/version.Frontend=${FRONTEND_VERSION}" \
 		-o ./${BUILD_DIRECTORY}/${PROGRAM_NAME} ./cmd/${PROGRAM_NAME}
 
-.PHONY: run
-run:
-	go run ./cmd/${PROGRAM_NAME} run --verbosity debug ${CONFIG}
-
 .PHONY: check-repository-unchanged
 check-repository-unchanged:
 	../tools/check_repository_unchanged.sh
@@ -37,6 +33,7 @@ tools:
 	 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 	 go install github.com/google/wire/cmd/wire@v0.7.0
 	 go install golang.org/x/tools/cmd/goimports@v0.45.0
+	 go install github.com/air-verse/air@v1.67.4
 
 .PHONY: dependencies
 dependencies:

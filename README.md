@@ -197,23 +197,21 @@ also be using `corepack` which ships with node and runs the right version of
 `yarn` for you. I don't know it all seems to be a bit of a mess.
 
 
-### Creating a config file
-
-Generate a default config file and edit it to point at your music, data, and
-cache directories:
-
-    $ cd backend
-    $ go run cmd/eggplant/main.go default_config | tee /path/to/config.toml
-
 ### Running frontend & backend locally
 
-From the repository root:
+Install the Go tools once and then run this from the repository root:
 
-    $ make dev CONFIG=/path/to/config.toml
+    $ make -C backend tools
+    $ make dev
 
-To expose the frontend dev server (e.g. to test from a phone, otherwise it's only accessible locally):
+This starts two instances so that you can also test connecting instances:
 
-    $ make dev-public CONFIG=/path/to/config.toml
+- Instance A: frontend http://127.0.0.1:5173, backend 127.0.0.1:8118
+- Instance B: frontend http://127.0.0.2:5174, backend 127.0.0.1:8119
+
+The backends restart when a Go file changes. Put some music in `_dev/music` to
+see it in the library. The config files and data of the instances are in
+`_dev/data`, delete that directory to start over.
 
 ### Running CI locally
 
