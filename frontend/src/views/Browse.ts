@@ -138,13 +138,24 @@ export default class Browse extends Vue {
         this.loadRemoteLibraries();
         this.$root.$on('revealNowPlaying', this.revealNowPlaying);
         this.$root.$on('scrollToTop', this.scrollToTop);
+        document.addEventListener('keydown', this.onKeyDown);
     }
 
     destroyed(): void {
         this.$root.$off('revealNowPlaying', this.revealNowPlaying);
         this.$root.$off('scrollToTop', this.scrollToTop);
+        document.removeEventListener('keydown', this.onKeyDown);
         this.clearTimeout();
         this.durationLoader.cancel();
+    }
+
+    onKeyDown(event: KeyboardEvent): void {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        if (this.view === View.Queue || this.view === View.Devices) {
+            this.switchView(View.Browse);
+        }
     }
 
     parentUrl(album: PartialAlbum): Location {
