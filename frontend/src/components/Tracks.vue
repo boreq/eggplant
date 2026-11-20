@@ -18,6 +18,7 @@
 
             <div class="title" :title="entry.track.title">
                 {{ entry.track.title }}
+                <a class="album" v-if="showAlbumTitle && entry.album" @click.stop="goToAlbum(entry)">{{ entry.album.title }}</a>
             </div>
 
             <dropdown class="actions" ref="dropdowns" @click.native.stop="">

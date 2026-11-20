@@ -9,7 +9,7 @@ import { User } from '@/dto/User';
 import { TrackWithAlbum } from '@/dto/TrackWithAlbum';
 import { Track } from '@/dto/Track';
 import { Mutation, ReplaceCommand, AppendCommand } from '@/store';
-import { Location } from 'vue-router';
+import { Location, Route } from 'vue-router';
 import Notifications from '@/components/Notifications';
 import { DeviceMode } from '@/dto/Device';
 import { deviceModeIcon, deviceService } from '@/services/DeviceService';
@@ -105,14 +105,23 @@ export default class Browse extends Vue {
     }
 
     @Watch('$route')
-    onRouteChanged(): void {
-        this.album = null;
-        this.state = BrowseState.Loading;
-        this.showAllTracks = false;
-        this.showAllAlbums = false;
-        this.load();
-        this.scrollToTop();
-        this.switchView(View.Browse);
+    onRouteChanged(to: Route, from: Route): void {
+        const pathChanged = to.path !== from.path;
+        if (pathChanged) {
+            this.album = null;
+            this.state = BrowseState.Loading;
+            this.showAllTracks = false;
+            this.showAllAlbums = false;
+            this.load();
+            this.scrollToTop();
+        }
+
+        this.searchQuery = this.getSearchQueryFromRoute();
+        if (this.searchQuery) {
+            this.view = View.Search;
+        } else if (pathChanged || this.view === View.Search) {
+            this.view = View.Browse;
+        }
     }
 
     @Watch('user')
@@ -131,9 +140,11 @@ export default class Browse extends Vue {
                 this.switchView(View.Browse);
             }
         }
+        this.writeSearchQueryToRoute();
     }
 
     created(): void {
+        this.searchQuery = this.getSearchQueryFromRoute();
         this.load();
         this.loadRemoteLibraries();
         this.$root.$on('revealNowPlaying', this.revealNowPlaying);
@@ -163,10 +174,10 @@ export default class Browse extends Vue {
     }
 
     selectAlbum(album: PartialAlbum): void {
-        this.switchView(View.Browse);
         const alreadyOnPage = this.$route.params.albumId === album.id
             && this.$route.params.libraryId === (album.remoteLibraryId || undefined);
-        if (alreadyOnPage) {
+        if (alreadyOnPage && !this.searchQuery) {
+            this.switchView(View.Browse);
             return;
         }
         const location = this.navigationService.getBrowse(album.id, album.remoteLibraryId);
@@ -541,6 +552,32 @@ export default class Browse extends Vue {
 
     private getIdFromRoute(): string | undefined {
         return this.$route.params.albumId;
+    }
+
+    private getSearchQueryFromRoute(): string | null {
+        const query = this.$route.query.q;
+        return typeof query === 'string' && query ? query : null;
+    }
+
+    private writeSearchQueryToRoute(): void {
+        const current = this.getSearchQueryFromRoute();
+        const next = this.searchQuery || null;
+        if (current === next) {
+            return;
+        }
+
+        const query = { ...this.$route.query };
+        if (next) {
+            query.q = next;
+        } else {
+            delete query.q;
+        }
+
+        if (current) {
+            this.$router.replace({ query });
+        } else {
+            this.$router.push({ query });
+        }
     }
 
     private getLibraryIdFromRoute(): string | undefined {

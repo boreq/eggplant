@@ -259,7 +259,16 @@ func (l *RemoteLibrary) Search(ctx context.Context, query string) (library.Searc
 				l.log.Error("could not convert remote search album", "instance", t.id.String(), "err", err)
 				continue
 			}
-			foundAlbum, err := library.NewFoundAlbum(album, a.Score)
+			var parent *musicdomain.PartialAlbum
+			if a.Parent != nil {
+				p, err := toRemotePartialAlbum(*a.Parent, t.id)
+				if err != nil {
+					l.log.Error("could not convert remote search album parent", "instance", t.id.String(), "err", err)
+					continue
+				}
+				parent = &p
+			}
+			foundAlbum, err := library.NewFoundAlbum(album, parent, a.Score)
 			if err != nil {
 				l.log.Error("could not create remote search album", "instance", t.id.String(), "err", err)
 				continue

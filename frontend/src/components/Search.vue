@@ -12,7 +12,7 @@
                         </a>
                     </template>
                 </SubHeader>
-                <Tracks v-if="hasTracks" :entries="displayedTracks" :allEntries="tracks" :showGoToAlbum="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
+                <Tracks v-if="hasTracks" :entries="displayedTracks" :allEntries="tracks" :showGoToAlbum="true" :showAlbumTitle="true" :hideNumber="true" @select-album="selectAlbum"></Tracks>
                 <div class="message" v-else>
                     No tracks found.
                 </div>
@@ -27,7 +27,7 @@
                         </a>
                     </template>
                 </SubHeader>
-                <Albums v-if="hasAlbums" :albums="albums" :collapsed="!showAllAlbums"
+                <Albums v-if="hasAlbums" :albums="albums" :parents="albumParents" :collapsed="!showAllAlbums"
                     @toggling-available="albumsTogglingAvailable = $event" @select-album="selectAlbum"></Albums>
                 <div class="message" v-else>
                     No albums found.

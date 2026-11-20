@@ -18,9 +18,15 @@ func toSearchResults(result library.SearchResults) openapi.SearchResults {
 func toAlbumSearchResults(hits []library.FoundAlbum) []openapi.AlbumSearchResult {
 	result := make([]openapi.AlbumSearchResult, 0, len(hits))
 	for _, h := range hits {
+		var parent *openapi.PartialAlbum
+		if p := h.Parent(); p != nil {
+			v := toPartialAlbum(*p)
+			parent = &v
+		}
 		result = append(result, openapi.AlbumSearchResult{
-			Album: toPartialAlbum(h.Album()),
-			Score: h.Dist(),
+			Album:  toPartialAlbum(h.Album()),
+			Parent: parent,
+			Score:  h.Dist(),
 		})
 	}
 	return result

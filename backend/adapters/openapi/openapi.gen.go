@@ -92,6 +92,9 @@ type Album struct {
 type AlbumSearchResult struct {
 	Album PartialAlbum `json:"album"`
 
+	// Parent The album which contains this album. Null for albums in the root of the library.
+	Parent *PartialAlbum `json:"parent,omitempty"`
+
 	// Score Relevance score (lower is better; 0 means the title directly matched the query).
 	Score int `json:"score"`
 }

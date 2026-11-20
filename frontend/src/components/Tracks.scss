@@ -84,6 +84,16 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+
+            .album {
+                margin-left: .5em;
+                color: $box-normal-text-dimmed-color;
+                cursor: pointer;
+
+                &:hover {
+                    color: $primary-color;
+                }
+            }
         }
 
         .duration {

@@ -13,6 +13,9 @@ export default class Albums extends Vue {
     @Prop()
     albums: PartialAlbum[];
 
+    @Prop({ default: null })
+    parents: PartialAlbum[] | null;
+
     @Prop({ default: false })
     collapsed: boolean;
 

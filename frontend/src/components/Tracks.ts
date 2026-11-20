@@ -34,6 +34,9 @@ export default class Tracks extends Vue {
     showGoToAlbum: boolean;
 
     @Prop({ default: false })
+    showAlbumTitle: boolean;
+
+    @Prop({ default: false })
     hideNumber: boolean;
 
     @Prop({ default: null })

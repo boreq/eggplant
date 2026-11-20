@@ -29,6 +29,15 @@
             text-overflow: ellipsis;
         }
 
+        .parent {
+            margin-top: .2em;
+            font-size: 14px;
+            color: $box-normal-text-dimmed-color;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         &:hover {
             cursor: pointer;
             color: $primary-color;

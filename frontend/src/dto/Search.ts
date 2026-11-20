@@ -8,6 +8,7 @@ export class SearchResults {
 
 export class SearchResultAlbum {
     album: PartialAlbum;
+    parent?: PartialAlbum;
     score: number;
 }
 

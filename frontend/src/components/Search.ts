@@ -83,6 +83,14 @@ export default class Search extends Vue {
         return this.result.albums.map(a => a.album);
     }
 
+    get albumParents(): PartialAlbum[] {
+        if (!this.result || !this.result.albums) {
+            return [];
+        }
+
+        return this.result.albums.map(a => a.parent);
+    }
+
     get hasTracks(): boolean {
         return this.tracks.length > 0;
     }

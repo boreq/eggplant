@@ -95,6 +95,41 @@ func TestSearchContent(t *testing.T) {
 		require.Len(t, result.Albums(), 1)
 		require.Equal(t, "findme", result.Albums()[0].Album().Title().String())
 		require.Equal(t, albumIdFor(t, "findme"), result.Albums()[0].Album().Id())
+		require.NotNil(t, result.Albums()[0].Parent())
+		require.Equal(t, "parent", result.Albums()[0].Parent().Title().String())
+		require.Equal(t, albumIdFor(t, "parent"), result.Albums()[0].Parent().Id())
+	})
+
+	t.Run("root_album_hit_has_no_parent", func(t *testing.T) {
+		lib := buildLib(t, rootSpec{
+			visibility: visPublic,
+			albums: []albumSpec{
+				{title: "findme", visibility: visPublic},
+			},
+		})
+		result, err := lib.Search(anonymous, "findme")
+		require.NoError(t, err)
+		require.Len(t, result.Albums(), 1)
+		require.Nil(t, result.Albums()[0].Parent())
+	})
+
+	t.Run("album_hit_hides_a_parent_the_caller_cannot_see", func(t *testing.T) {
+		lib := buildLib(t, rootSpec{
+			visibility: visPublic,
+			albums: []albumSpec{
+				{
+					title:      "private_parent",
+					visibility: visPrivate,
+					albums: []albumSpec{
+						{title: "findme", visibility: visPublic},
+					},
+				},
+			},
+		})
+		result, err := lib.Search(anonymous, "findme")
+		require.NoError(t, err)
+		require.Len(t, result.Albums(), 1)
+		require.Nil(t, result.Albums()[0].Parent())
 	})
 
 	t.Run("track_hit_carries_containing_album_ref", func(t *testing.T) {
@@ -497,7 +532,7 @@ func instanceIdString(id *remotedomain.RemoteInstanceID) string {
 }
 
 func foundAlbum(t *testing.T, album music.PartialAlbum, dist int) library.FoundAlbum {
-	found, err := library.NewFoundAlbum(album, dist)
+	found, err := library.NewFoundAlbum(album, nil, dist)
 	require.NoError(t, err)
 	return found
 }

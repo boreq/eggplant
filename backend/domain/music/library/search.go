@@ -25,14 +25,14 @@ func (l *Library) Search(accessCtx AccessContext, query string) (SearchResults, 
 		}
 	}
 
-	if err := searchAlbums(builder, l.root.albums, nil, l.getRootVisibilityToPropagateToChildren(), query, accessCtx); err != nil {
+	if err := searchAlbums(builder, l.root.albums, nil, nil, l.getRootVisibilityToPropagateToChildren(), query, accessCtx); err != nil {
 		return SearchResults{}, errors.Wrap(err, "could not search the albums")
 	}
 
 	return builder.build(), nil
 }
 
-func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, parentVis Visibility, query string, ctx AccessContext) error {
+func searchAlbums(b *searchBuilder, albums []Album, parent *music.PartialAlbum, parentInheritedDist *int, parentVis Visibility, query string, ctx AccessContext) error {
 	for _, a := range albums {
 		effective := parentVis
 		if a.visibility != nil {
@@ -46,11 +46,13 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 			ownDist = parentInheritedDist
 		}
 
+		var visibleAlbum *music.PartialAlbum
 		if ctx.CanSee(effective) {
 			album := music.NewPartialAlbum(a.id, a.title, a.thumbnail)
+			visibleAlbum = &album
 
 			if ownDist != nil {
-				if err := b.addAlbum(album, *ownDist); err != nil {
+				if err := b.addAlbum(album, parent, *ownDist); err != nil {
 					return errors.Wrap(err, "could not add an album")
 				}
 			}
@@ -70,7 +72,7 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 			}
 		}
 
-		if err := searchAlbums(b, a.albums, incDist(ownDist), effective, query, ctx); err != nil {
+		if err := searchAlbums(b, a.albums, visibleAlbum, incDist(ownDist), effective, query, ctx); err != nil {
 			return err
 		}
 	}
@@ -78,19 +80,24 @@ func searchAlbums(b *searchBuilder, albums []Album, parentInheritedDist *int, pa
 }
 
 type FoundAlbum struct {
-	album music.PartialAlbum
-	dist  int
+	album  music.PartialAlbum
+	parent *music.PartialAlbum
+	dist   int
 }
 
-func NewFoundAlbum(album music.PartialAlbum, dist int) (FoundAlbum, error) {
+func NewFoundAlbum(album music.PartialAlbum, parent *music.PartialAlbum, dist int) (FoundAlbum, error) {
 	if dist < 0 {
 		return FoundAlbum{}, errors.New("negative distance")
 	}
-	return FoundAlbum{album: album, dist: dist}, nil
+	return FoundAlbum{album: album, parent: parent, dist: dist}, nil
 }
 
 func (a FoundAlbum) Album() music.PartialAlbum {
 	return a.album
+}
+
+func (a FoundAlbum) Parent() *music.PartialAlbum {
+	return a.parent
 }
 
 func (a FoundAlbum) Dist() int {
@@ -138,7 +145,7 @@ func MergeResults(results ...SearchResults) (SearchResults, error) {
 	b := newSearchBuilder()
 	for _, r := range results {
 		for _, h := range r.albums {
-			if err := b.addAlbum(h.album, h.dist); err != nil {
+			if err := b.addAlbum(h.album, h.parent, h.dist); err != nil {
 				return SearchResults{}, errors.Wrap(err, "could not add an album")
 			}
 		}
@@ -195,12 +202,12 @@ func newSearchBuilder() *searchBuilder {
 	}
 }
 
-func (b *searchBuilder) addAlbum(a music.PartialAlbum, dist int) error {
+func (b *searchBuilder) addAlbum(a music.PartialAlbum, parent *music.PartialAlbum, dist int) error {
 	key := instanceKey(a.RemoteInstanceId()) + a.Id().String()
 	if existing, ok := b.albums[key]; ok && existing.dist <= dist {
 		return nil
 	}
-	found, err := NewFoundAlbum(a, dist)
+	found, err := NewFoundAlbum(a, parent, dist)
 	if err != nil {
 		return errors.Wrap(err, "could not create a found album")
 	}

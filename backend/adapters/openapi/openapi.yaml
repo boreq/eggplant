@@ -1001,6 +1001,11 @@ components:
       properties:
         album:
           $ref: '#/components/schemas/PartialAlbum'
+        parent:
+          allOf:
+            - $ref: '#/components/schemas/PartialAlbum'
+          nullable: true
+          description: The album which contains this album. Null for albums in the root of the library.
         score:
           type: integer
           description: Relevance score (lower is better; 0 means the title directly matched the query).
